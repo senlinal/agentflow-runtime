@@ -41,6 +41,7 @@ describe("ExternalProjectImporter", () => {
     const originalStringUtils = await readFile(join(source, "src/string-utils.ts"), "utf8");
     const recordStoreDir = await mkdtemp(join(tmpdir(), "agentflow-external-records-"));
     const externalRunBaseDir = await mkdtemp(join(tmpdir(), "agentflow-external-runs-"));
+    const patchExportBaseDir = await mkdtemp(join(tmpdir(), "agentflow-patch-exports-"));
     const taskBrief = taskBriefFixture();
 
     const result = await new ExternalProjectWorkspaceRunner().run({
@@ -53,17 +54,24 @@ describe("ExternalProjectImporter", () => {
       forbiddenFiles: ["src/string-utils.ts", ".env", ".env.local"],
       executionRecordBaseDir: recordStoreDir,
       externalRunBaseDir,
+      patchExportBaseDir,
     });
 
     assert.equal(result.initialTestStatus, "failed");
     assert.equal(result.finalTestStatus, "passed");
     assert.deepEqual(result.changedFiles, ["src/calculator.ts"]);
     assert.ok(result.patchPath.endsWith("changes.patch"));
+    assert.ok(result.patchExportId?.startsWith("patch_export_"));
+    assert.ok(result.patchHash?.startsWith("sha256:"));
+    assert.ok(result.patchMetadataPath?.endsWith("metadata.json"));
+    assert.ok(result.patchApplyGuidePath?.endsWith("APPLY_GUIDE.md"));
     assert.ok(result.executionId);
     assert.equal(result.finalContext.verification?.pass, true);
     assert.equal(await readFile(join(source, "src/calculator.ts"), "utf8"), originalCalculator);
     assert.equal(await readFile(join(source, "src/string-utils.ts"), "utf8"), originalStringUtils);
     assert.match(await readFile(result.patchPath, "utf8"), /return a \+ b/);
+    assert.match(await readFile(result.patchApplyGuidePath ?? "", "utf8"), /did not write this patch back/);
+    assert.equal(result.finalContext.patchExportRecord?.safeToApplyManually, true);
     assert.equal(result.finalContext.codeChangePlanExecutionRecord?.rollbackGuide?.destructiveRollbackPerformed, false);
   });
 });

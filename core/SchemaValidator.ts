@@ -8,6 +8,7 @@ import type {
   CodeChangePlanExecutionRecord,
   CodeChangePlanExecutionApprovalRequest,
   OutputSchemaName,
+  PatchExportRecord,
   Plan,
   ResearchReport,
   RevisedPlan,
@@ -60,6 +61,8 @@ export class SchemaValidator {
         return validateCodeChangePlanDryRunExecutionPlan(output);
       case "CodeChangePlanExecutionRecord":
         return validateCodeChangePlanExecutionRecord(output);
+      case "PatchExportRecord":
+        return validatePatchExportRecord(output);
       case "CorrectionHint":
         return validateCorrectionHint(output);
       case "SmokeTestResult":
@@ -339,6 +342,31 @@ function validateCodeChangePlanExecutionRecord(output: unknown): CodeChangePlanE
   requireArray(record, "blockedReasons", "CodeChangePlanExecutionRecord");
   requireArray(record, "safetyFindings", "CodeChangePlanExecutionRecord");
   return record as CodeChangePlanExecutionRecord;
+}
+
+function validatePatchExportRecord(output: unknown): PatchExportRecord {
+  const record = requireObject(output, "PatchExportRecord");
+  requireString(record, "patchExportId", "PatchExportRecord");
+  requireString(record, "executionId", "PatchExportRecord");
+  requireString(record, "sourceProjectPath", "PatchExportRecord");
+  requireString(record, "workspaceRoot", "PatchExportRecord");
+  requireString(record, "patchPath", "PatchExportRecord");
+  requireString(record, "metadataPath", "PatchExportRecord");
+  requireString(record, "applyGuidePath", "PatchExportRecord");
+  requireString(record, "patchHash", "PatchExportRecord");
+  if (!record.patchHash.startsWith("sha256:")) throw new Error("PatchExportRecord.patchHash must start with sha256:.");
+  requireArray(record, "changedFiles", "PatchExportRecord");
+  requireArray(record, "filesAdded", "PatchExportRecord");
+  requireArray(record, "filesModified", "PatchExportRecord");
+  requireArray(record, "filesDeleted", "PatchExportRecord");
+  if ("insertions" in record) requireNumber(record, "insertions", "PatchExportRecord");
+  if ("deletions" in record) requireNumber(record, "deletions", "PatchExportRecord");
+  if ("testStatus" in record && typeof record.testStatus !== "string") throw new Error("PatchExportRecord.testStatus must be a string when provided.");
+  if ("verificationPass" in record && typeof record.verificationPass !== "boolean") throw new Error("PatchExportRecord.verificationPass must be a boolean when provided.");
+  requireString(record, "createdAt", "PatchExportRecord");
+  requireBoolean(record, "safeToApplyManually", "PatchExportRecord");
+  requireArray(record, "warnings", "PatchExportRecord");
+  return record as PatchExportRecord;
 }
 
 function validateRollbackGuide(output: unknown): void {

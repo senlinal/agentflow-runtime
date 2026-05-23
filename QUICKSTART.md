@@ -126,6 +126,16 @@ npm run external:run -- --source /path/to/project --target src/file.ts --content
 
 The runner copies the project to a temporary workspace first, then writes patch and execution metadata for review.
 
+Review exported patches:
+
+```bash
+npm run patch:list
+npm run patch:show -- --id <patchExportId>
+npm run patch:apply-guide -- --id <patchExportId>
+```
+
+Patch commands are read-only. They do not run `git apply` and do not write changes back to the source project.
+
 ## 7. LLM Config Dry-Run
 
 ```bash

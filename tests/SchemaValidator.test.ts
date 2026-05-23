@@ -418,6 +418,52 @@ describe("SchemaValidator", () => {
     assert.deepEqual(SchemaValidator.validate("CodeChangePlanExecutionRecord", output), output);
   });
 
+  it("passes for a valid PatchExportRecord", () => {
+    const output = {
+      patchExportId: "patch_export_test",
+      executionId: "code_exec_test",
+      sourceProjectPath: "/tmp/source",
+      workspaceRoot: "/tmp/workspace",
+      patchPath: ".agentflow/patch-exports/exports/patch_export_test/changes.patch",
+      metadataPath: ".agentflow/patch-exports/exports/patch_export_test/metadata.json",
+      applyGuidePath: ".agentflow/patch-exports/exports/patch_export_test/APPLY_GUIDE.md",
+      patchHash: "sha256:abc123",
+      changedFiles: ["src/calculator.ts"],
+      filesAdded: [],
+      filesModified: ["src/calculator.ts"],
+      filesDeleted: [],
+      insertions: 1,
+      deletions: 1,
+      testStatus: "passed",
+      verificationPass: true,
+      createdAt: "2026-05-23T00:00:00.000Z",
+      safeToApplyManually: true,
+      warnings: [],
+    };
+
+    assert.deepEqual(SchemaValidator.validate("PatchExportRecord", output), output);
+  });
+
+  it("fails when PatchExportRecord hash is not sha256", () => {
+    assert.throws(() => SchemaValidator.validate("PatchExportRecord", {
+      patchExportId: "patch_export_test",
+      executionId: "code_exec_test",
+      sourceProjectPath: "/tmp/source",
+      workspaceRoot: "/tmp/workspace",
+      patchPath: "changes.patch",
+      metadataPath: "metadata.json",
+      applyGuidePath: "APPLY_GUIDE.md",
+      patchHash: "abc123",
+      changedFiles: [],
+      filesAdded: [],
+      filesModified: [],
+      filesDeleted: [],
+      createdAt: "2026-05-23T00:00:00.000Z",
+      safeToApplyManually: false,
+      warnings: [],
+    }), /patchHash/);
+  });
+
   it("fails when CodeChangePlanExecutionRecord rollback guide performs destructive rollback", () => {
     assert.throws(
       () => SchemaValidator.validate("CodeChangePlanExecutionRecord", {

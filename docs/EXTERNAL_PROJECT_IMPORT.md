@@ -23,7 +23,7 @@ It is designed for first-pass trials where the original project must remain unto
 npm run demo:external-project-import
 ```
 
-The demo uses the E2E fixture as the external source project, copies it to a temp workspace, confirms the initial tests fail, applies a scoped `CodeChangePlan` to `src/calculator.ts`, runs tests, verifies the result, writes a patch file, and saves execution records.
+The demo uses the E2E fixture as the external source project, copies it to a temp workspace, confirms the initial tests fail, applies a scoped `CodeChangePlan` to `src/calculator.ts`, runs tests, verifies the result, writes a patch export, and saves execution records.
 
 ## CLI
 
@@ -43,7 +43,25 @@ Optional:
 --forbiddenFiles src/string-utils.ts,.env,.env.local
 ```
 
-The CLI does not write changes back to the source project. It prints the copied workspace, patch path, execution id, execution record path, rollback guide path, summary path, and trace path.
+The CLI does not write changes back to the source project. It prints the copied workspace, patch export id, patch hash, patch path, metadata path, apply guide path, execution id, execution record path, rollback guide path, summary path, and trace path.
+
+## Patch Export / Apply Guidance
+
+Every successful external project run writes a patch export under `.agentflow/patch-exports/`.
+
+```bash
+npm run patch:list
+npm run patch:show -- --id <patchExportId>
+npm run patch:apply-guide -- --id <patchExportId>
+```
+
+The patch export contains:
+
+- `changes.patch`;
+- `metadata.json` with `patchHash`, changed files, insertions, deletions, test status, and verification status;
+- `APPLY_GUIDE.md` with manual review steps.
+
+The apply guide is intentionally read-only. AgentFlow does not run `git apply`, does not write changes back to the source project, and does not perform rollback commands. The user must manually review and apply the patch with their own git workflow.
 
 ## Safety Properties
 
@@ -52,7 +70,8 @@ The CLI does not write changes back to the source project. It prints the copied 
 - `delete_file` remains unsupported.
 - High-risk shell remains blocked by the existing controlled execution layer.
 - No real LLM is called.
-- Patch output is written under `.agentflow/external-runs/`, which is ignored by Git.
+- Raw patch output is written under `.agentflow/external-runs/`, which is ignored by Git.
+- Formal patch exports are written under `.agentflow/patch-exports/`, which is ignored by Git.
 - Rollback guidance remains read-only and non-destructive.
 
 ## Current Limits
@@ -60,5 +79,6 @@ The CLI does not write changes back to the source project. It prints the copied 
 - The first version requires explicit target file content.
 - It does not synthesize code changes from natural language.
 - It does not write patches back to the source project.
+- It does not automatically apply exported patches.
 - It does not run dependency installation.
 - It does not support destructive rollback.

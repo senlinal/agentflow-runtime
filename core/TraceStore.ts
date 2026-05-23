@@ -369,6 +369,7 @@ function buildExternalProjectSummary(context: WorkflowContext): string {
   const external = context.runtimeMetadata?.externalProject;
   if (!external) return "";
   const executionId = stringValue(external.executionId);
+  const patchExport = buildPatchExportSummary(context);
   return [
     "## External Project Scoped Workspace",
     "",
@@ -381,18 +382,52 @@ function buildExternalProjectSummary(context: WorkflowContext): string {
     `- finalTestStatus: ${stringValue(external.finalTestStatus)}`,
     `- changedFiles: ${arrayValue(external.changedFiles).join("; ") || "none"}`,
     `- patchPath: ${stringValue(external.patchPath)}`,
+    `- patchExportId: ${stringValue(external.patchExportId)}`,
+    `- patchHash: ${stringValue(external.patchHash)}`,
+    `- patchMetadataPath: ${stringValue(external.patchMetadataPath)}`,
+    `- patchApplyGuidePath: ${stringValue(external.patchApplyGuidePath)}`,
     `- executionId: ${executionId}`,
     `- executionRecordPath: ${stringValue(external.executionRecordPath)}`,
     `- rollbackGuidePath: ${stringValue(external.rollbackGuidePath)}`,
     "",
     "External project execution happened in a copied temporary workspace only.",
     "No changes were written back to the source project automatically.",
+    "Patch export is for manual review only; AgentFlow did not run git apply.",
     "",
     "Suggested execution queries:",
     "",
     "`npm run execution:list`",
     `\`npm run execution:show -- --id ${executionId}\``,
     `\`npm run execution:rollback-guide -- --id ${executionId}\``,
+    "",
+    "Suggested patch export queries:",
+    "",
+    "`npm run patch:list`",
+    `\`npm run patch:show -- --id ${stringValue(external.patchExportId)}\``,
+    `\`npm run patch:apply-guide -- --id ${stringValue(external.patchExportId)}\``,
+    "",
+    patchExport,
+  ].join("\n");
+}
+
+function buildPatchExportSummary(context: WorkflowContext): string {
+  const patch = context.patchExportRecord ?? context.runtimeMetadata?.patchExport;
+  if (!patch) return "";
+  return [
+    "## Patch Export",
+    "",
+    `- patchExportId: ${stringValue(patch.patchExportId)}`,
+    `- patchHash: ${stringValue(patch.patchHash)}`,
+    `- patchPath: ${stringValue(patch.patchPath)}`,
+    `- metadataPath: ${stringValue(patch.metadataPath)}`,
+    `- applyGuidePath: ${stringValue(patch.applyGuidePath)}`,
+    `- changedFiles: ${arrayValue(patch.changedFiles).join("; ") || "none"}`,
+    `- safeToApplyManually: ${stringValue(patch.safeToApplyManually)}`,
+    `- warnings: ${arrayValue(patch.warnings).join("; ") || "none"}`,
+    "",
+    "Patch was exported only.",
+    "No changes were applied to the source project.",
+    "Review the patch before applying it manually.",
     "",
   ].join("\n");
 }

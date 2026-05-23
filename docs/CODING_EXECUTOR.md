@@ -233,7 +233,17 @@ npm run external:run -- --source /path/to/project --target src/file.ts --content
 
 The importer validates the source directory, rejects the current repository root by default, excludes `node_modules`, `.git`, `dist`, `coverage`, `.env`, workflow runs, policy logs, and execution records, then copies the project into a temporary workspace. The controlled execution workflow runs only inside that copied workspace.
 
-The runner outputs a patch path, execution record, rollback guide, workflow summary, and trace. It does not write changes back to the original project.
+The runner outputs a patch path, formal patch export, execution record, rollback guide, workflow summary, and trace. It does not write changes back to the original project.
+
+Patch export queries:
+
+```bash
+npm run patch:list
+npm run patch:show -- --id <patchExportId>
+npm run patch:apply-guide -- --id <patchExportId>
+```
+
+Patch exports include `changes.patch`, `metadata.json`, a `sha256` patch hash, and `APPLY_GUIDE.md`. The apply guide is manual guidance only. AgentFlow does not execute `git apply`, does not copy files back to the source project, and does not perform destructive rollback.
 
 ## Output
 

@@ -6,6 +6,7 @@ dist/
 .workflow-runs/
 .agentflow/executions/
 .agentflow/external-runs/
+.agentflow/patch-exports/
 .opencode/policy-runs/
 .opencode/node_modules/
 .opencode/opencode.db

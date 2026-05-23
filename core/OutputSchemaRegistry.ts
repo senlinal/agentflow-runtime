@@ -15,6 +15,7 @@ export const OUTPUT_SCHEMA_NAMES: OutputSchemaName[] = [
   "CodeChangePlanExecutionApprovalRequest",
   "CodeChangePlanDryRunExecutionPlan",
   "CodeChangePlanExecutionRecord",
+  "PatchExportRecord",
   "CorrectionHint",
   "CodeExecutionResult",
   "TestExecutionResult",
@@ -262,6 +263,28 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
         rollbackGuidePath: "string optional",
         blockedReasons: ["string"],
         safetyFindings: ["string"],
+      };
+    case "PatchExportRecord":
+      return {
+        patchExportId: "string",
+        executionId: "string",
+        sourceProjectPath: "string",
+        workspaceRoot: "string",
+        patchPath: "string",
+        metadataPath: "string",
+        applyGuidePath: "string",
+        patchHash: "sha256:string",
+        changedFiles: ["string"],
+        filesAdded: ["string"],
+        filesModified: ["string"],
+        filesDeleted: ["string"],
+        insertions: "number optional",
+        deletions: "number optional",
+        testStatus: "string optional",
+        verificationPass: "boolean optional",
+        createdAt: "string",
+        safeToApplyManually: "boolean",
+        warnings: ["string"],
       };
     case "CorrectionHint":
       return {

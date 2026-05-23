@@ -40,7 +40,8 @@ Report privately through the repository owner's preferred private channel. Inclu
 - Controlled execution still rejects `delete_file`, forbidden or sensitive paths, high-risk shell, scope expansion, automatic approval, infinite retry, and destructive rollback.
 - CodeChangePlan execution records and rollback guides are persisted under `.agentflow/executions/` for local audit. The directory is ignored by Git, stores redacted/truncated execution data, and rollback guide commands are informational only.
 - The real-project E2E demo copies its fixture to a temporary workspace before execution. It must not modify fixture originals, project source files, or committed runtime logs.
-- External project import copies user-provided projects into a temporary workspace before execution. It rejects the current repository root by default, excludes local/runtime artifacts, does not write changes back to the source project, and stores patch output under `.agentflow/external-runs/`.
+- External project import copies user-provided projects into a temporary workspace before execution. It rejects the current repository root by default, excludes local/runtime artifacts, does not write changes back to the source project, and stores raw patch output under `.agentflow/external-runs/`.
+- Patch exports are stored under `.agentflow/patch-exports/` with metadata, hash, and a manual apply guide. Patch review commands are read-only and must not run `git apply`, `git reset`, `git checkout`, or write changes back to the source project.
 
 ## High-Risk Areas
 

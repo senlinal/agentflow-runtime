@@ -37,6 +37,7 @@ export type OutputSchemaName =
   | "CodeChangePlanExecutionApprovalRequest"
   | "CodeChangePlanDryRunExecutionPlan"
   | "CodeChangePlanExecutionRecord"
+  | "PatchExportRecord"
   | "CorrectionHint"
   | "CodeExecutionResult"
   | "TestExecutionResult"
@@ -355,6 +356,28 @@ export type CodeChangePlanExecutionRecord = {
   safetyFindings: string[];
 };
 
+export type PatchExportRecord = {
+  patchExportId: string;
+  executionId: string;
+  sourceProjectPath: string;
+  workspaceRoot: string;
+  patchPath: string;
+  metadataPath: string;
+  applyGuidePath: string;
+  patchHash: string;
+  changedFiles: string[];
+  filesAdded: string[];
+  filesModified: string[];
+  filesDeleted: string[];
+  insertions?: number;
+  deletions?: number;
+  testStatus?: string;
+  verificationPass?: boolean;
+  createdAt: string;
+  safeToApplyManually: boolean;
+  warnings: string[];
+};
+
 export type CorrectionHint = {
   driftDetected: boolean;
   originalGoalReminder: string;
@@ -403,6 +426,7 @@ export type WorkflowContext = TaskSpec & {
   codeChangePlanExecutionApprovalRecord?: CodeChangePlanExecutionApprovalRecord | null;
   codeChangePlanDryRunExecutionPlan?: CodeChangePlanDryRunExecutionPlan | null;
   codeChangePlanExecutionRecord?: CodeChangePlanExecutionRecord | null;
+  patchExportRecord?: PatchExportRecord | null;
   correctionHint: CorrectionHint | null;
   iteration: number;
   history: unknown[];
@@ -425,6 +449,7 @@ export type RuntimeMetadata = {
   executionVerification?: Record<string, unknown>;
   e2eRealProject?: Record<string, unknown>;
   externalProject?: Record<string, unknown>;
+  patchExport?: Record<string, unknown>;
 };
 
 export type WorkflowCondition = {

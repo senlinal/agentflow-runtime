@@ -4,6 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createInitialContext } from "../context.ts";
 import { NodeRegistry } from "../NodeRegistry.ts";
+import { PatchExportStore } from "../patch/PatchExportStore.ts";
 import { hashCodeChangePlan } from "../repair/CodeChangePlanHasher.ts";
 import { TraceStore, type TraceStoreResult } from "../TraceStore.ts";
 import type { CodeChangePlan, TaskBrief, WorkflowContext } from "../types.ts";
@@ -23,6 +24,7 @@ export type ExternalProjectWorkspaceRunOptions = {
   tempRoot?: string;
   executionRecordBaseDir?: string;
   externalRunBaseDir?: string;
+  patchExportBaseDir?: string;
   allowCurrentRepoRoot?: boolean;
 };
 
@@ -32,6 +34,10 @@ export type ExternalProjectWorkspaceRunResult = {
   finalTestStatus: "passed" | "failed";
   changedFiles: string[];
   patchPath: string;
+  patchExportId?: string;
+  patchMetadataPath?: string;
+  patchApplyGuidePath?: string;
+  patchHash?: string;
   executionId?: string;
   executionRecordPath?: string;
   rollbackGuidePath?: string;
@@ -78,6 +84,7 @@ export class ExternalProjectWorkspaceRunner {
       NodeRegistry.withDefaults(),
     ).run(context);
     const changedFiles = await gitChangedFiles(importedWorkspace.workspaceRoot);
+    const changedFileStatus = await gitChangedFileStatus(importedWorkspace.workspaceRoot);
     const patch = await gitDiff(importedWorkspace.workspaceRoot);
     const patchDir = join(options.externalRunBaseDir ?? join(".agentflow", "external-runs"), importedWorkspace.importId);
     await mkdir(patchDir, { recursive: true });
@@ -85,6 +92,22 @@ export class ExternalProjectWorkspaceRunner {
     await writeFile(patchPath, patch, "utf8");
 
     const finalTestStatus = finalContext.testExecutionResult?.status === "passed" ? "passed" : "failed";
+    const patchExport = finalContext.codeChangePlanExecutionRecord?.executionId
+      ? await new PatchExportStore(options.patchExportBaseDir).save({
+          executionId: finalContext.codeChangePlanExecutionRecord.executionId,
+          sourceProjectPath: importedWorkspace.sourceProjectPath,
+          workspaceRoot: importedWorkspace.workspaceRoot,
+          patchText: patch,
+          changedFiles,
+          filesAdded: changedFileStatus.added,
+          filesModified: changedFileStatus.modified,
+          filesDeleted: changedFileStatus.deleted,
+          testStatus: finalTestStatus,
+          verificationPass: finalContext.verification?.pass,
+          warnings: ["Patch was generated from a copied workspace. It was not applied to the source project."],
+        })
+      : undefined;
+    if (patchExport) finalContext.patchExportRecord = patchExport.record;
     finalContext.runtimeMetadata = {
       ...finalContext.runtimeMetadata,
       externalProject: {
@@ -97,10 +120,15 @@ export class ExternalProjectWorkspaceRunner {
         finalTestStatus,
         changedFiles,
         patchPath,
+        patchExportId: patchExport?.record.patchExportId,
+        patchMetadataPath: patchExport?.metadataPath,
+        patchApplyGuidePath: patchExport?.applyGuidePath,
+        patchHash: patchExport?.record.patchHash,
         executionId: finalContext.codeChangePlanExecutionRecord?.executionId,
         executionRecordPath: finalContext.codeChangePlanExecutionRecord?.executionRecordPath,
         rollbackGuidePath: finalContext.codeChangePlanExecutionRecord?.rollbackGuidePath,
       },
+      patchExport: patchExport?.record,
     };
     const traceStore = await TraceStore.save(finalContext, {
       workflowName: loaded.config.workflow.name,
@@ -113,6 +141,10 @@ export class ExternalProjectWorkspaceRunner {
       finalTestStatus,
       changedFiles,
       patchPath,
+      patchExportId: patchExport?.record.patchExportId,
+      patchMetadataPath: patchExport?.metadataPath,
+      patchApplyGuidePath: patchExport?.applyGuidePath,
+      patchHash: patchExport?.record.patchHash,
       executionId: finalContext.codeChangePlanExecutionRecord?.executionId,
       executionRecordPath: finalContext.codeChangePlanExecutionRecord?.executionRecordPath,
       rollbackGuidePath: finalContext.codeChangePlanExecutionRecord?.rollbackGuidePath,
@@ -210,6 +242,21 @@ async function gitChangedFiles(cwd: string): Promise<string[]> {
 
 async function gitDiff(cwd: string): Promise<string> {
   return (await run("git", ["diff", "--"], cwd)).stdout;
+}
+
+async function gitChangedFileStatus(cwd: string): Promise<{ added: string[]; modified: string[]; deleted: string[] }> {
+  const result = await run("git", ["diff", "--name-status", "--"], cwd);
+  const added: string[] = [];
+  const modified: string[] = [];
+  const deleted: string[] = [];
+  for (const line of result.stdout.split(/\r?\n/)) {
+    const [status, file] = line.split(/\s+/, 2);
+    if (!status || !file) continue;
+    if (status.startsWith("A")) added.push(file);
+    else if (status.startsWith("D")) deleted.push(file);
+    else modified.push(file);
+  }
+  return { added, modified, deleted };
 }
 
 async function runCommandString(command: string, cwd: string): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {

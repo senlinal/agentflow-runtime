@@ -176,13 +176,21 @@ More details are in `docs/REAL_PROJECT_E2E.md`.
 
 ### External Project Import
 
-`external:run` is the first user-specified project path runner. It never edits the source project directly. Instead, it copies the external project into a temporary workspace, excludes local/runtime artifacts, applies a scoped `CodeChangePlan` inside the copied workspace, runs configured tests, verifies the result, and writes a patch plus execution record.
+`external:run` is the first user-specified project path runner. It never edits the source project directly. Instead, it copies the external project into a temporary workspace, excludes local/runtime artifacts, applies a scoped `CodeChangePlan` inside the copied workspace, runs configured tests, verifies the result, and writes a patch export plus execution record.
 
 ```bash
 npm run external:run -- --source /path/to/project --target src/file.ts --contentFile /path/to/fixed-file.ts --testCommand "npm run test"
 ```
 
-The source project is not modified and changes are not written back automatically. See `docs/EXTERNAL_PROJECT_IMPORT.md`.
+Patch exports include a patch hash, metadata, and manual apply guide:
+
+```bash
+npm run patch:list
+npm run patch:show -- --id <patchExportId>
+npm run patch:apply-guide -- --id <patchExportId>
+```
+
+The source project is not modified, changes are not written back automatically, and AgentFlow does not run `git apply`. See `docs/EXTERNAL_PROJECT_IMPORT.md`.
 
 Validate and inspect templates:
 
