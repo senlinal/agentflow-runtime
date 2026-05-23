@@ -35,6 +35,7 @@ const requiredFiles = [
   "core/scope/ScopeConfirmationStore.ts",
   "core/scope/ScopeConfirmationFormatter.ts",
   "core/profile/WorkflowProfileLoader.ts",
+  "core/profile/ProfileWorkflowRunner.ts",
   "cli/execution-list.ts",
   "cli/execution-show.ts",
   "cli/execution-rollback-guide.ts",
@@ -50,6 +51,7 @@ const requiredFiles = [
   "cli/workflow-profile-current.ts",
   "cli/workflow-profile-use.ts",
   "cli/workflow-profile-inspect.ts",
+  "cli/run-profile-workflow.ts",
   "demo-task-negotiation.ts",
   "demo-scope-confirmation.ts",
   "demo-e2e-real-project.ts",
@@ -75,6 +77,7 @@ const requiredFiles = [
   "profiles/external-project-fix.json",
   ".opencode/commands/workflow.md",
   ".opencode/commands/workflow-profile.md",
+  ".opencode/tools/run-profile-workflow.ts",
 ];
 
 const requiredGitignoreEntries = [

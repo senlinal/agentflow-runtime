@@ -22,9 +22,7 @@ Use this command to run the repository's workflow template runner from opencode 
    - `nonGoals`
    - `rawUserInput`
 6. Default to the active profile's `defaultWorkflow`. Do not ask the user to repeat default constraints already present in `AGENTS.md`, policy files, memory files, or the active profile.
-7. Call the custom tool `run_workflow` with either:
-   - `template` and `taskBrief`, or
-   - `template` and `inputPath` when the user points to an existing TaskBrief JSON file.
+7. Prefer the custom tool `run_profile_workflow` with `task` and optional `profile`. Fall back to `run_workflow` only when the user explicitly names a template.
 8. Do not replace WorkflowRuntime with opencode reasoning. Planner, Executor, Verifier, GoalKeeper, and routing must remain controlled by the configured workflow and Runtime.
 9. Summarize the tool result:
    - decision

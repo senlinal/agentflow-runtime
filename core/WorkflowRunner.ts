@@ -17,6 +17,10 @@ export type WorkflowRunnerResult = {
   traceStore: TraceStoreResult;
 };
 
+export type WorkflowRunnerOptions = {
+  contextOverrides?: Partial<WorkflowContext>;
+};
+
 export class WorkflowRunner {
   private readonly registry: NodeRegistry;
 
@@ -24,7 +28,7 @@ export class WorkflowRunner {
     this.registry = registry;
   }
 
-  async run(config: WorkflowGraphConfig, taskBrief: TaskBrief): Promise<WorkflowRunnerResult> {
+  async run(config: WorkflowGraphConfig, taskBrief: TaskBrief, options: WorkflowRunnerOptions = {}): Promise<WorkflowRunnerResult> {
     const graph = new WorkflowGraph(config);
     const context = {
       ...createInitialContext({
@@ -40,6 +44,7 @@ export class WorkflowRunner {
       }),
       taskBrief,
       runtimeMetadata: buildRuntimeMetadata(config),
+      ...options.contextOverrides,
     };
 
     const finalContext = await new WorkflowRuntime(graph, this.registry).run(context);

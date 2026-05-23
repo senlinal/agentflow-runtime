@@ -61,6 +61,14 @@ npm run workflow:profile:use -- --profile rag-optimization
 
 The default `rag-optimization` profile starts with task negotiation, then uses confirmed scope as a gate before feasibility. `coding-safe-fix` is for scoped code fixes, and `external-project-fix` is for temp-workspace external project runs and patch export.
 
+Run the active profile directly:
+
+```bash
+npm run workflow:run-profile -- --task "继续 RAG 召回优化，分析上一轮实验结果，给出下一步方案"
+```
+
+This runs safe profile-aware preflight steps. It does not call `CodeExecutor`, run test commands, or call real LLM providers by default.
+
 ## 7. Run Controlled Code-Test-Verify
 
 For ambiguous or broad work, run task negotiation before feasibility or execution:

@@ -1,4 +1,5 @@
 import { TemplateCreateService } from "../../core/TemplateCreateService.ts";
+import { ProfileWorkflowRunner, type ProfileWorkflowRunRequest, type ProfileWorkflowRunResult } from "../../core/profile/ProfileWorkflowRunner.ts";
 import { TaskBriefLoader } from "../../core/TaskBriefLoader.ts";
 import { WorkflowRunner } from "../../core/WorkflowRunner.ts";
 import { WorkflowTemplateRegistry } from "../../core/WorkflowTemplateRegistry.ts";
@@ -71,6 +72,16 @@ export class OpenCodeWorkflowToolService {
       tracePath: result.tracePath,
       contextPath: result.contextPath,
     };
+  }
+
+  async runProfileWorkflow(input: ProfileWorkflowRunRequest): Promise<ProfileWorkflowRunResult> {
+    if (!input.task && !input.inputPath) {
+      throw new Error("run_profile_workflow requires task or inputPath.");
+    }
+    return new ProfileWorkflowRunner().run({
+      ...input,
+      allowExecution: input.allowExecution === true,
+    });
   }
 
   async listWorkflows(_input: { includeDetails?: boolean } = {}): Promise<{

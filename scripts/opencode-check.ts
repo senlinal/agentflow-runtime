@@ -5,6 +5,7 @@ const requiredFiles = [
   ".opencode/commands/workflow.md",
   ".opencode/commands/workflow-profile.md",
   ".opencode/tools/run-workflow.ts",
+  ".opencode/tools/run-profile-workflow.ts",
   ".opencode/plugins/agentflow-policy.ts",
   "adapters/opencode/PolicyAuditLogger.ts",
   "adapters/opencode/PolicyApprovalStore.ts",

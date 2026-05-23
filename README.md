@@ -119,6 +119,15 @@ Built-in profiles:
 
 The opencode `/workflow` command reads the active profile before choosing a default workflow. If a request does not fit the active profile, the agent should recommend a profile switch instead of forcing the task through the wrong template. See `docs/WORKFLOW_PROFILES.md`.
 
+Run the active profile directly from CLI:
+
+```bash
+npm run workflow:run-profile -- --task "继续 RAG 召回优化，分析上一轮实验结果，给出下一步方案"
+npm run workflow:run-profile -- --profile rag-optimization --task "..."
+```
+
+The first implementation runs only safe pre-execution profile steps by default. It will not run CodeExecutor, tests, execution workflows, or real LLM calls unless a later explicit execution path is used.
+
 ### Task Negotiation
 
 `task-negotiation` is a pre-flight workflow for complex or ambiguous requests. It produces a `TaskNegotiationResult` with detected task type, target module, ambiguities, clarification questions, proposed allowed/forbidden scope, suggested task breakdown, and a recommended next step.

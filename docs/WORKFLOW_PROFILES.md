@@ -33,7 +33,10 @@ npm run workflow:profiles
 npm run workflow:profile
 npm run workflow:profile:use -- --profile rag-optimization
 npm run workflow:profile:inspect -- --profile rag-optimization
+npm run workflow:run-profile -- --task "继续 RAG 召回优化，分析上一轮实验结果，给出下一步方案"
 ```
+
+`workflow:run-profile` executes the active profile's safe preflight chain. By default it does not run CodeExecutor, test commands, approved execution workflows, or real LLM providers. Execution-capable workflows are blocked unless a later explicit execution path is used.
 
 ## Daily Use
 
