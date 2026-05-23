@@ -1,7 +1,7 @@
 import { ScopeConfirmationService } from "../scope/ScopeConfirmationService.ts";
 import { ScopeConfirmationStore } from "../scope/ScopeConfirmationStore.ts";
 import { TaskBriefLoader } from "../TaskBriefLoader.ts";
-import type { ProfileSession, ProjectMemoryRecord, ProjectMemorySummary, ScopeConfirmationRecord, TaskBrief, TaskNegotiationResult, WorkflowGraphConfig } from "../types.ts";
+import type { CompactMemorySummary, ProfileSession, ProjectMemoryRecord, ProjectMemorySummary, ScopeConfirmationRecord, TaskBrief, TaskNegotiationResult, WorkflowGraphConfig } from "../types.ts";
 import { WorkflowRunner, type WorkflowRunnerResult } from "../WorkflowRunner.ts";
 import { WorkflowTemplateRegistry } from "../WorkflowTemplateRegistry.ts";
 import { WorkflowProfileLoader, type WorkflowProfile } from "./WorkflowProfileLoader.ts";
@@ -85,10 +85,15 @@ export class ProfileWorkflowRunner {
     const allowExecution = request.allowExecution === true;
     const steps: ProfileWorkflowStep[] = [];
     const warnings = [...validation.warnings];
+    const compactedMemory = await this.memoryStore.getCompacted(profile.id);
     const initialMemorySummary = await this.memoryStore.summarize(profile.id, 10);
     if (initialMemorySummary.records.length > 0) {
       warnings.push(`Loaded ${initialMemorySummary.records.length} project memory record(s) for profile ${profile.id}.`);
       taskBrief = withMemoryResources(taskBrief, initialMemorySummary);
+    }
+    if (compactedMemory) {
+      warnings.push(`Loaded compacted project memory for profile ${profile.id}.`);
+      taskBrief = withCompactedMemoryResources(taskBrief, compactedMemory);
     }
     let blocked = false;
 
@@ -167,6 +172,14 @@ export class ProfileWorkflowRunner {
       ...(profileSession ? { session: profileSession } : {}),
       ...(scopeConfirmation?.confirmationId ? { scopeConfirmationId: scopeConfirmation.confirmationId } : {}),
     };
+  }
+
+  async compactMemory(profileId?: string): Promise<CompactMemorySummary> {
+    const resolved = profileId
+      ? await this.resolveExplicitProfile(profileId)
+      : await this.profileLoader.loadCurrentProfile();
+    const { summary } = await this.memoryStore.compact(resolved.profile.id);
+    return summary;
   }
 
   private async createPendingSession(
@@ -390,6 +403,18 @@ function withMemoryResources(taskBrief: TaskBrief, memorySummary: ProjectMemoryS
   return {
     ...taskBrief,
     resources: [...taskBrief.resources, ...memoryResources],
+  };
+}
+
+function withCompactedMemoryResources(taskBrief: TaskBrief, summary: CompactMemorySummary): TaskBrief {
+  const compactResources = [
+    summary.confirmedScope ? `CompactMemory(confirmed_scope): ${summary.confirmedScope.summary}` : null,
+    ...summary.nextActions.slice(0, 3).map((item) => `CompactMemory(next_action): ${item.action}`),
+    ...summary.rejectedRoutes.slice(0, 3).map((item) => `CompactMemory(rejected_route): ${item.name} - ${item.reason}`),
+  ].filter((item): item is string => Boolean(item));
+  return {
+    ...taskBrief,
+    resources: [...taskBrief.resources, ...compactResources],
   };
 }
 

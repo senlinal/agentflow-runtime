@@ -9,7 +9,10 @@ The CLI entrypoints are:
 ```bash
 npm run memory:list
 npm run memory:summary -- --profile rag-optimization
+npm run memory:compact -- --profile rag-optimization
 npm run memory:show -- --id <memoryId>
 ```
 
 Do not store secrets, API keys, credentials, production data, or private tokens in memory records.
+
+`memory:compact` creates a stable summary of current facts, active decisions, rejected routes, open questions, resolved questions, next actions, and conflicts. It does not call an LLM and does not execute workflow steps.

@@ -1,6 +1,7 @@
 import { appendFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { ProjectMemoryRecord, ProjectMemorySummary } from "../types.ts";
+import type { CompactMemorySummary, ProjectMemoryRecord, ProjectMemorySummary } from "../types.ts";
+import { MemoryCompactor } from "./MemoryCompactor.ts";
 
 export type ProjectMemoryListFilters = {
   profileId?: string;
@@ -62,8 +63,29 @@ export class ProjectMemoryStore {
     };
   }
 
+  async compact(profileId: string, limit = 100): Promise<{ summary: CompactMemorySummary; summaryPath: string }> {
+    const records = await this.list({ profileId, limit });
+    const summary = new MemoryCompactor().compact(profileId, records);
+    await mkdir(this.compactedDir(), { recursive: true });
+    const summaryPath = join(this.compactedDir(), `${profileId}.json`);
+    await writeFile(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
+    return { summary, summaryPath };
+  }
+
+  async getCompacted(profileId: string): Promise<CompactMemorySummary | null> {
+    try {
+      return JSON.parse(await readFile(join(this.compactedDir(), `${profileId}.json`), "utf8")) as CompactMemorySummary;
+    } catch {
+      return null;
+    }
+  }
+
   private recordsDir(): string {
     return join(this.baseDir, "records");
+  }
+
+  private compactedDir(): string {
+    return join(this.baseDir, "compacted");
   }
 }
 

@@ -129,7 +129,7 @@ For code tasks, include file paths and test results.
 
 Profile-aware workflow runs may store local memory under `.agentflow/project-memory/`. Use it to remember confirmed scope, key decisions, tried routes, rejected routes, open questions, current best understanding, and next actions. Do not store secrets, credentials, API keys, production data, or private tokens in memory records.
 
-Before repeating scope questions or retrying a route, inspect recent memory with `npm run memory:summary -- --profile <profileId>` or the profile runner's memory summary. Do not delete project memory to bypass prior decisions.
+Before repeating scope questions or retrying a route, inspect recent memory with `npm run memory:summary -- --profile <profileId>`, compact it with `npm run memory:compact -- --profile <profileId>`, or use the profile runner's memory summary. Do not delete project memory to bypass prior decisions.
 
 ## Stop Conditions
 

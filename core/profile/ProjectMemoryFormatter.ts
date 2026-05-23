@@ -1,4 +1,4 @@
-import type { ProjectMemoryRecord, ProjectMemorySummary } from "../types.ts";
+import type { CompactMemorySummary, ProjectMemoryRecord, ProjectMemorySummary } from "../types.ts";
 
 export function formatProjectMemories(records: ProjectMemoryRecord[], format: "text" | "json" = "text"): string {
   if (format === "json") return JSON.stringify(records, null, 2);
@@ -32,6 +32,24 @@ export function formatProjectMemorySummary(summary: ProjectMemorySummary, format
     `triedRoutes: ${summary.triedRoutes.map((record) => record.title).join(" | ") || "none"}`,
     `rejectedRoutes: ${summary.rejectedRoutes.map((record) => record.title).join(" | ") || "none"}`,
     `nextActions: ${summary.nextActions.map((record) => record.summary).join(" | ") || "none"}`,
+    `warnings: ${summary.warnings.join("; ") || "none"}`,
+  ].join("\n");
+}
+
+export function formatCompactMemorySummary(summary: CompactMemorySummary, format: "text" | "json" = "text"): string {
+  if (format === "json") return JSON.stringify(summary, null, 2);
+  return [
+    `profileId: ${summary.profileId}`,
+    `compactedAt: ${summary.compactedAt}`,
+    `confirmedScope: ${summary.confirmedScope?.title ?? "none"}`,
+    `currentFacts: ${summary.currentFacts.map((item) => item.title).join(" | ") || "none"}`,
+    `activeDecisions: ${summary.activeDecisions.map((item) => item.title).join(" | ") || "none"}`,
+    `rejectedRoutes: ${summary.rejectedRoutes.map((item) => item.name).join(" | ") || "none"}`,
+    `candidateRoutes: ${summary.candidateRoutes.map((item) => item.name).join(" | ") || "none"}`,
+    `openQuestions: ${summary.openQuestions.map((item) => item.question).join(" | ") || "none"}`,
+    `resolvedQuestions: ${summary.resolvedQuestions.map((item) => item.question).join(" | ") || "none"}`,
+    `nextActions: ${summary.nextActions.map((item) => item.action).join(" | ") || "none"}`,
+    `conflicts: ${summary.conflicts.map((item) => `${item.severity}:${item.summary}`).join(" | ") || "none"}`,
     `warnings: ${summary.warnings.join("; ") || "none"}`,
   ].join("\n");
 }

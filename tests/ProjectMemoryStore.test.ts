@@ -47,6 +47,47 @@ test("ProjectMemoryStore", async (t) => {
     assert.match(formatProjectMemories([scope]), /memory_scope_1/);
   });
 
+  await t.test("compacts memory into current facts, routes, next actions, and conflicts", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "agentflow-memory-"));
+    const store = new ProjectMemoryStore(dir);
+    await store.save(memory({
+      memoryId: "memory_scope_a",
+      type: "confirmed_scope",
+      title: "Confirmed RAG scope A",
+      summary: "Goal: improve recall | Allowed modules: rag | Blocked actions: deploy | Quality constraints: no answer regression",
+      tags: ["scope"],
+    }));
+    await store.save(memory({
+      memoryId: "memory_scope_b",
+      type: "confirmed_scope",
+      title: "Confirmed RAG scope B",
+      summary: "Goal: improve recall | Allowed modules: rag-v2 | Blocked actions: deploy | Quality constraints: no answer regression",
+      tags: ["scope"],
+    }));
+    await store.save(memory({
+      memoryId: "memory_blocked",
+      type: "rejected_route",
+      title: "Blocked workflow confirmed-scope-gate",
+      summary: "Missing ScopeConfirmationRecord.",
+      tags: ["blocked-route"],
+    }));
+    await store.save(memory({
+      memoryId: "memory_open_question",
+      type: "open_question",
+      title: "Metric definition",
+      summary: "Which recall level should be used?",
+      tags: ["blocking"],
+    }));
+
+    const { summary, summaryPath } = await store.compact("rag-optimization");
+    assert.ok(summaryPath.endsWith("rag-optimization.json"));
+    assert.ok(summary.confirmedScope);
+    assert.equal(summary.rejectedRoutes.length, 1);
+    assert.equal(summary.openQuestions.length, 1);
+    assert.equal(summary.conflicts.some((conflict) => conflict.type === "confirmed_scope_conflict"), true);
+    assert.equal((await store.getCompacted("rag-optimization"))?.profileId, "rag-optimization");
+  });
+
   await t.test("writes parseable JSONL and rejects secret-like memory", async () => {
     const dir = await mkdtemp(join(tmpdir(), "agentflow-memory-"));
     const store = new ProjectMemoryStore(dir);

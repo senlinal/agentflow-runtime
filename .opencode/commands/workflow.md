@@ -12,7 +12,7 @@ Use this command to run the repository's workflow template runner from opencode 
 2. Read `profiles/current.json`, then load the active profile from `profiles/<activeProfile>.json`.
 3. Read the active profile's `policyFiles`.
 4. Read or summarize existing `memoryFiles`; if a memory file is missing, record a warning and continue.
-5. Read recent Project Memory when available using `npm run memory:summary -- --profile <activeProfile>` or the profile tool result. Use it to avoid repeating confirmed scope questions, failed routes, and rejected approaches.
+5. Read recent Project Memory when available using `npm run memory:summary -- --profile <activeProfile>` or `npm run memory:compact -- --profile <activeProfile>`. Use it to avoid repeating confirmed scope questions, failed routes, and rejected approaches.
 6. Convert the user's message into a structured TaskBrief:
    - `goal`
    - `currentState`

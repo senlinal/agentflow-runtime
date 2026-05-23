@@ -29,6 +29,7 @@ const requiredFiles = [
   "core/profile/ProjectMemoryStore.ts",
   "cli/project-memory-list.ts",
   "cli/project-memory-summary.ts",
+  "cli/project-memory-compact.ts",
   "docs/PROJECT_MEMORY.md",
 ];
 

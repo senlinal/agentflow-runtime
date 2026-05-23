@@ -67,10 +67,13 @@ Use:
 ```bash
 npm run memory:list -- --profile rag-optimization
 npm run memory:summary -- --profile rag-optimization
+npm run memory:compact -- --profile rag-optimization
 npm run memory:show -- --id <memoryId>
 ```
 
 `workflow:run-profile` loads recent memory summaries for the active profile and includes them in the result. Memory records must not contain secrets, credentials, API keys, or production data.
+
+Compaction converts many local memory records into current facts, active decisions, rejected routes that should not be repeated without new evidence, open/resolved questions, next actions, and conflict warnings. If a compacted summary exists, later profile runs include it in the task resources.
 
 ## Daily Use
 

@@ -111,6 +111,29 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.equal(later.warnings.some((warning) => /Loaded .* project memory record/.test(warning)), true);
     assert.equal(later.taskBrief.resources.some((resource) => resource.startsWith("ProjectMemory(")), true);
   });
+
+  await t.test("reads compacted project memory on later profile runs", async () => {
+    const runner = createRunner();
+    const first = await runner.run({
+      profileId: "rag-optimization",
+      task: "继续 RAG 召回优化，分析上一轮实验结果，给出下一步方案",
+    });
+    await runner.run({
+      profileId: "rag-optimization",
+      sessionId: first.session?.sessionId,
+      answer: "召回口径按 heading/file，不牺牲回答质量，不改生产索引，可以做 query rewrite 和 reranker 实验。",
+    });
+    await runner.compactMemory("rag-optimization");
+
+    const later = await runner.run({
+      profileId: "rag-optimization",
+      task: "继续基于压缩记忆给出下一步方案",
+      dryRun: true,
+    });
+
+    assert.equal(later.warnings.some((warning) => /Loaded compacted project memory/.test(warning)), true);
+    assert.equal(later.taskBrief.resources.some((resource) => resource.startsWith("CompactMemory(")), true);
+  });
 });
 
 function createRunner(): ProfileWorkflowRunner {

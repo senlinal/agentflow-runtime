@@ -256,6 +256,86 @@ export type ProjectMemorySummary = {
   warnings: string[];
 };
 
+export type ConfirmedScopeMemory = {
+  id: string;
+  title: string;
+  summary: string;
+  sourceMemoryIds: string[];
+  allowedModules: string[];
+  forbiddenModules: string[];
+  allowedActions: string[];
+  blockedActions: string[];
+  qualityConstraints: string[];
+};
+
+export type MemoryConflict = {
+  conflictId: string;
+  type:
+    | "confirmed_scope_conflict"
+    | "decision_conflict"
+    | "route_conflict"
+    | "duplicate_memory"
+    | "unknown";
+  severity: "low" | "medium" | "high";
+  summary: string;
+  conflictingMemoryIds: string[];
+  recommendedResolution: "ask_human" | "prefer_latest" | "archive_duplicate" | "keep_both" | "stop";
+};
+
+export type CompactMemorySummary = {
+  profileId: string;
+  compactedAt: string;
+  confirmedScope?: ConfirmedScopeMemory;
+  currentFacts: {
+    id: string;
+    title: string;
+    summary: string;
+    sourceMemoryIds: string[];
+    confidence: "low" | "medium" | "high";
+  }[];
+  activeDecisions: {
+    id: string;
+    title: string;
+    summary: string;
+    sourceMemoryIds: string[];
+  }[];
+  rejectedRoutes: {
+    routeId: string;
+    name: string;
+    reason: string;
+    doNotRepeatWithoutNewEvidence: boolean;
+    sourceMemoryIds: string[];
+  }[];
+  candidateRoutes: {
+    routeId: string;
+    name: string;
+    hypothesis: string;
+    evidence: string[];
+    sourceMemoryIds: string[];
+  }[];
+  openQuestions: {
+    id: string;
+    question: string;
+    blocking: boolean;
+    sourceMemoryIds: string[];
+  }[];
+  resolvedQuestions: {
+    id: string;
+    question: string;
+    answerSummary: string;
+    sourceMemoryIds: string[];
+  }[];
+  nextActions: {
+    id: string;
+    action: string;
+    priority: "low" | "medium" | "high";
+    blockedBy: string[];
+    sourceMemoryIds: string[];
+  }[];
+  conflicts: MemoryConflict[];
+  warnings: string[];
+};
+
 export type ResearchReport = {
   summary: string;
   knownFacts: string[];
