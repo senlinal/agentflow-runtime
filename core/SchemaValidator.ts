@@ -343,10 +343,15 @@ function validateCodeChangePlanExecutionRecord(output: unknown): CodeChangePlanE
 
 function validateRollbackGuide(output: unknown): void {
   const record = requireObject(output, "RollbackGuide");
+  if ("rollbackId" in record && typeof record.rollbackId !== "string") throw new Error("RollbackGuide.rollbackId must be a string when provided.");
   if ("checkpointId" in record && typeof record.checkpointId !== "string") throw new Error("RollbackGuide.checkpointId must be a string when provided.");
+  if ("workspaceRoot" in record && typeof record.workspaceRoot !== "string") throw new Error("RollbackGuide.workspaceRoot must be a string when provided.");
   requireString(record, "summary", "RollbackGuide");
   requireArray(record, "changedFiles", "RollbackGuide");
+  if ("suggestedCommands" in record) requireArray(record, "suggestedCommands", "RollbackGuide");
   requireArray(record, "manualSteps", "RollbackGuide");
+  if ("reason" in record && typeof record.reason !== "string") throw new Error("RollbackGuide.reason must be a string when provided.");
+  if ("destructiveRollbackAvailable" in record && record.destructiveRollbackAvailable !== false) throw new Error("RollbackGuide.destructiveRollbackAvailable must be false when provided.");
   if (record.destructiveRollbackPerformed !== false) throw new Error("RollbackGuide.destructiveRollbackPerformed must be false.");
 }
 

@@ -13,6 +13,7 @@ import type {
 } from "../types.ts";
 import { CodeExecutor } from "../execution/CodeExecutor.ts";
 import { TestExecutor } from "../execution/TestExecutor.ts";
+import { ExecutionRecordStore } from "../execution/ExecutionRecordStore.ts";
 import { ExecutionVerifier } from "../verification/ExecutionVerifier.ts";
 import { hashCodeChangePlan } from "./CodeChangePlanHasher.ts";
 
@@ -44,15 +45,15 @@ export class CodeChangePlanExecutionRunner {
     const plan = context.codeChangePlan;
     const approval = context.codeChangePlanExecutionApprovalRecord;
     if (!plan) {
-      return blockedRecord(executionId, "", "", "", startedAt, ["CodeChangePlan is missing."], []);
+      return await persistExecutionRecord(blockedRecord(executionId, "", "", "", startedAt, ["CodeChangePlan is missing."], []), options.executorConfig);
     }
     if (!approval) {
-      return blockedRecord(executionId, plan.planId, "", hashCodeChangePlan(plan), startedAt, ["CodeChangePlanExecutionApprovalRecord is missing."], []);
+      return await persistExecutionRecord(blockedRecord(executionId, plan.planId, "", hashCodeChangePlan(plan), startedAt, ["CodeChangePlanExecutionApprovalRecord is missing."], []), options.executorConfig);
     }
 
     const safety = validateExecutablePlan(plan, approval, now);
     if (safety.blockedReasons.length > 0) {
-      return blockedRecord(executionId, plan.planId, approval.approvalId, hashCodeChangePlan(plan), startedAt, safety.blockedReasons, safety.safetyFindings);
+      return await persistExecutionRecord(blockedRecord(executionId, plan.planId, approval.approvalId, hashCodeChangePlan(plan), startedAt, safety.blockedReasons, safety.safetyFindings), options.executorConfig);
     }
 
     const codeNode = buildCodeNode(plan, options.executorConfig);
@@ -80,7 +81,7 @@ export class CodeChangePlanExecutionRunner {
       approval.status = "consumed";
       approval.consumedAt = new Date().toISOString();
       approval.consumedByExecutionId = executionId;
-      return {
+      return await persistExecutionRecord({
         executionId,
         codeChangePlanId: plan.planId,
         approvalId: approval.approvalId,
@@ -97,14 +98,14 @@ export class CodeChangePlanExecutionRunner {
         rollbackGuide,
         blockedReasons: [],
         safetyFindings: safety.safetyFindings,
-      };
+      }, options.executorConfig);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       rollbackGuide = buildRollbackGuide(checkpointId, codeExecutionResult);
       approval.status = "consumed";
       approval.consumedAt = new Date().toISOString();
       approval.consumedByExecutionId = executionId;
-      return {
+      return await persistExecutionRecord({
         executionId,
         codeChangePlanId: plan.planId,
         approvalId: approval.approvalId,
@@ -121,7 +122,7 @@ export class CodeChangePlanExecutionRunner {
         rollbackGuide,
         blockedReasons: [message],
         safetyFindings: safety.safetyFindings,
-      };
+      }, options.executorConfig);
     }
   }
 }
@@ -274,15 +275,46 @@ function extractCheckpointId(result?: ExecutionResult): string | undefined {
 }
 
 function buildRollbackGuide(checkpointId: string | undefined, result?: ExecutionResult): RollbackGuide {
+  const workspaceRoot = extractWorkspaceRoot(result);
   return {
     checkpointId,
+    workspaceRoot,
     summary: "No automatic destructive rollback was performed. Review changed files and use the checkpoint evidence to manually revert if needed.",
     changedFiles: result?.artifacts ?? [],
+    suggestedCommands: [],
     manualSteps: [
       "Inspect codeExecutionResult.rawOutput diff evidence.",
       "Review changed files before applying any manual revert.",
       "Use version control or the checkpoint status as guidance; do not run destructive rollback automatically.",
     ],
+    reason: "Automatic destructive rollback is intentionally disabled for approved execution.",
+    destructiveRollbackAvailable: false,
     destructiveRollbackPerformed: false,
   };
+}
+
+function extractWorkspaceRoot(result?: ExecutionResult): string | undefined {
+  if (!result) return undefined;
+  try {
+    const raw = JSON.parse(result.rawOutput) as { checkpoint?: { cwd?: unknown } };
+    return typeof raw.checkpoint?.cwd === "string" ? raw.checkpoint.cwd : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function persistExecutionRecord(
+  record: CodeChangePlanExecutionRecord,
+  executorConfig: Record<string, unknown> = {},
+): Promise<CodeChangePlanExecutionRecord> {
+  const baseDir = typeof executorConfig.executionRecordBaseDir === "string"
+    ? executorConfig.executionRecordBaseDir
+    : undefined;
+  const store = new ExecutionRecordStore(baseDir);
+  try {
+    const saved = await store.save(record);
+    return saved.record;
+  } catch (error) {
+    throw new Error(`Failed to persist CodeChangePlanExecutionRecord ${record.executionId}: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }

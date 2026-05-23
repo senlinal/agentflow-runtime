@@ -38,6 +38,7 @@ Report privately through the repository owner's preferred private channel. Inclu
 - Explicit controlled execution requires an approved, unexpired, unconsumed execution approval, a matching `codeChangePlanHash`, scoped target files, explicit operation content, and allowlisted test commands.
 - Controlled execution creates a checkpoint before writes, runs scoped tests afterward, runs execution-aware verification, records a rollback guide, and consumes approval only after execution starts and an execution record is generated.
 - Controlled execution still rejects `delete_file`, forbidden or sensitive paths, high-risk shell, scope expansion, automatic approval, infinite retry, and destructive rollback.
+- CodeChangePlan execution records and rollback guides are persisted under `.agentflow/executions/` for local audit. The directory is ignored by Git, stores redacted/truncated execution data, and rollback guide commands are informational only.
 
 ## High-Risk Areas
 

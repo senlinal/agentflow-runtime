@@ -96,6 +96,14 @@ npm run demo:code-change-plan-execution
 
 This uses a temporary workspace, requires an approved execution approval record, rechecks the `CodeChangePlan` hash, creates a checkpoint, applies only declared file operations, runs scoped tests, verifies the result, creates a rollback guide, and consumes the approval once. It does not support delete operations, high-risk shell, automatic approval, or destructive rollback.
 
+Inspect persisted execution records and rollback guidance:
+
+```bash
+npm run execution:list
+npm run execution:show -- --id <executionId>
+npm run execution:rollback-guide -- --id <executionId>
+```
+
 ## 7. LLM Config Dry-Run
 
 ```bash

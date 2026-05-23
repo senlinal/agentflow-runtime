@@ -321,10 +321,15 @@ export type CodeChangePlanDryRunExecutionPlan = {
 };
 
 export type RollbackGuide = {
+  rollbackId?: string;
   checkpointId?: string;
+  workspaceRoot?: string;
   summary: string;
   changedFiles: string[];
+  suggestedCommands?: string[];
   manualSteps: string[];
+  reason?: string;
+  destructiveRollbackAvailable?: false;
   destructiveRollbackPerformed: false;
 };
 
@@ -343,6 +348,9 @@ export type CodeChangePlanExecutionRecord = {
   testExecutionResult?: TestExecutionResult;
   verification?: VerificationReport;
   rollbackGuide?: RollbackGuide;
+  rollbackGuideId?: string;
+  executionRecordPath?: string;
+  rollbackGuidePath?: string;
   blockedReasons: string[];
   safetyFindings: string[];
 };

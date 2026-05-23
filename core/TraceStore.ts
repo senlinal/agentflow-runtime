@@ -309,6 +309,8 @@ function buildCodeChangeExecutionSummary(context: WorkflowContext): string {
     `- rollbackGuide.summary: ${record.rollbackGuide?.summary ?? "none"}`,
     `- rollbackGuide.changedFiles: ${record.rollbackGuide?.changedFiles.join("; ") || "none"}`,
     `- rollbackGuide.destructiveRollbackPerformed: ${record.rollbackGuide?.destructiveRollbackPerformed ?? "n/a"}`,
+    `- executionRecordPath: ${record.executionRecordPath ?? "n/a"}`,
+    `- rollbackGuidePath: ${record.rollbackGuidePath ?? "n/a"}`,
     "",
     blocked
       ? "Execution was blocked. No files were modified."
@@ -319,6 +321,11 @@ function buildCodeChangeExecutionSummary(context: WorkflowContext): string {
     blocked ? "" : "Execution-aware verification was run after tests.",
     "Rollback guide is non-destructive.",
     "No automatic destructive rollback was performed.",
+    "",
+    "View execution details:",
+    "",
+    `\`npm run execution:show -- --id ${record.executionId}\``,
+    `\`npm run execution:rollback-guide -- --id ${record.executionId}\``,
     "",
   ].join("\n");
 }

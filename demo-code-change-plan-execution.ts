@@ -46,6 +46,8 @@ console.log(JSON.stringify({
   testStatus: finalContext.testExecutionResult?.status,
   verificationPass: finalContext.verification?.pass,
   rollbackGuideCreated: Boolean(finalContext.codeChangePlanExecutionRecord?.rollbackGuide),
+  executionRecordPath: finalContext.codeChangePlanExecutionRecord?.executionRecordPath,
+  rollbackGuidePath: finalContext.codeChangePlanExecutionRecord?.rollbackGuidePath,
   destructiveRollbackPerformed: finalContext.codeChangePlanExecutionRecord?.rollbackGuide?.destructiveRollbackPerformed,
   wroteExpectedFile: writtenContent.includes("approved execution"),
   traceNodes: finalContext.trace.map((item) => item.nodeId),

@@ -191,6 +191,16 @@ When allowed, it:
 
 This stage does not auto-approve, does not retry, does not support `delete_file`, and does not perform destructive rollback. If tests or verification fail after files were written, the execution record is `failed`, approval is consumed, and the rollback guide explains manual review steps.
 
+Execution records are persisted under `.agentflow/executions/`:
+
+```bash
+npm run execution:list
+npm run execution:show -- --id <executionId>
+npm run execution:rollback-guide -- --id <executionId>
+```
+
+The rollback guide CLI is read-only. It displays checkpoint, changed files, suggested commands, and manual review steps, but it does not run rollback commands.
+
 ## Output
 
 Both `code` and `test` nodes return `ExecutionResult`:

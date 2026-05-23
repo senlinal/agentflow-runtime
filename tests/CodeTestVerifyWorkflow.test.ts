@@ -227,9 +227,10 @@ describe("code-test-verify workflow", () => {
         test: "node -e \"const fs=require('fs'); const text=fs.readFileSync('src/generated.txt','utf8'); if(!text.includes('approved execution')) process.exit(1);\"",
       },
     }, null, 2), "utf8");
+    const executionRecordBaseDir = await mkdtemp(join(tmpdir(), "agentflow-execution-records-"));
     const loaded = await new WorkflowTemplateRegistry().load("code-change-plan-execution");
     loaded.config.nodes = loaded.config.nodes.map((node) => node.id === "codeChangePlanExecutionRunner"
-      ? { ...node, executorConfig: { projectRoot: workspace, cwd: workspace, timeoutMs: 120000 } }
+      ? { ...node, executorConfig: { projectRoot: workspace, cwd: workspace, timeoutMs: 120000, executionRecordBaseDir } }
       : node);
     const context = executableWorkflowContext();
     const finalContext = await new WorkflowRuntime(
@@ -256,8 +257,12 @@ describe("code-test-verify workflow", () => {
     assert.equal(finalContext.codeChangePlanExecutionRecord?.rollbackGuide?.destructiveRollbackPerformed, false);
     assert.match(written, /approved execution/);
     assert.equal(finalContext.codeChangePlanExecutionRecord?.hashMatched, true);
+    assert.match(finalContext.codeChangePlanExecutionRecord?.executionRecordPath ?? "", /records\/code_exec_/);
+    assert.match(finalContext.codeChangePlanExecutionRecord?.rollbackGuidePath ?? "", /rollback-guides\/rollback_code_exec_/);
     assert.match(summary, /CodeChangePlan Execution/);
     assert.match(summary, /hashMatched: true/);
+    assert.match(summary, /executionRecordPath:/);
+    assert.match(summary, /npm run execution:show -- --id/);
     assert.match(summary, /CodeChangePlan was executed under explicit approval/);
     assert.match(summary, /Execution approval was consumed/);
     assert.match(summary, /Rollback guide is non-destructive/);

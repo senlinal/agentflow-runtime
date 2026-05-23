@@ -147,6 +147,14 @@ It still does not support `delete_file`, high-risk shell, automatic approval, in
 npm run demo:code-change-plan-execution
 ```
 
+Execution records are persisted under `.agentflow/executions/` for local audit and are ignored by Git:
+
+```bash
+npm run execution:list
+npm run execution:show -- --id <executionId>
+npm run execution:rollback-guide -- --id <executionId>
+```
+
 Validate and inspect templates:
 
 ```bash
