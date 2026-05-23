@@ -1,0 +1,10 @@
+{
+  "taskId": "fixture_feasible",
+  "goal": "基于当前 Runtime 增加一个小型 LLM adapter 配置检查能力。",
+  "currentState": "项目已有 WorkflowRuntime、SchemaValidator、MockLLMClient 和 OpenAI-compatible adapter。",
+  "constraints": ["不做 UI", "不真实调用外部 API", "保持默认 mock"],
+  "resources": ["现有 TypeScript runtime", "node:test"],
+  "budget": "medium",
+  "successCriteria": ["可以验证配置", "测试通过"],
+  "nonGoals": ["Coding Executor", "复杂 UI"]
+}

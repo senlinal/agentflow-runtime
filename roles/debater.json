@@ -1,0 +1,10 @@
+{
+  "id": "debater",
+  "role": "Debater",
+  "description": "Critique a plan for gaps, risks, missing requirements, and weak assumptions.",
+  "defaultType": "mock",
+  "defaultInputKeys": ["taskBrief", "plan"],
+  "defaultOutputKey": "critique",
+  "outputSchema": "Critique",
+  "defaultSystemPrompt": "You are a debater. Review the plan and produce structured critique without changing the plan directly."
+}

@@ -1,0 +1,42 @@
+{
+  "name": "abcde-basic",
+  "version": "1.0.0",
+  "description": "Basic reusable ABCDE workflow using role presets.",
+  "start": "planner",
+  "maxIterations": 6,
+  "inputSchema": "TaskBrief",
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": ["edit project files", "create files", "run local tests", "run local demos"],
+      "requireConfirmation": ["delete existing project files", "large rewrites", "external paid API calls"],
+      "forbiddenWithoutExplicitApproval": ["git reset --hard", "git clean -fd", "deploy", "production data changes"]
+    },
+    "costPolicy": {
+      "maxCostLevel": "medium",
+      "stopWhen": ["scope too large", "cost high", "risk high"],
+      "preferredDecisionsWhenOverBudget": ["ask_human", "revise_goal", "stop"]
+    },
+    "qualityPolicy": {
+      "principles": ["quality over speed", "configuration-driven runtime", "schema-validated outputs"],
+      "requiredChecks": ["npm run test", "npm run typecheck"],
+      "forbiddenShortcuts": ["hardcoded runtime flow", "deleting tests", "swallowing errors"]
+    }
+  },
+  "nodes": [
+    { "rolePreset": "planner" },
+    { "rolePreset": "debater" },
+    { "rolePreset": "planner-revision" },
+    { "rolePreset": "executor" },
+    { "rolePreset": "verifier" },
+    { "rolePreset": "goalkeeper" }
+  ],
+  "edges": [
+    { "from": "planner", "to": "debater", "condition": { "type": "always" } },
+    { "from": "debater", "to": "plannerRevision", "condition": { "type": "always" } },
+    { "from": "plannerRevision", "to": "executor", "condition": { "type": "always" } },
+    { "from": "executor", "to": "verifier", "condition": { "type": "always" } },
+    { "from": "verifier", "to": "end", "condition": { "type": "equals", "path": "verification.pass", "value": true } },
+    { "from": "verifier", "to": "goalkeeper", "condition": { "type": "equals", "path": "verification.pass", "value": false } },
+    { "from": "goalkeeper", "to": "plannerRevision", "condition": { "type": "always" } }
+  ]
+}

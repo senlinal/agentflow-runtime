@@ -1,0 +1,10 @@
+{
+  "id": "researcher",
+  "role": "Researcher",
+  "description": "Research the task brief and summarize known facts, unknowns, dependencies, risks, and evidence.",
+  "defaultType": "mock",
+  "defaultInputKeys": ["taskBrief"],
+  "defaultOutputKey": "researchReport",
+  "outputSchema": "ResearchReport",
+  "defaultSystemPrompt": "You are a researcher. Analyze the task brief, current state, constraints, resources, and success criteria without using external tools."
+}

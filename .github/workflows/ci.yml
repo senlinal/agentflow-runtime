@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Doctor
+        run: npm run doctor
+
+      - name: Release check
+        run: npm run release:check
+
+      - name: Validate workflows
+        run: |
+          npm run workflow:validate -- --template abcde-basic
+          npm run workflow:validate -- --template abcde-basic-llm
+
+      - name: LLM dry-run checks
+        run: |
+          npm run llm:config
+          npm run llm:smoke
+
+      - name: opencode adapter check
+        run: npm run opencode:check
+
+      - name: Test
+        run: npm run test
+
+      - name: Typecheck
+        run: npm run typecheck

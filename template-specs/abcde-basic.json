@@ -1,0 +1,35 @@
+{
+  "name": "abcde-basic",
+  "version": "1.0.0",
+  "description": "Basic planner-debater-executor-verifier-goalkeeper workflow.",
+  "start": "planner",
+  "maxIterations": 6,
+  "inputSchema": "TaskBrief",
+  "rolePresets": ["planner", "debater", "planner-revision", "executor", "verifier", "goalkeeper"],
+  "edges": [
+    { "from": "planner", "to": "debater", "condition": { "type": "always" } },
+    { "from": "debater", "to": "plannerRevision", "condition": { "type": "always" } },
+    { "from": "plannerRevision", "to": "executor", "condition": { "type": "always" } },
+    { "from": "executor", "to": "verifier", "condition": { "type": "always" } },
+    { "from": "verifier", "to": "end", "condition": { "type": "equals", "path": "verification.pass", "value": true } },
+    { "from": "verifier", "to": "goalkeeper", "condition": { "type": "equals", "path": "verification.pass", "value": false } },
+    { "from": "goalkeeper", "to": "plannerRevision", "condition": { "type": "always" } }
+  ],
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": ["edit project files", "create files", "run local tests", "run local demos"],
+      "requireConfirmation": ["delete existing project files", "large rewrites", "external paid API calls"],
+      "forbiddenWithoutExplicitApproval": ["git reset --hard", "git clean -fd", "deploy", "production data changes"]
+    },
+    "costPolicy": {
+      "maxCostLevel": "medium",
+      "stopWhen": ["scope too large", "cost high", "risk high", "information insufficient"],
+      "preferredDecisionsWhenOverBudget": ["ask_human", "revise_goal", "stop"]
+    },
+    "qualityPolicy": {
+      "principles": ["quality over speed", "configuration-driven runtime", "schema-validated outputs"],
+      "requiredChecks": ["npm run test", "npm run typecheck"],
+      "forbiddenShortcuts": ["hardcoded runtime flow", "deleting tests", "swallowing errors"]
+    }
+  }
+}

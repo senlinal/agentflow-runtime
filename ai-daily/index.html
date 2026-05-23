@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Signal Daily</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <p class="eyebrow">AI Signal Daily</p>
+          <h1>每天 9:30，只看真正值得关注的 AI 信号</h1>
+        </div>
+      </div>
+      <nav class="nav" aria-label="主导航">
+        <a href="#today">今日</a>
+        <a href="#pipeline">筛选流</a>
+        <a href="#sources">信源</a>
+        <a href="#archive">归档</a>
+        <a href="#settings">订阅</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" id="today">
+        <div class="hero-copy">
+          <p class="date-line" id="dateLine">加载日期中...</p>
+          <h2>今日 AI 热点简报</h2>
+          <p class="lead">
+            从官方发布、论文、GitHub、社区讨论和中文技术媒体中提取高价值事件，
+            去重后按重要性、可信度和行动价值排序。
+          </p>
+          <div class="hero-actions">
+            <button class="primary-action" id="generateBtn" type="button">生成今日简报</button>
+            <button class="icon-action" id="compactBtn" type="button" aria-pressed="false" title="紧凑视图">
+              <span aria-hidden="true">▦</span>
+            </button>
+          </div>
+        </div>
+        <div class="signal-panel" aria-label="今日信号概览">
+          <div class="signal-radar" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div class="metric-grid">
+            <article>
+              <strong id="sourceCount">0</strong>
+              <span>已扫描信源</span>
+            </article>
+            <article>
+              <strong id="candidateCount">0</strong>
+              <span>候选事件</span>
+            </article>
+            <article>
+              <strong id="selectedCount">0</strong>
+              <span>入选日报</span>
+            </article>
+            <article>
+              <strong>09:30</strong>
+              <span>每日推送</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="toolbar" aria-label="日报筛选">
+        <div class="segments" id="categoryTabs" role="tablist" aria-label="分类筛选"></div>
+        <label class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input id="searchInput" type="search" placeholder="搜索模型、公司、论文或来源" />
+        </label>
+      </section>
+
+      <section class="content-grid">
+        <div>
+          <div class="section-heading">
+            <p class="eyebrow">Selected Signals</p>
+            <h2>入选热点</h2>
+          </div>
+          <div class="story-list" id="storyList"></div>
+        </div>
+
+        <aside class="briefing-card" aria-label="日报摘要">
+          <div class="section-heading">
+            <p class="eyebrow">Brief</p>
+            <h2>今日判断</h2>
+          </div>
+          <p id="briefSummary"></p>
+          <div class="impact-list" id="impactList"></div>
+          <div class="weekly-panel">
+            <div class="section-heading">
+              <p class="eyebrow">Weekly Heat</p>
+              <h2>本周热度排行</h2>
+            </div>
+            <div class="weekly-list" id="weeklyList"></div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="pipeline" id="pipeline">
+        <div class="section-heading">
+          <p class="eyebrow">Signal Pipeline</p>
+          <h2>从信息噪声到可读日报</h2>
+        </div>
+        <div class="pipeline-grid">
+          <article>
+            <span class="step-index">01</span>
+            <h3>抓取</h3>
+            <p>官方博客、论文、GitHub Release、HN、中文技术媒体和重点 KOL。</p>
+          </article>
+          <article>
+            <span class="step-index">02</span>
+            <h3>预筛</h3>
+            <p>低成本模型先判断 AI 相关性，无关内容进入冷库，不消耗主模型预算。</p>
+          </article>
+          <article>
+            <span class="step-index">03</span>
+            <h3>评分</h3>
+            <p>模型只打维度分，最终排序由代码公式决定，降低主观漂移。</p>
+          </article>
+          <article>
+            <span class="step-index">04</span>
+            <h3>聚类</h3>
+            <p>把同一事件的官方、媒体和社区讨论合并成一条主线。</p>
+          </article>
+          <article>
+            <span class="step-index">05</span>
+            <h3>推送</h3>
+            <p>每天 9:30 推送网站链接、邮件摘要和 RSS 条目。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="archive" id="archive">
+        <div class="section-heading">
+          <p class="eyebrow">Archive</p>
+          <h2>历史日报</h2>
+        </div>
+        <div class="archive-list" id="archiveList"></div>
+      </section>
+
+      <section class="sources" id="sources">
+        <div class="section-heading">
+          <p class="eyebrow">Sources</p>
+          <h2>信息源</h2>
+        </div>
+        <div class="source-list" id="sourceList"></div>
+      </section>
+
+      <section class="settings" id="settings">
+        <div class="section-heading">
+          <p class="eyebrow">Subscription</p>
+          <h2>推送设置</h2>
+        </div>
+        <form class="settings-grid" id="subscribeForm">
+          <label>
+            <span>邮箱</span>
+            <input type="email" placeholder="you@example.com" required />
+          </label>
+          <label>
+            <span>推送时间</span>
+            <input type="time" value="09:30" />
+          </label>
+          <label>
+            <span>日报条数</span>
+            <input type="number" value="10" min="5" max="20" />
+          </label>
+          <button class="primary-action" type="submit">保存订阅</button>
+        </form>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="./data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

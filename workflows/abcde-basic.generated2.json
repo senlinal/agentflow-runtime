@@ -1,0 +1,203 @@
+{
+  "name": "abcde-basic-generated2",
+  "version": "1.0.0",
+  "description": "Generated ABCDE workflow template v2.",
+  "start": "planner",
+  "maxIterations": 6,
+  "inputSchema": "TaskBrief",
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": [
+        "edit project files",
+        "create files",
+        "run local tests",
+        "run local demos"
+      ],
+      "requireConfirmation": [
+        "delete existing project files",
+        "large rewrites",
+        "external paid API calls"
+      ],
+      "forbiddenWithoutExplicitApproval": [
+        "git reset --hard",
+        "git clean -fd",
+        "deploy",
+        "production data changes"
+      ]
+    },
+    "costPolicy": {
+      "maxCostLevel": "medium",
+      "stopWhen": [
+        "scope too large",
+        "cost high",
+        "risk high",
+        "information insufficient"
+      ],
+      "preferredDecisionsWhenOverBudget": [
+        "ask_human",
+        "revise_goal",
+        "stop"
+      ]
+    },
+    "qualityPolicy": {
+      "principles": [
+        "quality over speed",
+        "configuration-driven runtime",
+        "schema-validated outputs"
+      ],
+      "requiredChecks": [
+        "npm run test",
+        "npm run typecheck"
+      ],
+      "forbiddenShortcuts": [
+        "hardcoded runtime flow",
+        "deleting tests",
+        "swallowing errors"
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "id": "planner",
+      "rolePreset": "planner",
+      "type": "mock",
+      "role": "Planner",
+      "description": "Create a structured plan based on the task brief and feasibility report.",
+      "inputKeys": [
+        "taskBrief",
+        "feasibilityReport",
+        "correctionHint"
+      ],
+      "outputKey": "plan",
+      "outputSchema": "Plan",
+      "systemPrompt": "You are a planner. Create a structured plan aligned with the task brief, constraints, and success criteria."
+    },
+    {
+      "id": "debater",
+      "rolePreset": "debater",
+      "type": "mock",
+      "role": "Debater",
+      "description": "Critique a plan for gaps, risks, missing requirements, and weak assumptions.",
+      "inputKeys": [
+        "taskBrief",
+        "plan"
+      ],
+      "outputKey": "critique",
+      "outputSchema": "Critique",
+      "systemPrompt": "You are a debater. Review the plan and produce structured critique without changing the plan directly."
+    },
+    {
+      "id": "plannerRevision",
+      "rolePreset": "planner-revision",
+      "type": "mock",
+      "role": "PlannerRevision",
+      "description": "Revise the plan using critique and optional correction hints.",
+      "inputKeys": [
+        "taskBrief",
+        "plan",
+        "critique",
+        "correctionHint"
+      ],
+      "outputKey": "revisedPlan",
+      "outputSchema": "RevisedPlan",
+      "systemPrompt": "You are a planner revision agent. Revise the plan while preserving the original goal and success criteria."
+    },
+    {
+      "id": "executor",
+      "rolePreset": "executor",
+      "type": "mock",
+      "role": "Executor",
+      "description": "Execute the revised plan using the configured executor.",
+      "inputKeys": [
+        "taskBrief",
+        "revisedPlan"
+      ],
+      "outputKey": "executionResult",
+      "outputSchema": "ExecutionResult",
+      "systemPrompt": "You are an executor. Execute the revised plan and return structured artifacts, completed steps, errors, and raw output."
+    },
+    {
+      "id": "verifier",
+      "rolePreset": "verifier",
+      "type": "mock",
+      "role": "Verifier",
+      "description": "Verify execution results against the task brief and success criteria.",
+      "inputKeys": [
+        "taskBrief",
+        "executionResult"
+      ],
+      "outputKey": "verification",
+      "outputSchema": "VerificationReport",
+      "systemPrompt": "You are a verifier. Judge whether execution satisfies the task brief and success criteria."
+    },
+    {
+      "id": "goalkeeper",
+      "rolePreset": "goalkeeper",
+      "type": "mock",
+      "role": "GoalKeeper",
+      "description": "Keep replanning aligned with the original goal after verification failure.",
+      "inputKeys": [
+        "taskBrief",
+        "verification"
+      ],
+      "outputKey": "correctionHint",
+      "outputSchema": "CorrectionHint",
+      "systemPrompt": "You are a goalkeeper. Prevent goal drift and produce correction instructions for the next planning loop."
+    }
+  ],
+  "edges": [
+    {
+      "from": "planner",
+      "to": "debater",
+      "condition": {
+        "type": "always"
+      }
+    },
+    {
+      "from": "debater",
+      "to": "plannerRevision",
+      "condition": {
+        "type": "always"
+      }
+    },
+    {
+      "from": "plannerRevision",
+      "to": "executor",
+      "condition": {
+        "type": "always"
+      }
+    },
+    {
+      "from": "executor",
+      "to": "verifier",
+      "condition": {
+        "type": "always"
+      }
+    },
+    {
+      "from": "verifier",
+      "to": "end",
+      "condition": {
+        "type": "equals",
+        "path": "verification.pass",
+        "value": true
+      }
+    },
+    {
+      "from": "verifier",
+      "to": "goalkeeper",
+      "condition": {
+        "type": "equals",
+        "path": "verification.pass",
+        "value": false
+      }
+    },
+    {
+      "from": "goalkeeper",
+      "to": "plannerRevision",
+      "condition": {
+        "type": "always"
+      }
+    }
+  ]
+}

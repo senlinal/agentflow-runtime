@@ -1,0 +1,226 @@
+window.AI_DAILY_DATA = {
+  "generatedAt": "2026-05-22T21:15:07.651026+08:00",
+  "scannedSources": 7,
+  "candidates": 18,
+  "brief": "今日AI领域突破频现：OpenAI模型证伪离散几何80年猜想，标志AI数学推理新高度；Google I/O 2026发布Gemini Omni等重磅产品；GitHub Copilot for Eclipse开源。学术方面，SOLAR终身学习代理与OSCToM心智理论研究推进。AdventHealth借力ChatGPT优化医疗工作流，展现垂直领域渗透。",
+  "categories": [
+    "全部",
+    "模型",
+    "产品",
+    "论文",
+    "开源",
+    "行业"
+  ],
+  "impacts": [
+    {
+      "title": "开发者",
+      "body": "Copilot Eclipse开源提供新的代码辅助集成方案，需关注多IDE生态适配及定制化开发机会。"
+    },
+    {
+      "title": "产品经理",
+      "body": "Google I/O发布多项AI功能，需评估产品集成机会；医疗AI案例显示垂直场景落地路径与合规要求。"
+    },
+    {
+      "title": "创业者",
+      "body": "终身学习代理(SOLAR)和高阶心智理论突破为下一代自主代理创业提供技术基础，数学推理突破打开科研服务新赛道。"
+    }
+  ],
+  "stories": [
+    {
+      "title": "OpenAI模型证伪离散几何80年猜想",
+      "category": "模型",
+      "tier": "T1",
+      "source": "OpenAI News",
+      "url": "https://openai.com/index/model-disproves-discrete-geometry-conjecture",
+      "score": 95,
+      "tags": [
+        "数学推理",
+        "基础科研",
+        "OpenAI"
+      ],
+      "summary": "OpenAI模型成功证伪离散几何领域长达80年的单位距离猜想，通过AI驱动的数学推理解决重大难题，标志着人工智能在理论数学证明方面取得里程碑式突破。",
+      "why": "数学突破验证AI抽象推理能力，推动科研范式变革"
+    },
+    {
+      "title": "Google I/O 2026发布Gemini Omni等百余项AI创新",
+      "category": "模型",
+      "tier": "T1",
+      "source": "Google AI Blog",
+      "url": "https://blog.google/innovation-and-ai/technology/ai/google-io-2026-all-our-announcements/",
+      "score": 92,
+      "tags": [
+        "Gemini",
+        "产品发布",
+        "开发者大会"
+      ],
+      "summary": "Google I/O 2026大会集中发布包括Gemini Omni、Google Antigravity在内的百余项AI创新，涵盖基础模型、开发工具及消费级应用，全面展示其AI生态布局与技术领导力。",
+      "why": "年度最大规模AI产品发布，定义行业技术风向标"
+    },
+    {
+      "title": "GitHub Copilot for Eclipse正式开源",
+      "category": "开源",
+      "tier": "T1.5",
+      "source": "GitHub Changelog",
+      "url": "https://github.blog/changelog/2026-05-21-github-copilot-for-eclipse-is-open-source",
+      "score": 85,
+      "tags": [
+        "GitHub",
+        "Eclipse",
+        "开源",
+        "编程工具"
+      ],
+      "summary": "GitHub宣布Copilot for Eclipse插件正式开源，采用MIT许可证托管于GitHub。这是Copilot在IDE生态开放的重要里程碑，为Java开发者社区提供可定制、可审计的AI代码辅助方案。",
+      "why": "主流AI编程工具首次开源，重塑开发者工具生态"
+    },
+    {
+      "title": "SOLAR：自优化终身学习自主代理框架",
+      "category": "论文",
+      "tier": "T1",
+      "source": "arXiv cs.AI",
+      "url": "https://arxiv.org/abs/2605.20189",
+      "score": 84,
+      "tags": [
+        "终身学习",
+        "自主代理",
+        "概念漂移"
+      ],
+      "summary": "论文提出SOLAR自优化开放域自主代理框架，通过元认知机制实现终身学习与持续适应，有效应对概念漂移问题，无需昂贵梯度更新即可在动态环境中保持模型性能。",
+      "why": "解决概念漂移难题，为自主代理商业化奠定基础"
+    },
+    {
+      "title": "OSCToM：强化学习引导的高阶心智理论对抗生成",
+      "category": "论文",
+      "tier": "T1",
+      "source": "arXiv cs.AI",
+      "url": "https://arxiv.org/abs/2605.20423",
+      "score": 78,
+      "tags": [
+        "心智理论",
+        "社交推理",
+        "LLM"
+      ],
+      "summary": "研究提出OSCToM框架，利用强化学习引导对抗生成高阶心智理论(ToM)测试场景，解决现有基准在递归信念和信息不对称测试中的不足，提升LLM复杂社交推理能力。",
+      "why": "突破社交推理瓶颈，迈向真正智能的人机交互"
+    },
+    {
+      "title": "AdventHealth采用OpenAI优化医疗工作流",
+      "category": "行业",
+      "tier": "T1",
+      "source": "OpenAI News",
+      "url": "https://openai.com/index/adventhealth",
+      "score": 76,
+      "tags": [
+        "医疗AI",
+        "ChatGPT",
+        "行业应用"
+      ],
+      "summary": "医疗系统AdventHealth采用ChatGPT for Healthcare解决方案，通过AI自动化简化临床工作流程、减轻行政负担，将医护人员从繁琐文档中解放，回归患者护理本质。",
+      "why": "医疗场景深度落地，验证AI在关键垂直领域价值"
+    }
+  ],
+  "archives": [
+    {
+      "date": "2026-05-22",
+      "title": "今日 AI 热点简报",
+      "count": 6,
+      "url": "./archive/2026-05-22.json"
+    }
+  ],
+  "weeklyHot": [
+    {
+      "title": "How Ramp engineers accelerate code review with Codex",
+      "source": "OpenAI News",
+      "url": "https://openai.com/index/ramp",
+      "heat": 100
+    },
+    {
+      "title": "GitHub Copilot for Eclipse is open source",
+      "source": "GitHub Changelog",
+      "url": "https://github.blog/changelog/2026-05-21-github-copilot-for-eclipse-is-open-source",
+      "heat": 100
+    },
+    {
+      "title": "OSCToM: RL-Guided Adversarial Generation for High-Order Theory of Mind",
+      "source": "arXiv cs.AI",
+      "url": "https://arxiv.org/abs/2605.20423",
+      "heat": 100
+    },
+    {
+      "title": "Copilot usage metrics reports now use GitHub-owned download URLs",
+      "source": "GitHub Changelog",
+      "url": "https://github.blog/changelog/2026-05-20-copilot-usage-metrics-reports-now-use-github-owned-download-urls",
+      "heat": 100
+    },
+    {
+      "title": "100 things we announced at I/O 2026",
+      "source": "Google AI Blog",
+      "url": "https://blog.google/innovation-and-ai/technology/ai/google-io-2026-all-our-announcements/",
+      "heat": 100
+    },
+    {
+      "title": "SOLAR: A Self-Optimizing Open-Ended Autonomous Agent for Lifelong Learning and Continual Adaptation",
+      "source": "arXiv cs.AI",
+      "url": "https://arxiv.org/abs/2605.20189",
+      "heat": 100
+    },
+    {
+      "title": "Tool-Augmented Agent for Closed-loop Optimization,Simulation,and Modeling Orchestration",
+      "source": "arXiv cs.AI",
+      "url": "https://arxiv.org/abs/2605.20190",
+      "heat": 100
+    },
+    {
+      "title": "An OpenAI model has disproved a central conjecture in discrete geometry",
+      "source": "OpenAI News",
+      "url": "https://openai.com/index/model-disproves-discrete-geometry-conjecture",
+      "heat": 100
+    }
+  ],
+  "sourceCatalog": [
+    {
+      "name": "OpenAI News",
+      "tier": "T1",
+      "category": "模型",
+      "url": "https://openai.com/news/rss.xml"
+    },
+    {
+      "name": "Anthropic News",
+      "tier": "T1",
+      "category": "模型",
+      "url": "https://www.anthropic.com/news"
+    },
+    {
+      "name": "Google AI Blog",
+      "tier": "T1",
+      "category": "模型",
+      "url": "https://blog.google/technology/ai/rss/"
+    },
+    {
+      "name": "GitHub Changelog",
+      "tier": "T1.5",
+      "category": "产品",
+      "url": "https://github.blog/changelog/feed/"
+    },
+    {
+      "name": "arXiv cs.AI",
+      "tier": "T1",
+      "category": "论文",
+      "url": "https://export.arxiv.org/rss/cs.AI"
+    },
+    {
+      "name": "arXiv cs.LG",
+      "tier": "T1",
+      "category": "论文",
+      "url": "https://export.arxiv.org/rss/cs.LG"
+    },
+    {
+      "name": "Hacker News AI",
+      "tier": "T2",
+      "category": "行业",
+      "url": "https://hnrss.org/newest?q=AI"
+    }
+  ],
+  "fetchErrors": [
+    "Filtered out 3 stale items older than 7 days."
+  ]
+};

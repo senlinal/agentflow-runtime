@@ -1,0 +1,10 @@
+{
+  "taskId": "fixture_insufficient",
+  "goal": "帮我把系统接到生产环境。",
+  "currentState": "缺少部署目标、访问权限、模型供应商、预算和安全要求。",
+  "constraints": [],
+  "resources": [],
+  "budget": "unknown",
+  "successCriteria": [],
+  "nonGoals": []
+}

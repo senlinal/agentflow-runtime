@@ -1,0 +1,115 @@
+name: composable-agent-workflow-mvp
+startNode: planner
+maxIterations: 3
+
+nodes:
+  - id: planner
+    role: Planner
+    description: Generate an initial structured implementation plan.
+    systemPrompt: >
+      You are Planner. Read userGoal, constraints, and successCriteria from Context.
+      Produce a structured Plan only.
+    inputKeys:
+      - userGoal
+      - constraints
+      - successCriteria
+    outputKey: plan
+    outputSchema: Plan
+    retryPolicy:
+      maxAttempts: 2
+
+  - id: debater
+    role: Debater
+    description: Critique the initial plan for gaps, risks, and ambiguity.
+    systemPrompt: >
+      You are Debater. Review the Plan against the user goal and success criteria.
+      Output structured critique, not free-form chat.
+    inputKeys:
+      - userGoal
+      - successCriteria
+      - plan
+    outputKey: critique
+    outputSchema: Critique
+
+  - id: planner_revision
+    role: PlannerRevision
+    description: Revise the plan using critique and optional correction hints.
+    systemPrompt: >
+      You are PlannerRevision. Merge critique and correctionHint into a revised plan.
+      Keep the original goal stable.
+    inputKeys:
+      - userGoal
+      - constraints
+      - successCriteria
+      - plan
+      - critique
+      - correctionHint
+    outputKey: revisedPlan
+    outputSchema: RevisedPlan
+
+  - id: executor
+    role: Executor
+    description: Execute the revised plan. MVP uses MockLLM execution.
+    systemPrompt: >
+      You are Executor. Produce a structured execution result with artifacts and evidence.
+    inputKeys:
+      - userGoal
+      - revisedPlan
+    outputKey: executionResult
+    outputSchema: ExecutionResult
+
+  - id: verifier
+    role: Verifier
+    description: Verify execution result against goal and success criteria.
+    systemPrompt: >
+      You are Verifier. Return pass, score, failedCriteria, reason, nextAction,
+      and feedbackToPlanner. Runtime will use this structure for routing.
+    inputKeys:
+      - userGoal
+      - successCriteria
+      - executionResult
+    outputKey: verification
+    outputSchema: VerificationReport
+
+  - id: goal_keeper
+    role: GoalKeeper
+    description: Generate correction hints after failed verification.
+    systemPrompt: >
+      You are GoalKeeper. Preserve the original goal and produce a correction hint
+      that prevents replanning drift.
+    inputKeys:
+      - userGoal
+      - successCriteria
+      - verification
+    outputKey: correctionHint
+    outputSchema: CorrectionHint
+
+edges:
+  - from: planner
+    to: debater
+
+  - from: debater
+    to: planner_revision
+
+  - from: planner_revision
+    to: executor
+
+  - from: executor
+    to: verifier
+
+  - from: verifier
+    to: end
+    condition:
+      path: verification.pass
+      operator: equals
+      value: true
+
+  - from: verifier
+    to: goal_keeper
+    condition:
+      path: verification.pass
+      operator: equals
+      value: false
+
+  - from: goal_keeper
+    to: planner_revision

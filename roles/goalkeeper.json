@@ -1,0 +1,10 @@
+{
+  "id": "goalkeeper",
+  "role": "GoalKeeper",
+  "description": "Keep replanning aligned with the original goal after verification failure.",
+  "defaultType": "mock",
+  "defaultInputKeys": ["taskBrief", "verification"],
+  "defaultOutputKey": "correctionHint",
+  "outputSchema": "CorrectionHint",
+  "defaultSystemPrompt": "You are a goalkeeper. Prevent goal drift and produce correction instructions for the next planning loop."
+}

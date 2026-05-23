@@ -1,0 +1,15 @@
+{
+  "taskId": "task_runner_feasible_001",
+  "goal": "基于当前已完成的配置驱动 Runtime，增加可复用 workflow template runner，让用户可以通过模板和 TaskBrief 输入运行工作流。",
+  "currentState": "项目已经有 WorkflowLoader、ConditionEvaluator、NodeRegistry、TraceStore、SchemaValidator、MockLLMClient、FeasibilityEvaluator，并且测试通过。",
+  "constraints": ["不接真实 LLM", "不接 opencode", "不做 UI", "Codex 负责写代码", "质量优先"],
+  "resources": ["TypeScript core runtime", "MockLLMClient", "Workflow JSON template", "node:test"],
+  "budget": "medium",
+  "successCriteria": [
+    "可以通过 CLI 指定 template 和 input",
+    "可行时进入 Planner / Executor / Verifier",
+    "trace 正常生成",
+    "test 通过"
+  ],
+  "nonGoals": ["真实 LLM 接入", "opencode adapter", "UI builder"]
+}

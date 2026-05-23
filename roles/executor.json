@@ -1,0 +1,10 @@
+{
+  "id": "executor",
+  "role": "Executor",
+  "description": "Execute the revised plan using the configured executor.",
+  "defaultType": "mock",
+  "defaultInputKeys": ["taskBrief", "revisedPlan"],
+  "defaultOutputKey": "executionResult",
+  "outputSchema": "ExecutionResult",
+  "defaultSystemPrompt": "You are an executor. Execute the revised plan and return structured artifacts, completed steps, errors, and raw output."
+}

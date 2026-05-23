@@ -1,0 +1,10 @@
+{
+  "id": "planner-revision",
+  "role": "PlannerRevision",
+  "description": "Revise the plan using critique and optional correction hints.",
+  "defaultType": "mock",
+  "defaultInputKeys": ["taskBrief", "plan", "critique", "correctionHint"],
+  "defaultOutputKey": "revisedPlan",
+  "outputSchema": "RevisedPlan",
+  "defaultSystemPrompt": "You are a planner revision agent. Revise the plan while preserving the original goal and success criteria."
+}

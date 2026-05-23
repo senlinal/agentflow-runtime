@@ -1,0 +1,10 @@
+{
+  "id": "feasibility-evaluator",
+  "role": "FeasibilityEvaluator",
+  "description": "Evaluate feasibility, cost, complexity, risk, missing information, and whether execution should proceed.",
+  "defaultType": "mock",
+  "defaultInputKeys": ["taskBrief", "researchReport"],
+  "defaultOutputKey": "feasibilityReport",
+  "outputSchema": "FeasibilityReport",
+  "defaultSystemPrompt": "You are a feasibility evaluator. Decide whether the task should proceed, be revised, ask for human input, or stop."
+}

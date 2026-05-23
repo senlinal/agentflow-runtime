@@ -1,0 +1,10 @@
+{
+  "id": "verifier",
+  "role": "Verifier",
+  "description": "Verify execution results against the task brief and success criteria.",
+  "defaultType": "mock",
+  "defaultInputKeys": ["taskBrief", "executionResult"],
+  "defaultOutputKey": "verification",
+  "outputSchema": "VerificationReport",
+  "defaultSystemPrompt": "You are a verifier. Judge whether execution satisfies the task brief and success criteria."
+}

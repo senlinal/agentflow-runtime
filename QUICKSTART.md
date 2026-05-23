@@ -1,0 +1,66 @@
+# Quickstart
+
+This guide gets a fresh clone running with mock workflows only. No API key is required.
+
+## 1. Clone
+
+```bash
+git clone <your-repo-url>
+cd <repo>
+```
+
+## 2. Check The Environment
+
+```bash
+npm run doctor
+```
+
+The doctor command checks the Node version, required files, required npm scripts, sample templates, and whether local runtime files such as `.env` or `.workflow-runs/` are tracked by Git.
+
+## 3. Run A Demo
+
+```bash
+npm run demo
+```
+
+This uses `MockLLMClient` and exercises the Planner -> Debater -> PlannerRevision -> Executor -> Verifier -> GoalKeeper loop.
+
+## 4. Run A Reusable Workflow Template
+
+```bash
+npm run workflow -- --template research-feasibility-execute-verify --input inputs/feasible-task.json
+```
+
+The workflow first creates a `ResearchReport`, then a `FeasibilityReport`. If the task is feasible, it enters the Planner / Executor / Verifier flow. If it is too broad or too risky, it stops before execution.
+
+Try the infeasible sample:
+
+```bash
+npm run workflow -- --template research-feasibility-execute-verify --input inputs/infeasible-task.json
+```
+
+## 5. Inspect Templates And Roles
+
+```bash
+npm run workflow:list
+npm run workflow:roles
+npm run workflow:inspect -- --template abcde-basic
+npm run workflow:validate -- --template abcde-basic
+```
+
+## 6. LLM Config Dry-Run
+
+```bash
+npm run llm:config
+npm run llm:smoke
+```
+
+`llm:smoke` is dry-run by default and does not call external providers. Do not run `--execute` unless you intentionally want a real provider call.
+
+## 7. Full Local Verification
+
+```bash
+npm run verify
+```
+
+This runs release checks, doctor, opencode adapter checks, workflow validation, LLM dry-run checks, tests, and typecheck.

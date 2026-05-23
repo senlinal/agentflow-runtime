@@ -1,0 +1,10 @@
+{
+  "taskId": "task_runner_infeasible_001",
+  "goal": "三天内完成完整 Dify 替代品，包括复杂 UI、多人协作、插件市场、权限系统、真实 LLM 接入和部署平台。",
+  "currentState": "当前只有 CLI Runtime、MockLLMClient、配置驱动 workflow，没有 UI、没有真实 LLM、没有 opencode adapter。",
+  "constraints": ["不接真实 LLM", "不做 UI", "不做大型平台", "质量优先"],
+  "resources": ["CLI Runtime", "MockLLMClient", "配置驱动 workflow"],
+  "budget": "low",
+  "successCriteria": ["系统应识别成本过高", "不进入 Planner / Executor", "输出 FeasibilityReport", "给出替代方案"],
+  "nonGoals": ["完整 Dify 替代品", "复杂 UI", "生产部署平台", "真实 LLM 接入"]
+}

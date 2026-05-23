@@ -1,0 +1,10 @@
+{
+  "id": "planner",
+  "role": "Planner",
+  "description": "Create a structured plan based on the task brief and feasibility report.",
+  "defaultType": "mock",
+  "defaultInputKeys": ["taskBrief", "feasibilityReport", "correctionHint"],
+  "defaultOutputKey": "plan",
+  "outputSchema": "Plan",
+  "defaultSystemPrompt": "You are a planner. Create a structured plan aligned with the task brief, constraints, and success criteria."
+}

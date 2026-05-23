@@ -1,0 +1,45 @@
+[
+  {
+    "name": "OpenAI News",
+    "tier": "T1",
+    "category": "模型",
+    "url": "https://openai.com/news/rss.xml"
+  },
+  {
+    "name": "Anthropic News",
+    "tier": "T1",
+    "category": "模型",
+    "type": "html",
+    "url": "https://www.anthropic.com/news"
+  },
+  {
+    "name": "Google AI Blog",
+    "tier": "T1",
+    "category": "模型",
+    "url": "https://blog.google/technology/ai/rss/"
+  },
+  {
+    "name": "GitHub Changelog",
+    "tier": "T1.5",
+    "category": "产品",
+    "url": "https://github.blog/changelog/feed/"
+  },
+  {
+    "name": "arXiv cs.AI",
+    "tier": "T1",
+    "category": "论文",
+    "url": "https://export.arxiv.org/rss/cs.AI"
+  },
+  {
+    "name": "arXiv cs.LG",
+    "tier": "T1",
+    "category": "论文",
+    "url": "https://export.arxiv.org/rss/cs.LG"
+  },
+  {
+    "name": "Hacker News AI",
+    "tier": "T2",
+    "category": "行业",
+    "url": "https://hnrss.org/newest?q=AI"
+  }
+]

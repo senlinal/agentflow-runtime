@@ -1,0 +1,127 @@
+{
+  "name": "research-feasibility-workflow-template",
+  "version": "0.1.0",
+  "description": "Reusable template that researches a TaskBrief, evaluates feasibility, and only proceeds to execution when scope and risk are acceptable.",
+  "start": "researcher",
+  "maxIterations": 3,
+  "inputSchema": "TaskBrief",
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": ["edit project files", "create files", "run local tests", "run local demos"],
+      "requireConfirmation": ["delete existing project files", "large rewrites", "external paid API calls"],
+      "forbiddenWithoutExplicitApproval": ["git reset --hard", "git clean -fd", "deploy", "production data changes"]
+    },
+    "costPolicy": {
+      "maxCostLevel": "medium",
+      "stopWhen": ["scope too large", "cost high", "risk high", "information insufficient"],
+      "preferredDecisionsWhenOverBudget": ["ask_human", "revise_goal", "stop"]
+    },
+    "qualityPolicy": {
+      "principles": ["configuration-driven runtime", "schema-validated outputs", "trace every step"],
+      "requiredChecks": ["npm run demo", "npm run test"],
+      "forbiddenShortcuts": ["hardcoded runtime flow", "deleting tests", "swallowing errors"]
+    }
+  },
+  "nodes": [
+    {
+      "id": "researcher",
+      "type": "mock",
+      "role": "Researcher",
+      "description": "Research the TaskBrief using local mock reasoning.",
+      "inputKeys": ["taskBrief"],
+      "outputKey": "researchReport",
+      "outputSchema": "ResearchReport"
+    },
+    {
+      "id": "feasibility",
+      "type": "mock",
+      "role": "FeasibilityEvaluator",
+      "description": "Evaluate feasibility, cost, complexity, risk, and next decision.",
+      "inputKeys": ["taskBrief", "researchReport"],
+      "outputKey": "feasibilityReport",
+      "outputSchema": "FeasibilityReport"
+    },
+    {
+      "id": "planner",
+      "type": "mock",
+      "role": "Planner",
+      "description": "Create a structured plan only when feasibility allows execution.",
+      "inputKeys": ["taskBrief", "researchReport", "feasibilityReport"],
+      "outputKey": "plan",
+      "outputSchema": "Plan"
+    },
+    {
+      "id": "debater",
+      "type": "mock",
+      "role": "Debater",
+      "description": "Critique the plan.",
+      "inputKeys": ["taskBrief", "plan"],
+      "outputKey": "critique",
+      "outputSchema": "Critique"
+    },
+    {
+      "id": "planner_revision",
+      "type": "mock",
+      "role": "PlannerRevision",
+      "description": "Revise the plan using critique and correction hints.",
+      "inputKeys": ["taskBrief", "plan", "critique", "correctionHint"],
+      "outputKey": "revisedPlan",
+      "outputSchema": "RevisedPlan"
+    },
+    {
+      "id": "executor",
+      "type": "mock",
+      "role": "Executor",
+      "description": "Execute the revised plan using mock execution.",
+      "inputKeys": ["taskBrief", "revisedPlan"],
+      "outputKey": "executionResult",
+      "outputSchema": "ExecutionResult"
+    },
+    {
+      "id": "verifier",
+      "type": "mock",
+      "role": "Verifier",
+      "description": "Verify executionResult against TaskBrief success criteria.",
+      "inputKeys": ["taskBrief", "executionResult"],
+      "outputKey": "verification",
+      "outputSchema": "VerificationReport"
+    },
+    {
+      "id": "goal_keeper",
+      "type": "mock",
+      "role": "GoalKeeper",
+      "description": "Keep replanning aligned with the original TaskBrief.",
+      "inputKeys": ["taskBrief", "verification"],
+      "outputKey": "correctionHint",
+      "outputSchema": "CorrectionHint"
+    }
+  ],
+  "edges": [
+    { "from": "researcher", "to": "feasibility", "condition": { "type": "always" } },
+    {
+      "from": "feasibility",
+      "to": "planner",
+      "condition": { "type": "in", "path": "feasibilityReport.decision", "value": ["proceed", "proceed_with_risks"] }
+    },
+    {
+      "from": "feasibility",
+      "to": "end",
+      "condition": { "type": "in", "path": "feasibilityReport.decision", "value": ["stop", "ask_human", "revise_goal"] }
+    },
+    { "from": "planner", "to": "debater", "condition": { "type": "always" } },
+    { "from": "debater", "to": "planner_revision", "condition": { "type": "always" } },
+    { "from": "planner_revision", "to": "executor", "condition": { "type": "always" } },
+    { "from": "executor", "to": "verifier", "condition": { "type": "always" } },
+    {
+      "from": "verifier",
+      "to": "end",
+      "condition": { "type": "equals", "path": "verification.pass", "value": true }
+    },
+    {
+      "from": "verifier",
+      "to": "goal_keeper",
+      "condition": { "type": "equals", "path": "verification.pass", "value": false }
+    },
+    { "from": "goal_keeper", "to": "planner_revision", "condition": { "type": "always" } }
+  ]
+}

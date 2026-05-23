@@ -1,0 +1,17 @@
+[project]
+name = "langgraph-supervisor-research"
+version = "0.1.0"
+description = "Minimal LangGraph supervisor research agent workflow"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ddgs>=9.0.0",
+    "langchain-openai>=0.3.0",
+    "langgraph>=0.2.0",
+    "langgraph-checkpoint-sqlite>=3.1.0",
+    "python-dotenv>=1.0.1",
+]
+
+[tool.uv]
+package = false
+

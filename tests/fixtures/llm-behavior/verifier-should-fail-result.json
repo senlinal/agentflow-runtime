@@ -1,0 +1,19 @@
+{
+  "taskBrief": {
+    "taskId": "fixture_verify_fail",
+    "goal": "实现配置检查并输出 trace",
+    "currentState": "已有 Runtime",
+    "constraints": ["必须输出 trace"],
+    "resources": [],
+    "budget": "medium",
+    "successCriteria": ["输出 trace", "测试通过"],
+    "nonGoals": []
+  },
+  "executionResult": {
+    "completedSteps": ["config-check"],
+    "artifacts": ["config report"],
+    "summary": "只完成配置检查，没有输出 trace。",
+    "errors": [],
+    "rawOutput": "{\"traceGenerated\":false}"
+  }
+}

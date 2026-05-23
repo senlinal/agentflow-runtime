@@ -1,0 +1,10 @@
+{
+  "taskId": "fixture_infeasible",
+  "goal": "三天内完成完整 Dify 替代品，包括复杂 UI、多人协作、插件市场、权限系统、真实 LLM 接入和部署平台。",
+  "currentState": "当前只有 CLI Runtime、MockLLMClient、配置驱动 workflow，没有 UI、没有真实部署平台。",
+  "constraints": ["不做大型平台", "质量优先"],
+  "resources": ["现有 CLI runtime"],
+  "budget": "low",
+  "successCriteria": ["系统识别成本过高", "不进入 Executor"],
+  "nonGoals": ["完整商业平台"]
+}

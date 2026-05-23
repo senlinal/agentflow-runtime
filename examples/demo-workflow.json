@@ -1,0 +1,80 @@
+{
+  "workflow": {
+    "name": "composable-agent-workflow-demo",
+    "start": "planner",
+    "maxIterations": 3
+  },
+  "nodes": [
+    {
+      "id": "planner",
+      "type": "mock",
+      "role": "Planner",
+      "description": "Create an initial structured plan.",
+      "inputKeys": ["userGoal", "constraints", "successCriteria"],
+      "outputKey": "plan",
+      "outputSchema": "Plan"
+    },
+    {
+      "id": "debater",
+      "type": "mock",
+      "role": "Debater",
+      "description": "Critique the initial plan.",
+      "inputKeys": ["userGoal", "plan"],
+      "outputKey": "critique",
+      "outputSchema": "Critique"
+    },
+    {
+      "id": "planner_revision",
+      "type": "mock",
+      "role": "PlannerRevision",
+      "description": "Revise the plan using critique and optional correctionHint.",
+      "inputKeys": ["userGoal", "plan", "critique", "correctionHint"],
+      "outputKey": "revisedPlan",
+      "outputSchema": "RevisedPlan"
+    },
+    {
+      "id": "executor",
+      "type": "mock",
+      "role": "Executor",
+      "description": "Execute the revised plan.",
+      "inputKeys": ["userGoal", "revisedPlan"],
+      "outputKey": "executionResult",
+      "outputSchema": "ExecutionResult"
+    },
+    {
+      "id": "verifier",
+      "type": "mock",
+      "role": "Verifier",
+      "description": "Verify executionResult against goal and successCriteria.",
+      "inputKeys": ["userGoal", "successCriteria", "executionResult"],
+      "outputKey": "verification",
+      "outputSchema": "VerificationReport"
+    },
+    {
+      "id": "goal_keeper",
+      "type": "mock",
+      "role": "GoalKeeper",
+      "description": "Keep replanning aligned with the original goal after failed verification.",
+      "inputKeys": ["userGoal", "successCriteria", "verification"],
+      "outputKey": "correctionHint",
+      "outputSchema": "CorrectionHint"
+    }
+  ],
+  "edges": [
+    { "from": "planner", "to": "debater", "condition": { "type": "always" } },
+    { "from": "debater", "to": "planner_revision", "condition": { "type": "always" } },
+    { "from": "planner_revision", "to": "executor", "condition": { "type": "always" } },
+    { "from": "executor", "to": "verifier", "condition": { "type": "always" } },
+    {
+      "from": "verifier",
+      "to": "end",
+      "condition": { "type": "equals", "path": "verification.pass", "value": true }
+    },
+    {
+      "from": "verifier",
+      "to": "goal_keeper",
+      "condition": { "type": "equals", "path": "verification.pass", "value": false }
+    },
+    { "from": "goal_keeper", "to": "planner_revision", "condition": { "type": "always" } }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "taskBrief": {
+    "taskId": "fixture_verify_pass",
+    "goal": "实现配置检查并输出 trace",
+    "currentState": "已有 Runtime",
+    "constraints": ["必须输出 trace"],
+    "resources": [],
+    "budget": "medium",
+    "successCriteria": ["输出 trace", "测试通过"],
+    "nonGoals": []
+  },
+  "executionResult": {
+    "completedSteps": ["config-check", "trace-output", "test"],
+    "artifacts": ["config report", "trace.json", "test result"],
+    "summary": "完成配置检查，输出 trace，并通过测试。",
+    "errors": [],
+    "rawOutput": "{\"traceGenerated\":true,\"testsPassed\":true}"
+  }
+}
