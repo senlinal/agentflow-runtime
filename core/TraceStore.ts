@@ -42,6 +42,8 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
   const feasibility = context.feasibilityReport;
   const finalStatus = context.stopReason
     ? "stopped"
+    : context.codeChangePlanDryRunExecutionPlan?.status === "planned"
+    ? "execution-dry-run-planned"
     : context.codeChangePlanExecutionApprovalRequest?.status === "pending"
     ? "execution-approval-pending"
     : context.codeChangePlan
@@ -111,6 +113,7 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
     buildExecutionVerificationSummary(context),
     buildRepairSummary(context),
     buildCodeChangeExecutionApprovalSummary(context),
+    buildCodeChangeDryRunSummary(context),
     "",
     !executionStarted && feasibility
       ? [
@@ -236,6 +239,46 @@ function buildCodeChangeExecutionApprovalSummary(context: WorkflowContext): stri
     "CodeChangePlan execution was not performed.",
     "Explicit human approval is required before executing this plan.",
     "Pending execution approval is not an execution authorization.",
+    "",
+  ].join("\n");
+}
+
+function buildCodeChangeDryRunSummary(context: WorkflowContext): string {
+  const plan = context.codeChangePlanDryRunExecutionPlan;
+  if (!plan) return "";
+  return [
+    "## CodeChangePlan Execution Dry-run",
+    "",
+    `- dryRunId: ${plan.dryRunId}`,
+    `- codeChangePlanId: ${plan.codeChangePlanId}`,
+    `- codeChangePlanHash: ${plan.codeChangePlanHash}`,
+    `- approvalId: ${plan.approvalId}`,
+    `- approvalStatus: ${plan.approvalStatus}`,
+    `- status: ${plan.status}`,
+    `- hashMatched: ${plan.hashMatched}`,
+    `- mode: ${plan.mode}`,
+    `- riskLevel: ${plan.riskLevel}`,
+    `- operationsCount: ${plan.operations.length}`,
+    `- targetFiles: ${plan.targetFiles.join("; ") || "none"}`,
+    `- expectedFilesChanged: ${plan.expectedFilesChanged.join("; ") || "none"}`,
+    `- testCommands: ${plan.testCommands.join("; ") || "none"}`,
+    `- safetyFindings: ${plan.safetyChecks.join("; ") || "none"}`,
+    `- blockedReasons: ${plan.blockedReasons.join("; ") || "none"}`,
+    `- wouldWriteFiles: ${plan.wouldWriteFiles}`,
+    `- wouldRunCommands: ${plan.wouldRunCommands}`,
+    `- wouldRunTests: ${plan.wouldRunTests}`,
+    `- wouldCallCodeExecutor: ${plan.wouldCallCodeExecutor}`,
+    `- consumesApproval: ${plan.consumesApproval}`,
+    `- requiresExecuteFlag: ${plan.requiresExecuteFlag}`,
+    `- requiresSeparateExecutionStep: ${plan.requiresSeparateExecutionStep}`,
+    "",
+    "Dry-run only. No files were written.",
+    "No CodeChangePlan operations were executed.",
+    "No commands were executed.",
+    "No tests were run.",
+    "CodeExecutor was not called.",
+    "Approval was not consumed.",
+    "Use an explicit execution step to apply this plan.",
     "",
   ].join("\n");
 }

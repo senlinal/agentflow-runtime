@@ -80,6 +80,14 @@ npm run demo:code-change-plan-execution-approval
 
 This records a hash-bound request with `status=pending`. It does not apply the plan, run tests, or call `CodeExecutor`.
 
+Generate an approved execution dry-run plan:
+
+```bash
+npm run demo:code-change-plan-execution-dry-run
+```
+
+This requires an approved execution approval record, verifies the `CodeChangePlan` hash, and creates a dry-run plan only. It still does not write files, run commands, run tests, call `CodeExecutor`, or consume approval.
+
 ## 7. LLM Config Dry-Run
 
 ```bash

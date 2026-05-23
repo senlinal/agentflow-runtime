@@ -303,6 +303,78 @@ describe("SchemaValidator", () => {
     );
   });
 
+  it("passes for a valid CodeChangePlanDryRunExecutionPlan", () => {
+    const output = {
+      dryRunId: "dry_run_1",
+      codeChangePlanId: "code_change_1",
+      codeChangePlanHash: "sha256:abc123",
+      approvalId: "code_exec_approval_1",
+      approvalStatus: "approved",
+      status: "planned",
+      mode: "dry_run",
+      hashMatched: true,
+      summary: "dry-run only",
+      operations: [{
+        id: "op_1",
+        type: "modify_file",
+        targetFile: "src/generated.txt",
+        description: "Prepare patch.",
+        reason: "Fix failed test.",
+        safetyConstraints: ["No delete."],
+      }],
+      targetFiles: ["src/generated.txt"],
+      expectedFilesChanged: ["src/generated.txt"],
+      forbiddenFiles: [".env"],
+      testCommands: ["npm run test"],
+      riskLevel: "low",
+      safetyChecks: ["hash matches"],
+      blockedReasons: [],
+      wouldWriteFiles: false,
+      wouldRunCommands: false,
+      wouldRunTests: false,
+      wouldCallCodeExecutor: false,
+      consumesApproval: false,
+      requiresExecuteFlag: true,
+      requiresSeparateExecutionStep: true,
+      createdAt: "2026-05-23T00:00:00.000Z",
+    };
+
+    assert.deepEqual(SchemaValidator.validate("CodeChangePlanDryRunExecutionPlan", output), output);
+  });
+
+  it("fails when CodeChangePlanDryRunExecutionPlan would write files", () => {
+    assert.throws(
+      () => SchemaValidator.validate("CodeChangePlanDryRunExecutionPlan", {
+        dryRunId: "dry_run_1",
+        codeChangePlanId: "code_change_1",
+        codeChangePlanHash: "sha256:abc123",
+        approvalId: "code_exec_approval_1",
+        approvalStatus: "approved",
+        status: "planned",
+        mode: "dry_run",
+        hashMatched: true,
+        summary: "dry-run only",
+        operations: [],
+        targetFiles: [],
+        expectedFilesChanged: [],
+        forbiddenFiles: [],
+        testCommands: [],
+        riskLevel: "low",
+        safetyChecks: [],
+        blockedReasons: [],
+        wouldWriteFiles: true,
+        wouldRunCommands: false,
+        wouldRunTests: false,
+        wouldCallCodeExecutor: false,
+        consumesApproval: false,
+        requiresExecuteFlag: true,
+        requiresSeparateExecutionStep: true,
+        createdAt: "2026-05-23T00:00:00.000Z",
+      }),
+      /CodeChangePlanDryRunExecutionPlan\.wouldWriteFiles must be false/,
+    );
+  });
+
   it("fails when SmokeTestResult.ok is not boolean", () => {
     assert.throws(
       () =>

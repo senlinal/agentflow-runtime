@@ -4,6 +4,7 @@ import type {
   ExecutionResult,
   FeasibilityReport,
   CodeChangePlan,
+  CodeChangePlanDryRunExecutionPlan,
   CodeChangePlanExecutionApprovalRequest,
   OutputSchemaName,
   Plan,
@@ -54,6 +55,8 @@ export class SchemaValidator {
         return validateCodeChangePlan(output);
       case "CodeChangePlanExecutionApprovalRequest":
         return validateCodeChangePlanExecutionApprovalRequest(output);
+      case "CodeChangePlanDryRunExecutionPlan":
+        return validateCodeChangePlanDryRunExecutionPlan(output);
       case "CorrectionHint":
         return validateCorrectionHint(output);
       case "SmokeTestResult":
@@ -267,6 +270,48 @@ function validateCodeChangePlanExecutionApprovalRequest(output: unknown): CodeCh
     throw new Error("CodeChangePlanExecutionApprovalRequest.expiresAt must be a string when provided.");
   }
   return record as CodeChangePlanExecutionApprovalRequest;
+}
+
+function validateCodeChangePlanDryRunExecutionPlan(output: unknown): CodeChangePlanDryRunExecutionPlan {
+  const record = requireObject(output, "CodeChangePlanDryRunExecutionPlan");
+  requireString(record, "dryRunId", "CodeChangePlanDryRunExecutionPlan");
+  requireString(record, "codeChangePlanId", "CodeChangePlanDryRunExecutionPlan");
+  requireString(record, "codeChangePlanHash", "CodeChangePlanDryRunExecutionPlan");
+  requireString(record, "approvalId", "CodeChangePlanDryRunExecutionPlan");
+  requireEnum(record, "approvalStatus", ["approved"], "CodeChangePlanDryRunExecutionPlan");
+  requireEnum(record, "status", ["planned"], "CodeChangePlanDryRunExecutionPlan");
+  requireEnum(record, "mode", ["dry_run"], "CodeChangePlanDryRunExecutionPlan");
+  if (record.hashMatched !== true) throw new Error("CodeChangePlanDryRunExecutionPlan.hashMatched must be true.");
+  requireString(record, "summary", "CodeChangePlanDryRunExecutionPlan");
+  requireArray(record, "operations", "CodeChangePlanDryRunExecutionPlan");
+  requireArray(record, "targetFiles", "CodeChangePlanDryRunExecutionPlan");
+  requireArray(record, "expectedFilesChanged", "CodeChangePlanDryRunExecutionPlan");
+  requireArray(record, "forbiddenFiles", "CodeChangePlanDryRunExecutionPlan");
+  requireArray(record, "testCommands", "CodeChangePlanDryRunExecutionPlan");
+  requireEnum(record, "riskLevel", ["low", "medium", "high"], "CodeChangePlanDryRunExecutionPlan");
+  requireArray(record, "safetyChecks", "CodeChangePlanDryRunExecutionPlan");
+  requireArray(record, "blockedReasons", "CodeChangePlanDryRunExecutionPlan");
+  if (record.wouldWriteFiles !== false) throw new Error("CodeChangePlanDryRunExecutionPlan.wouldWriteFiles must be false.");
+  if (record.wouldRunCommands !== false) throw new Error("CodeChangePlanDryRunExecutionPlan.wouldRunCommands must be false.");
+  if (record.wouldRunTests !== false) throw new Error("CodeChangePlanDryRunExecutionPlan.wouldRunTests must be false.");
+  if (record.wouldCallCodeExecutor !== false) throw new Error("CodeChangePlanDryRunExecutionPlan.wouldCallCodeExecutor must be false.");
+  if (record.consumesApproval !== false) throw new Error("CodeChangePlanDryRunExecutionPlan.consumesApproval must be false.");
+  if (record.requiresExecuteFlag !== true) throw new Error("CodeChangePlanDryRunExecutionPlan.requiresExecuteFlag must be true.");
+  if (record.requiresSeparateExecutionStep !== true) {
+    throw new Error("CodeChangePlanDryRunExecutionPlan.requiresSeparateExecutionStep must be true.");
+  }
+  requireString(record, "createdAt", "CodeChangePlanDryRunExecutionPlan");
+  record.operations.forEach((operation, index) => {
+    const item = requireObject(operation, `CodeChangePlanDryRunExecutionPlan.operations[${index}]`);
+    requireString(item, "id", `CodeChangePlanDryRunExecutionPlan.operations[${index}]`);
+    requireEnum(item, "type", ["modify_file", "create_file", "run_test", "inspect", "manual_review"], `CodeChangePlanDryRunExecutionPlan.operations[${index}]`);
+    if ("targetFile" in item && typeof item.targetFile !== "string") throw new Error(`CodeChangePlanDryRunExecutionPlan.operations[${index}].targetFile must be a string when provided.`);
+    if ("command" in item && typeof item.command !== "string") throw new Error(`CodeChangePlanDryRunExecutionPlan.operations[${index}].command must be a string when provided.`);
+    requireString(item, "description", `CodeChangePlanDryRunExecutionPlan.operations[${index}]`);
+    requireString(item, "reason", `CodeChangePlanDryRunExecutionPlan.operations[${index}]`);
+    requireArray(item, "safetyConstraints", `CodeChangePlanDryRunExecutionPlan.operations[${index}]`);
+  });
+  return record as CodeChangePlanDryRunExecutionPlan;
 }
 
 function validateCorrectionHint(output: unknown): CorrectionHint {

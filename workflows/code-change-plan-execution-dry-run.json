@@ -1,0 +1,39 @@
+{
+  "name": "code-change-plan-execution-dry-run",
+  "version": "1.0.0",
+  "description": "Generate a dry-run execution plan for an approved CodeChangePlan without executing it.",
+  "start": "codeChangePlanDryRunRunner",
+  "maxIterations": 1,
+  "inputSchema": "TaskBrief",
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": ["create dry-run execution plan for approved CodeChangePlan"],
+      "requireConfirmation": ["execute CodeChangePlan", "write files", "run commands", "run tests"],
+      "forbiddenWithoutExplicitApproval": ["call CodeExecutor", "consume approval", "apply CodeChangePlan operations", "delete files"]
+    },
+    "costPolicy": {
+      "maxCostLevel": "low",
+      "stopWhen": ["execution approval missing", "approval not approved", "hash mismatch", "scope expands", "unsafe operation found"],
+      "preferredDecisionsWhenOverBudget": ["ask_human", "stop"]
+    },
+    "qualityPolicy": {
+      "principles": ["dry-run only", "do not execute", "do not consume approval", "preserve CodeChangePlan hash integrity"],
+      "requiredChecks": ["approved execution approval record", "CodeChangePlan hash match", "targetFiles boundary", "forbiddenFiles boundary"],
+      "forbiddenShortcuts": ["auto execute CodeExecutor", "auto run tests", "auto consume approval", "support delete_file"]
+    }
+  },
+  "nodes": [
+    {
+      "id": "codeChangePlanDryRunRunner",
+      "type": "executionDryRun",
+      "role": "CodeChangePlanDryRunRunner",
+      "description": "Generate a dry-run execution plan for an approved CodeChangePlan without writing files, running commands, tests, or CodeExecutor.",
+      "inputKeys": ["taskBrief", "codeChangePlan", "codeChangePlanExecutionApprovalRecord"],
+      "outputKey": "codeChangePlanDryRunExecutionPlan",
+      "outputSchema": "CodeChangePlanDryRunExecutionPlan"
+    }
+  ],
+  "edges": [
+    { "from": "codeChangePlanDryRunRunner", "to": "end", "condition": { "type": "always" } }
+  ]
+}

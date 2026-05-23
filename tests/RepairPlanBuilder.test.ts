@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createInitialContext } from "../core/context.ts";
+import { CodeChangePlanDryRunExecutor, CodeChangePlanDryRunRunner } from "../core/repair/CodeChangePlanDryRunExecutor.ts";
 import { CodeChangePlanExecutionApprovalExecutor, CodeChangePlanExecutionApprovalGate } from "../core/repair/CodeChangePlanExecutionApprovalExecutor.ts";
 import { hashCodeChangePlan } from "../core/repair/CodeChangePlanHasher.ts";
 import { HumanApprovalExecutor } from "../core/repair/HumanApprovalExecutor.ts";
@@ -261,6 +262,143 @@ describe("CodeChangePlanExecutionApprovalGate", () => {
   });
 });
 
+describe("CodeChangePlanDryRunRunner", () => {
+  it("creates a dry-run execution plan for an approved execution approval without consuming it", () => {
+    const context = approvedExecutionContext();
+    const dryRun = new CodeChangePlanDryRunRunner().build(
+      context.codeChangePlan!,
+      context.codeChangePlanExecutionApprovalRecord!,
+      new Date("2026-05-23T00:03:00.000Z"),
+    );
+
+    assert.equal(dryRun.status, "planned");
+    assert.equal(dryRun.mode, "dry_run");
+    assert.equal(dryRun.approvalStatus, "approved");
+    assert.equal(dryRun.hashMatched, true);
+    assert.equal(dryRun.codeChangePlanId, context.codeChangePlan?.planId);
+    assert.equal(dryRun.codeChangePlanHash, context.codeChangePlanExecutionApprovalRecord?.codeChangePlanHash);
+    assert.equal(dryRun.approvalId, context.codeChangePlanExecutionApprovalRecord?.approvalId);
+    assert.deepEqual(dryRun.expectedFilesChanged, context.codeChangePlan?.targetFiles);
+    assert.equal(dryRun.wouldWriteFiles, false);
+    assert.equal(dryRun.wouldRunCommands, false);
+    assert.equal(dryRun.wouldRunTests, false);
+    assert.equal(dryRun.wouldCallCodeExecutor, false);
+    assert.equal(dryRun.consumesApproval, false);
+    assert.equal(dryRun.requiresExecuteFlag, true);
+    assert.equal(context.codeChangePlanExecutionApprovalRecord?.status, "approved");
+    assert.equal(SchemaValidator.validate("CodeChangePlanDryRunExecutionPlan", dryRun), dryRun);
+  });
+
+  it("CodeChangePlanDryRunExecutor returns a dry-run plan without execution", async () => {
+    const context = approvedExecutionContext();
+    const output = await new CodeChangePlanDryRunExecutor().execute({
+      id: "codeChangePlanDryRunRunner",
+      type: "executionDryRun",
+      role: "CodeChangePlanDryRunRunner",
+      description: "dry_run",
+      inputKeys: ["codeChangePlan", "codeChangePlanExecutionApprovalRecord"],
+      outputKey: "codeChangePlanDryRunExecutionPlan",
+      outputSchema: "CodeChangePlanDryRunExecutionPlan",
+    }, context);
+
+    const dryRun = SchemaValidator.validate("CodeChangePlanDryRunExecutionPlan", output) as typeof context.codeChangePlanDryRunExecutionPlan;
+    assert.equal(dryRun?.wouldCallCodeExecutor, false);
+    assert.equal(context.codeExecutionResult, null);
+    assert.equal(context.codeChangePlanExecutionApprovalRecord?.status, "approved");
+  });
+
+  it("refuses missing, pending, rejected, expired, consumed, mismatched, or unsafe dry-run inputs", async () => {
+    const context = approvedExecutionContext();
+
+    await assert.rejects(
+      () => new CodeChangePlanDryRunExecutor().execute({
+        id: "codeChangePlanDryRunRunner",
+        type: "executionDryRun",
+        role: "CodeChangePlanDryRunRunner",
+        description: "dry_run",
+        inputKeys: ["codeChangePlan"],
+        outputKey: "codeChangePlanDryRunExecutionPlan",
+        outputSchema: "CodeChangePlanDryRunExecutionPlan",
+      }, contextWithoutExecutionApprovalRecord()),
+      /requires codeChangePlanExecutionApprovalRecord/,
+    );
+
+    for (const status of ["pending", "rejected", "consumed"] as const) {
+      assert.throws(
+        () => new CodeChangePlanDryRunRunner().build(context.codeChangePlan!, {
+          ...context.codeChangePlanExecutionApprovalRecord!,
+          status,
+        }),
+        /must be approved/,
+      );
+    }
+
+    assert.throws(
+      () => new CodeChangePlanDryRunRunner().build(context.codeChangePlan!, {
+        ...context.codeChangePlanExecutionApprovalRecord!,
+        expiresAt: "2020-01-01T00:00:00.000Z",
+      }),
+      /expired/,
+    );
+    assert.throws(
+      () => new CodeChangePlanDryRunRunner().build(context.codeChangePlan!, {
+        ...context.codeChangePlanExecutionApprovalRecord!,
+        codeChangePlanId: "code_change_other",
+      }),
+      /codeChangePlanId does not match/,
+    );
+    assert.throws(
+      () => new CodeChangePlanDryRunRunner().build(context.codeChangePlan!, {
+        ...context.codeChangePlanExecutionApprovalRecord!,
+        codeChangePlanHash: "sha256:mismatch",
+      }),
+      /hash mismatch/,
+    );
+    assert.throws(
+      () => new CodeChangePlanDryRunRunner().build(
+        { ...context.codeChangePlan!, operations: [] },
+        { ...context.codeChangePlanExecutionApprovalRecord!, codeChangePlanHash: hashCodeChangePlan({ ...context.codeChangePlan!, operations: [] }) },
+      ),
+      /at least one operation/,
+    );
+    assert.throws(
+      () => new CodeChangePlanDryRunRunner().build(
+        { ...context.codeChangePlan!, operations: [{ ...context.codeChangePlan!.operations[0], type: "delete_file" as never }] },
+        context.codeChangePlanExecutionApprovalRecord!,
+      ),
+      /delete_file/,
+    );
+    assert.throws(
+      () => new CodeChangePlanDryRunRunner().build(
+        { ...context.codeChangePlan!, operations: [{ ...context.codeChangePlan!.operations[0], targetFile: ".env" }], targetFiles: [".env"] },
+        { ...context.codeChangePlanExecutionApprovalRecord!, codeChangePlanHash: hashCodeChangePlan({ ...context.codeChangePlan!, operations: [{ ...context.codeChangePlan!.operations[0], targetFile: ".env" }], targetFiles: [".env"] }) },
+      ),
+      /forbidden or sensitive/,
+    );
+    assert.throws(
+      () => new CodeChangePlanDryRunRunner().build(
+        { ...context.codeChangePlan!, operations: [{ ...context.codeChangePlan!.operations[0], targetFile: "src/other.txt" }] },
+        { ...context.codeChangePlanExecutionApprovalRecord!, codeChangePlanHash: hashCodeChangePlan({ ...context.codeChangePlan!, operations: [{ ...context.codeChangePlan!.operations[0], targetFile: "src/other.txt" }] }) },
+      ),
+      /outside targetFiles/,
+    );
+    assert.throws(
+      () => new CodeChangePlanDryRunRunner().build(
+        { ...context.codeChangePlan!, operations: [{ ...context.codeChangePlan!.operations[0], type: "run_test", command: "rm -rf src" }], testCommands: ["rm -rf src"] },
+        { ...context.codeChangePlanExecutionApprovalRecord!, codeChangePlanHash: hashCodeChangePlan({ ...context.codeChangePlan!, operations: [{ ...context.codeChangePlan!.operations[0], type: "run_test", command: "rm -rf src" }], testCommands: ["rm -rf src"] }) },
+      ),
+      /high risk/,
+    );
+    assert.throws(
+      () => new CodeChangePlanDryRunRunner().build(
+        { ...context.codeChangePlan!, operations: [{ ...context.codeChangePlan!.operations[0], type: "run_test", command: "npm run lint" }] },
+        { ...context.codeChangePlanExecutionApprovalRecord!, codeChangePlanHash: hashCodeChangePlan({ ...context.codeChangePlan!, operations: [{ ...context.codeChangePlan!.operations[0], type: "run_test", command: "npm run lint" }] }) },
+      ),
+      /outside testCommands/,
+    );
+  });
+});
+
 describe("HumanApprovalRequestBuilder", () => {
   it("creates a pending approval request without executing repair", () => {
     const plan = new RepairPlanBuilder().build(failedContext());
@@ -367,4 +505,30 @@ function approvedContext(): WorkflowContext {
       note: "Approved for materialization only.",
     },
   };
+}
+
+function approvedExecutionContext(): WorkflowContext {
+  const context = approvedContext();
+  context.codeChangePlan = new RepairPlanMaterializer().materialize(context, new Date("2026-05-23T00:00:00.000Z"));
+  context.codeChangePlanExecutionApprovalRequest = new CodeChangePlanExecutionApprovalGate().build(
+    context.codeChangePlan,
+    new Date("2026-05-23T00:01:00.000Z"),
+  );
+  context.codeChangePlanExecutionApprovalRecord = {
+    approvalId: context.codeChangePlanExecutionApprovalRequest.approvalId,
+    codeChangePlanId: context.codeChangePlanExecutionApprovalRequest.codeChangePlanId,
+    codeChangePlanHash: context.codeChangePlanExecutionApprovalRequest.codeChangePlanHash,
+    status: "approved",
+    requestedAction: "approve_code_change_plan_execution",
+    approvedAt: "2026-05-23T00:02:00.000Z",
+    approvedBy: "user",
+    note: "Approved for dry-run only.",
+  };
+  return context;
+}
+
+function contextWithoutExecutionApprovalRecord(): WorkflowContext {
+  const context = approvedContext();
+  context.codeChangePlan = new RepairPlanMaterializer().materialize(context, new Date("2026-05-23T00:00:00.000Z"));
+  return context;
 }

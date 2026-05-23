@@ -33,6 +33,8 @@ Report privately through the repository owner's preferred private channel. Inclu
 - A materialized `CodeChangePlan` can create a pending execution approval request. The request is bound to a `codeChangePlanHash`, but pending approval is not execution authorization.
 - CodeChangePlan execution approval request generation does not write files, run commands, run tests, or call `CodeExecutor`.
 - The `codeChangePlanHash` prevents approving one plan and executing another. Changing operations, target files, executable flags, or explicit approval requirements changes the hash.
+- Approved execution approval can produce a dry-run execution plan, but dry-run is still non-executing. It does not write files, run commands, run tests, call `CodeExecutor`, or consume approval.
+- Dry-run rejects pending, rejected, expired, consumed, mismatched, scope-expanding, secret-touching, delete, non-allowlisted, and high-risk command plans.
 
 ## High-Risk Areas
 

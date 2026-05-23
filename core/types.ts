@@ -13,6 +13,7 @@ export type AgentRole =
   | "HumanApprovalGate"
   | "RepairPlanMaterializer"
   | "CodeChangePlanExecutionApprovalGate"
+  | "CodeChangePlanDryRunRunner"
   | "GoalKeeper";
 
 export type RetryPolicy = {
@@ -33,6 +34,7 @@ export type OutputSchemaName =
   | "HumanApprovalRequest"
   | "CodeChangePlan"
   | "CodeChangePlanExecutionApprovalRequest"
+  | "CodeChangePlanDryRunExecutionPlan"
   | "CorrectionHint"
   | "CodeExecutionResult"
   | "TestExecutionResult"
@@ -47,7 +49,8 @@ export type NodeType =
   | "repair"
   | "approval"
   | "materialize"
-  | "executionApproval";
+  | "executionApproval"
+  | "executionDryRun";
 
 export type AgentNode = {
   id: string;
@@ -269,6 +272,48 @@ export type CodeChangePlanExecutionApprovalRequest = {
   expiresAt?: string;
 };
 
+export type CodeChangePlanExecutionApprovalRecord = {
+  approvalId: string;
+  codeChangePlanId: string;
+  codeChangePlanHash: string;
+  status: "pending" | "approved" | "rejected" | "expired" | "consumed";
+  requestedAction: "approve_code_change_plan_execution";
+  approvedAt?: string;
+  rejectedAt?: string;
+  consumedAt?: string;
+  expiresAt?: string;
+  approvedBy?: string;
+  note?: string;
+};
+
+export type CodeChangePlanDryRunExecutionPlan = {
+  dryRunId: string;
+  codeChangePlanId: string;
+  codeChangePlanHash: string;
+  approvalId: string;
+  approvalStatus: "approved";
+  status: "planned";
+  mode: "dry_run";
+  hashMatched: true;
+  summary: string;
+  operations: CodeChangeOperation[];
+  targetFiles: string[];
+  expectedFilesChanged: string[];
+  forbiddenFiles: string[];
+  testCommands: string[];
+  riskLevel: "low" | "medium" | "high";
+  safetyChecks: string[];
+  blockedReasons: string[];
+  wouldWriteFiles: false;
+  wouldRunCommands: false;
+  wouldRunTests: false;
+  wouldCallCodeExecutor: false;
+  consumesApproval: false;
+  requiresExecuteFlag: true;
+  requiresSeparateExecutionStep: true;
+  createdAt: string;
+};
+
 export type CorrectionHint = {
   driftDetected: boolean;
   originalGoalReminder: string;
@@ -314,6 +359,8 @@ export type WorkflowContext = TaskSpec & {
   repairApprovalRecord?: RepairApprovalRecord | null;
   codeChangePlan?: CodeChangePlan | null;
   codeChangePlanExecutionApprovalRequest?: CodeChangePlanExecutionApprovalRequest | null;
+  codeChangePlanExecutionApprovalRecord?: CodeChangePlanExecutionApprovalRecord | null;
+  codeChangePlanDryRunExecutionPlan?: CodeChangePlanDryRunExecutionPlan | null;
   correctionHint: CorrectionHint | null;
   iteration: number;
   history: unknown[];

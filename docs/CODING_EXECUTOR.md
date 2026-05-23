@@ -149,6 +149,26 @@ It produces `CodeChangePlanExecutionApprovalRequest` with `status: "pending"`, `
 
 This request is not execution authorization. The stage does not write files, run commands, run tests, call `CodeExecutor`, auto-approve, or consume an approval. It only records that a later execution phase must receive a separate explicit approval bound to the same CodeChangePlan hash.
 
+## Approved Execution Dry-run
+
+`workflows/code-change-plan-execution-dry-run.json` adds the next non-executing step:
+
+```text
+codeChangePlanDryRunRunner -> end
+```
+
+The runner requires:
+
+- a materialized `CodeChangePlan`;
+- `CodeChangePlanExecutionApprovalRecord.status="approved"`;
+- matching `codeChangePlanHash`;
+- no expired, rejected, consumed, pending, or mismatched approval;
+- no `delete_file`, forbidden paths, sensitive paths, unscoped target files, non-allowlisted commands, or high-risk commands.
+
+It produces `CodeChangePlanDryRunExecutionPlan` with `mode: "dry_run"` and `status: "planned"`.
+
+Dry-run is still not execution. It does not write files, run commands, run tests, call `CodeExecutor`, consume approval, or change approval status. A later stage must add an explicit execution runner if real application is desired.
+
 ## Output
 
 Both `code` and `test` nodes return `ExecutionResult`:

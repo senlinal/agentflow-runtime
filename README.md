@@ -125,6 +125,16 @@ Pending approval is not execution authorization. The hash binding prevents appro
 npm run demo:code-change-plan-execution-approval
 ```
 
+### Approved Execution Dry-run
+
+`code-change-plan-execution-dry-run` takes a `CodeChangePlan` plus an approved `CodeChangePlanExecutionApprovalRecord`, verifies the `codeChangePlanHash`, checks scope and command safety, and produces a dry-run execution plan.
+
+The dry-run still does not execute. It does not write files, run commands, run tests, call `CodeExecutor`, consume approval, or change approval status.
+
+```bash
+npm run demo:code-change-plan-execution-dry-run
+```
+
 Validate and inspect templates:
 
 ```bash

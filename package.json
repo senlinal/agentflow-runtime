@@ -13,6 +13,7 @@
     "demo:code-test-repair-review": "node --experimental-strip-types demo-code-test-repair-review.ts",
     "demo:approved-repair-materialize": "node --experimental-strip-types demo-approved-repair-materialize.ts",
     "demo:code-change-plan-execution-approval": "node --experimental-strip-types demo-code-change-plan-execution-approval.ts",
+    "demo:code-change-plan-execution-dry-run": "node --experimental-strip-types demo-code-change-plan-execution-dry-run.ts",
     "workflow": "node --experimental-strip-types cli/run-workflow.ts",
     "workflow:list": "node --experimental-strip-types cli/list-templates.ts",
     "workflow:validate": "node --experimental-strip-types cli/validate-template.ts",
