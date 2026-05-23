@@ -18,6 +18,10 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.equal(result.steps[0].workflow, "task-negotiation");
     assert.equal(result.steps[0].status, "ran");
     assert.equal(result.steps[0].enteredExecutor, false);
+    assert.equal(result.executedWorkflows.includes("task-negotiation"), true);
+    assert.ok(result.roleTimeline.some((event) => event.role === "TaskNegotiator"));
+    assert.ok(result.summaryPaths.some((path) => path.endsWith("summary.md")));
+    assert.ok(result.tracePaths.some((path) => path.endsWith("trace.json")));
     assert.equal(result.steps[1].workflow, "confirmed-scope-gate");
     assert.equal(result.steps[1].status, "blocked");
     assert.match(result.steps[1].reason, /ScopeConfirmationRecord/);
@@ -165,6 +169,7 @@ test("ProfileWorkflowRunner", async (t) => {
 
     assert.equal(later.finalStatus, "blocked");
     assert.equal(later.steps[0].workflow, "memory-autonomy-gate");
+    assert.equal(later.roleTimeline[0].role, "MemoryAutonomyGate");
     assert.equal(later.autonomyDecision?.decision, "ask_human");
     assert.equal(later.autonomyDecision?.mustAskHuman, true);
     assert.equal(later.steps.slice(1).every((step) => step.status === "skipped"), true);

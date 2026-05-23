@@ -50,12 +50,17 @@ describe("OpenCodeWorkflowToolService", () => {
 
   it("runs profile workflow with safe preflight and blocks before scope gate", async () => {
     const result = await new OpenCodeWorkflowToolService().runProfileWorkflow({
-      profileId: "rag-optimization",
+      profile: "rag-optimization",
       task: "继续 RAG 召回优化，分析上一轮实验结果。",
     });
 
     assert.equal(result.profileId, "rag-optimization");
     assert.equal(result.finalStatus, "blocked");
+    assert.ok(result.roleTimeline.length >= 2);
+    assert.equal(result.roleTimeline[0].role, "MemoryAutonomyGate");
+    assert.equal(result.executedWorkflows.includes("task-negotiation"), true);
+    assert.ok(result.summaryPaths.some((path) => path.endsWith("summary.md")));
+    assert.ok(result.tracePaths.some((path) => path.endsWith("trace.json")));
     assert.equal(result.steps[0].workflow, "task-negotiation");
     assert.equal(result.steps[0].enteredExecutor, false);
     assert.equal(result.steps[1].workflow, "confirmed-scope-gate");

@@ -67,5 +67,11 @@ for (const requiredText of ["profiles/current.json", "WORKER_POLICY", "AUTONOMY_
     process.exit(1);
   }
 }
+for (const requiredText of ["run_profile_workflow", "AgentFlow Role Timeline", "Do not call `todowrite`", "Do not call `list_files`"]) {
+  if (!workflowCommand.includes(requiredText)) {
+    console.error(`workflow.md does not include tool-first execution text: ${requiredText}`);
+    process.exit(1);
+  }
+}
 
 console.log(`OpenCode adapter files OK: ${requiredFiles.length}`);

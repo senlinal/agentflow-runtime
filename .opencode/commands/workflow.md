@@ -1,89 +1,113 @@
 # /workflow
 
-Use this command to run the repository's workflow template runner from opencode using the active workflow profile.
+Run AgentFlow Runtime through the active workflow profile. This command is an execution entrypoint, not a prompt template.
 
-## Usage
+## Hard Rules
 
-`/workflow <goal, current state, optional constraints>`
+- Do not create a Supervisor Research Plan.
+- Do not call `todowrite`.
+- Do not call `list_files`.
+- Do not scan the project before invoking AgentFlow.
+- Do not only restate these instructions.
+- Do not replace `WorkflowRuntime` or `ProfileWorkflowRunner` with opencode reasoning.
+- Do not run real LLM smoke tests or `npm run llm:smoke -- --execute`.
+- Do not touch `ai-daily/`.
 
-## Instructions
+## Tool-First Execution
 
-1. Read `AGENTS.md`.
-2. Read `profiles/current.json`, then load the active profile from `profiles/<activeProfile>.json`.
-3. Read the active profile's `policyFiles`.
-4. Read or summarize existing `memoryFiles`; if a memory file is missing, record a warning and continue.
-5. Read recent Project Memory when available using `npm run memory:summary -- --profile <activeProfile>` or `npm run memory:compact -- --profile <activeProfile>`. Use `npm run memory:autonomy -- --profile <activeProfile> --task "<task>"` or the profile runner's built-in autonomy decision to avoid repeating confirmed scope questions, failed routes, and rejected approaches.
-6. Convert the user's message into a structured TaskBrief:
-   - `goal`
-   - `currentState`
-   - `constraints`
-   - `resources`
-   - `budget`
-   - `successCriteria`
-   - `nonGoals`
-   - `rawUserInput`
-7. Default to the active profile's `defaultWorkflow`. Do not ask the user to repeat default constraints already present in `AGENTS.md`, policy files, memory files, project memory, or the active profile.
-8. Prefer the custom tool `run_profile_workflow` with `task` and optional `profile`. If the user is answering prior scope questions, call `run_profile_workflow` with `answer` and optional `sessionId`. Fall back to `run_workflow` only when the user explicitly names a template.
-9. Do not replace WorkflowRuntime with opencode reasoning. Planner, Executor, Verifier, GoalKeeper, and routing must remain controlled by the configured workflow and Runtime.
-10. Summarize the tool result:
-   - decision
-   - costLevel
-   - riskLevel
-   - enteredExecutor
-   - verification pass / score
-   - `summary.md` path
-   - `trace.json` path
-11. If execution did not enter Executor, explain the FeasibilityReport reason and recommended alternatives from the saved summary/context.
-12. Include relevant memory summary, especially active confirmed scope, tried routes, rejected routes, and next actions.
+1. Read `AGENTS.md` only as project policy context.
+2. Respect profile policy files such as `docs/WORKER_POLICY.md` and `docs/AUTONOMY_POLICY.md`; the runner handles profile memory, `memory:summary`, `memory:compact`, and `memory:autonomy` behavior.
+3. Call the custom tool `run_profile_workflow` first.
+4. Use this shape for a normal task. This runs safe profile preflight roles such as `MemoryAutonomyGate`, `TaskNegotiator`, and `ConfirmedScopeGate`, while keeping execution-capable workflows blocked:
 
-## Profile Routing
+```json
+{
+  "task": "<user task>",
+  "profile": "<optional profile>",
+  "dryRun": false,
+  "allowExecution": false
+}
+```
 
-- `rag-optimization`: run `task-negotiation` first. If human-confirmed scope is available, run `confirmed-scope-gate`, then proceed to feasibility. Do not modify production indexes, deploy, delete files, or call CodeExecutor from this profile by default.
-- `coding-safe-fix`: use the safe code-fix chain. Execution requires explicit approval and hash-bound CodeChangePlan execution.
-- `external-project-fix`: copy external projects into a temporary workspace and export a patch. Do not modify the source project directly.
+Use `"dryRun": true` only when the user explicitly asks for a preview without running even the safe preflight roles.
 
-If the user's task clearly does not match the active profile, recommend switching profile before running the workflow. Use:
+5. If the user is answering previous scope questions, call:
+
+```json
+{
+  "sessionId": "<sessionId if provided>",
+  "answer": "<user answer>",
+  "profile": "<optional profile>",
+  "dryRun": false,
+  "allowExecution": false
+}
+```
+
+6. If `run_profile_workflow` is not available, fall back to bash:
 
 ```bash
-npm run workflow:profiles
-npm run workflow:profile
-npm run workflow:profile:use -- --profile coding-safe-fix
+npm run workflow:run-profile -- --task "<user task>"
 ```
 
-The user only needs to provide goal, optional current state, and special constraints. Default rules come from `AGENTS.md`, `docs/WORKER_POLICY.md`, `docs/AUTONOMY_POLICY.md`, and the active profile.
+For a scope-answer resume fallback:
 
-## Scope Resume
-
-When `run_profile_workflow` returns `pending_scope_confirmation`, show the `sessionId` and clarification questions. On the user's next `/workflow` message, if they say they are answering the previous questions, pass the answer back to `run_profile_workflow` instead of starting over:
-
-```json
-{
-  "profileId": "rag-optimization",
-  "sessionId": "<sessionId>",
-  "answer": "..."
-}
+```bash
+npm run workflow:run-profile -- --sessionId "<sessionId>" --answer "<user answer>"
 ```
 
-The tool will create a `ScopeConfirmationRecord`, run `confirmed-scope-gate`, and continue only within the profile's safe chain.
+7. Use `run_workflow` only when the user explicitly names a workflow template.
 
-After scope resume, the runner writes Project Memory records for confirmed scope, human decisions, tried routes, blocked routes, and next actions. Later `/workflow` calls should use those memory records instead of asking the user to repeat confirmed boundaries.
+## Active Profile Behavior
 
-If compacted memory reports a high-severity conflict, blocking open question, or rejected route that would be repeated, stop and ask the user. Do not treat those memory findings as non-blocking warnings.
+- The runner reads `profiles/current.json`.
+- The active profile decides the default workflow chain.
+- `rag-optimization` starts with `task-negotiation`, then `confirmed-scope-gate`, then feasibility followup when scope is confirmed.
+- `coding-safe-fix` and `external-project-fix` are execution-capable profiles and must remain blocked unless explicit execution approval is part of the workflow and `allowExecution=true` is deliberately provided.
+- If the user task does not match the active profile, recommend a profile switch instead of forcing the task through the wrong profile.
 
-## Default Tool Call Shape
+## Required User-Facing Output
 
-```json
-{
-  "template": "<active profile defaultWorkflow>",
-  "taskBrief": {
-    "goal": "...",
-    "currentState": "...",
-    "constraints": [],
-    "resources": [],
-    "budget": "not specified",
-    "successCriteria": [],
-    "nonGoals": [],
-    "rawUserInput": "..."
-  }
-}
+After the tool or fallback command returns, show a concise runtime result. Do not paste raw JSON unless the user asks.
+
+Include:
+
+- `profile`
+- `finalStatus`
+- `autonomyDecision`
+- `autonomyReason`
+- `executedWorkflows`
+- `summaryPaths`
+- `tracePaths`
+- `sessionId` and `pendingQuestions` when scope confirmation is pending
+- `nextActions`
+
+Then show:
+
+```text
+AgentFlow Role Timeline
 ```
+
+For each `roleTimeline` event, print one line:
+
+```text
+[status] workflow :: role/nodeId -> nextNode
+  summary
+```
+
+If the fallback CLI is used, parse the `AgentFlow Role Timeline:` section from `npm run workflow:run-profile` output and show it directly.
+
+## Memory And Autonomy
+
+The profile runner loads recent Project Memory and compacted memory automatically. If the result contains an autonomy decision of `ask_human`, `blocked`, or `stop`, do not continue manually. Show the blocking reason and the questions or next allowed actions.
+
+If compacted memory reports a high-severity conflict, blocking open question, or rejected route that would be repeated, stop and ask the user. Do not treat these findings as warnings.
+
+## Minimal User Input
+
+The user only needs to provide:
+
+- goal;
+- current state, optional;
+- special constraints, optional.
+
+Standing rules come from `AGENTS.md`, policy files, profile config, and project memory.

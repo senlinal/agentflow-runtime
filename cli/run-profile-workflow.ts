@@ -22,6 +22,9 @@ if (args.format === "json") {
   console.log(`dryRun: ${result.dryRun}`);
   console.log(`allowExecution: ${result.allowExecution}`);
   console.log(`workflowChain: ${result.workflowChain.join(" -> ")}`);
+  console.log(`executedWorkflows: ${result.executedWorkflows.join(" -> ") || "none"}`);
+  console.log(`summaryPaths: ${result.summaryPaths.join(" | ") || "none"}`);
+  console.log(`tracePaths: ${result.tracePaths.join(" | ") || "none"}`);
   console.log(`warnings: ${result.warnings.join("; ") || "none"}`);
   if (result.autonomyDecision) {
     console.log(`autonomyDecision: ${result.autonomyDecision.decision}`);
@@ -46,6 +49,13 @@ if (args.format === "json") {
     if (step.summaryPath) console.log(`  summaryPath: ${step.summaryPath}`);
     if (step.tracePath) console.log(`  tracePath: ${step.tracePath}`);
     if (typeof step.enteredExecutor === "boolean") console.log(`  enteredExecutor: ${step.enteredExecutor}`);
+  }
+  console.log("AgentFlow Role Timeline:");
+  for (const event of result.roleTimeline) {
+    console.log(`  [${event.status}] ${event.workflow} :: ${event.role}/${event.nodeId} -> ${event.nextNode ?? "n/a"}`);
+    console.log(`    ${event.summary}`);
+    if (event.summaryPath) console.log(`    summaryPath: ${event.summaryPath}`);
+    if (event.tracePath) console.log(`    tracePath: ${event.tracePath}`);
   }
   console.log(`nextActions: ${result.nextActions.join(" | ")}`);
 }
