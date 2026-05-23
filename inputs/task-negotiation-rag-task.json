@@ -1,0 +1,29 @@
+{
+  "taskId": "task_negotiation_rag_001",
+  "goal": "优化当前 RAG 检索效果，让问答结果更准确，但先不要改代码。",
+  "currentState": "目前只知道用户反馈答案不稳定，尚未明确是 embedding、召回、rerank、chunking 还是 prompt 的问题。",
+  "constraints": [
+    "不要接真实 LLM",
+    "不要执行代码修改",
+    "不要运行外部项目执行链路",
+    "先确认目标模块和评估标准"
+  ],
+  "resources": [
+    "现有 workflow runtime",
+    "TaskBrief 输入",
+    "MockLLMClient"
+  ],
+  "budget": "low",
+  "successCriteria": [
+    "识别 RAG 优化任务类型",
+    "提出需要用户确认的问题",
+    "明确 allowedActions 和 blockedActions",
+    "不要进入 CodeExecutor"
+  ],
+  "nonGoals": [
+    "不修改文件",
+    "不运行测试",
+    "不调用真实模型"
+  ],
+  "rawUserInput": "优化 RAG 效果，但先别动代码，先问清楚范围。"
+}

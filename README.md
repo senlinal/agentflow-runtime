@@ -79,6 +79,7 @@ Templates live in `workflows/`.
 Important examples:
 
 - `research-feasibility-execute-verify`: Researcher -> FeasibilityEvaluator -> execution flow only if feasible.
+- `task-negotiation`: TaskNegotiator -> end; clarifies goal, target module, constraints, and human confirmation needs before feasibility or planning.
 - `abcde-basic`: Planner -> Debater -> PlannerRevision -> Executor -> Verifier -> GoalKeeper loop.
 - `abcde-basic-llm`: opt-in LLM node version. It is not used by default.
 - `code-test-verify`: controlled CodeExecutor -> TestRunner -> deterministic Verifier.
@@ -98,6 +99,16 @@ npm run workflow -- --template code-test-verify --input inputs/feasible-task.jso
 `code-test-verify` uses a `type: "verify"` node. Its deterministic verifier checks code execution status, configured test results, blocked operations, changed/deleted files, diff limits, unsafe paths, and checkpoint evidence before marking the workflow as passed.
 
 When verification fails, the template now routes to `repairPlanBuilder -> humanApprovalGate -> end`. That branch creates a scoped repair plan and a pending human approval request only; it does not automatically rerun `CodeExecutor`.
+
+### Task Negotiation
+
+`task-negotiation` is a pre-flight workflow for complex or ambiguous requests. It produces a `TaskNegotiationResult` with detected task type, target module, ambiguities, clarification questions, proposed allowed/forbidden scope, suggested task breakdown, and a recommended next step.
+
+```bash
+npm run demo:task-negotiation
+```
+
+The negotiator does not plan implementation, write files, run tests, call `CodeExecutor`, or run real LLMs. If scope or module boundaries are unclear it returns `recommendedNextStep: "ask_human"` or `split_task`, so the human can confirm the boundary before feasibility analysis or execution.
 
 ### Scoped Repair Plans
 

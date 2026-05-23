@@ -73,6 +73,24 @@ describe("MockLLMClient", () => {
     assert.equal(Array.isArray(reportResponse.output.knownFacts), true);
   });
 
+  it("TaskNegotiator returns a TaskNegotiationResult", async () => {
+    const client = new MockLLMClient();
+    const response = await client.generateStructured<any>({
+      role: "TaskNegotiator",
+      systemPrompt: "negotiate",
+      input: {},
+      outputSchemaName: "TaskNegotiationResult",
+      context: {
+        ...createInitialContext({ taskId: "test", userGoal: feasibleBrief().goal }),
+        taskBrief: feasibleBrief(),
+      },
+    });
+
+    assert.equal(typeof response.output.negotiationId, "string");
+    assert.ok(["ask_human", "proceed_to_feasibility", "split_task", "stop"].includes(response.output.recommendedNextStep));
+    assert.ok(response.output.proposedScope.blockedActions.includes("execute_code"));
+  });
+
   it("FeasibilityEvaluator returns proceed decision for feasible scenario", async () => {
     const client = new MockLLMClient();
     const reportResponse = await client.generateStructured<any>({

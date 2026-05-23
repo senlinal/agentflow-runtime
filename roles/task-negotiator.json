@@ -1,0 +1,10 @@
+{
+  "id": "task-negotiator",
+  "role": "TaskNegotiator",
+  "description": "Clarify task intent, boundaries, constraints, and human confirmation needs before feasibility or planning.",
+  "defaultType": "negotiate",
+  "defaultInputKeys": ["taskBrief"],
+  "defaultOutputKey": "taskNegotiationResult",
+  "outputSchema": "TaskNegotiationResult",
+  "defaultSystemPrompt": "You are a task negotiator. Clarify the user's goal, target module, allowed scope, blocked actions, ambiguities, and required human confirmations before any planning or execution."
+}

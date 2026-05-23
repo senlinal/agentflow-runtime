@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { isSupportedOutputSchema } from "./OutputSchemaRegistry.ts";
 import type { RoleDefinition } from "./types.ts";
 
-const ROLE_TYPES = ["mock", "llm", "code", "test", "verify", "repair", "approval", "materialize", "executionApproval", "executionDryRun", "execution"];
+const ROLE_TYPES = ["mock", "llm", "negotiate", "code", "test", "verify", "repair", "approval", "materialize", "executionApproval", "executionDryRun", "execution"];
 
 export class RoleCatalog {
   private rolesCache: RoleDefinition[] | null = null;

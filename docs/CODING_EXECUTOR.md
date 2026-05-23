@@ -2,6 +2,18 @@
 
 Phase 16 adds the first controlled engineering execution layer.
 
+## Task Negotiation Before Execution
+
+For broad or ambiguous engineering requests, run the pre-flight negotiation workflow before feasibility, planning, code execution, or external project import:
+
+```bash
+npm run demo:task-negotiation
+```
+
+`TaskNegotiator` outputs `TaskNegotiationResult`: detected task type, target module, ambiguity, clarification questions, proposed allowed/forbidden scope, allowed actions, blocked actions, and a recommended next step such as `ask_human`, `split_task`, `proceed_to_feasibility`, or `stop`.
+
+This node is non-executing. It does not call `CodeExecutor`, does not write files, does not run tests, does not call real LLM providers, and does not route directly to implementation. It exists to confirm human scope before the controlled execution layers below are used.
+
 ## Scope
 
 The runtime now supports two additional workflow node types:

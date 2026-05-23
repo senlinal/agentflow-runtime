@@ -50,6 +50,14 @@ npm run workflow:validate -- --template abcde-basic
 
 ## 6. Run Controlled Code-Test-Verify
 
+For ambiguous or broad work, run task negotiation before feasibility or execution:
+
+```bash
+npm run demo:task-negotiation
+```
+
+This generates a `TaskNegotiationResult` with target module, ambiguity, clarification questions, proposed scope, blocked actions, and a recommended next step. It does not call `CodeExecutor`, does not modify files, and does not run tests.
+
 ```bash
 npm run workflow -- --template code-test-verify --input inputs/feasible-task.json
 ```

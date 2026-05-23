@@ -24,6 +24,7 @@ const requiredFiles = [
   "core/patch/PatchExportStore.ts",
   "core/patch/PatchExportFormatter.ts",
   "core/patch/PatchVerifier.ts",
+  "core/negotiation/TaskNegotiatorExecutor.ts",
   "cli/execution-list.ts",
   "cli/execution-show.ts",
   "cli/execution-rollback-guide.ts",
@@ -32,11 +33,13 @@ const requiredFiles = [
   "cli/patch-show.ts",
   "cli/patch-apply-guide.ts",
   "cli/patch-verify.ts",
+  "demo-task-negotiation.ts",
   "demo-e2e-real-project.ts",
   "demo-external-project-import.ts",
   "docs/REAL_PROJECT_E2E.md",
   "docs/EXTERNAL_PROJECT_IMPORT.md",
   "inputs/e2e-real-project-fix-task.json",
+  "inputs/task-negotiation-rag-task.json",
   "tests/fixtures/e2e-real-project/package.json",
   "tests/fixtures/e2e-real-project/src/calculator.ts",
   "tests/fixtures/e2e-real-project/src/string-utils.ts",
@@ -45,6 +48,7 @@ const requiredFiles = [
   "workflows/research-feasibility-execute-verify.json",
   "workflows/abcde-basic.json",
   "workflows/abcde-basic.llm.json",
+  "workflows/task-negotiation.json",
 ];
 
 const requiredGitignoreEntries = [
@@ -188,6 +192,9 @@ function isClearlyFakeSecret(token: string): boolean {
     normalized.includes("fake") ||
     normalized.includes("secret") ||
     normalized.includes("replace") ||
+    normalized.includes("negotiate") ||
+    normalized.includes("negotiator") ||
+    normalized.includes("negotiation") ||
     normalized.includes("trace") ||
     normalized.includes("your")
   );

@@ -2,6 +2,7 @@ import type { OutputSchemaName } from "./types.ts";
 
 export const OUTPUT_SCHEMA_NAMES: OutputSchemaName[] = [
   "TaskBrief",
+  "TaskNegotiationResult",
   "ResearchReport",
   "FeasibilityReport",
   "Plan",
@@ -39,6 +40,36 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
         successCriteria: ["string"],
         nonGoals: ["string"],
         rawUserInput: "string optional",
+      };
+    case "TaskNegotiationResult":
+      return {
+        negotiationId: "string",
+        understoodGoal: "string",
+        detectedTaskType: "rag_optimization | coding_fix | refactor | documentation | research | unknown",
+        targetModule: "string optional",
+        complexity: "low | medium | high | unknown",
+        ambiguities: ["string"],
+        clarificationQuestions: ["string"],
+        proposedScope: {
+          allowedModules: ["string"],
+          forbiddenModules: ["string"],
+          allowedFiles: ["string optional"],
+          forbiddenFiles: ["string optional"],
+          allowedActions: ["string"],
+          blockedActions: ["string"],
+          qualityConstraints: ["string"],
+        },
+        suggestedTaskBreakdown: [{
+          id: "string",
+          title: "string",
+          goal: "string",
+          expectedOutput: "string",
+          riskLevel: "low | medium | high",
+        }],
+        recommendedNextStep: "ask_human | proceed_to_feasibility | split_task | stop",
+        readyToExecute: "boolean",
+        reason: "string",
+        createdAt: "string",
       };
     case "ResearchReport":
       return {

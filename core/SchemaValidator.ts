@@ -15,6 +15,7 @@ import type {
   ScopedRepairPlan,
   SmokeTestResult,
   TaskBrief,
+  TaskNegotiationResult,
   VerificationReport,
   HumanApprovalRequest,
 } from "./types.ts";
@@ -31,6 +32,8 @@ export class SchemaValidator {
     switch (schemaName) {
       case "TaskBrief":
         return validateTaskBrief(output);
+      case "TaskNegotiationResult":
+        return validateTaskNegotiationResult(output);
       case "ResearchReport":
         return validateResearchReport(output);
       case "FeasibilityReport":
@@ -71,6 +74,46 @@ export class SchemaValidator {
         throw new Error(`Unsupported output schema: ${String(schemaName)}`);
     }
   }
+}
+
+function validateTaskNegotiationResult(output: unknown): TaskNegotiationResult {
+  const record = requireObject(output, "TaskNegotiationResult");
+  requireString(record, "negotiationId", "TaskNegotiationResult");
+  requireString(record, "understoodGoal", "TaskNegotiationResult");
+  requireEnum(
+    record,
+    "detectedTaskType",
+    ["rag_optimization", "coding_fix", "refactor", "documentation", "research", "unknown"],
+    "TaskNegotiationResult",
+  );
+  if ("targetModule" in record && typeof record.targetModule !== "string") {
+    throw new Error("TaskNegotiationResult.targetModule must be a string when provided.");
+  }
+  requireEnum(record, "complexity", ["low", "medium", "high", "unknown"], "TaskNegotiationResult");
+  requireArray(record, "ambiguities", "TaskNegotiationResult");
+  requireArray(record, "clarificationQuestions", "TaskNegotiationResult");
+  const scope = requireObject(record.proposedScope, "TaskNegotiationResult.proposedScope");
+  requireArray(scope, "allowedModules", "TaskNegotiationResult.proposedScope");
+  requireArray(scope, "forbiddenModules", "TaskNegotiationResult.proposedScope");
+  if ("allowedFiles" in scope) requireArray(scope, "allowedFiles", "TaskNegotiationResult.proposedScope");
+  if ("forbiddenFiles" in scope) requireArray(scope, "forbiddenFiles", "TaskNegotiationResult.proposedScope");
+  requireArray(scope, "allowedActions", "TaskNegotiationResult.proposedScope");
+  requireArray(scope, "blockedActions", "TaskNegotiationResult.proposedScope");
+  requireArray(scope, "qualityConstraints", "TaskNegotiationResult.proposedScope");
+  requireArray(record, "suggestedTaskBreakdown", "TaskNegotiationResult");
+  record.suggestedTaskBreakdown.forEach((step, index) => {
+    const item = requireObject(step, `TaskNegotiationResult.suggestedTaskBreakdown[${index}]`);
+    requireString(item, "id", `TaskNegotiationResult.suggestedTaskBreakdown[${index}]`);
+    requireString(item, "title", `TaskNegotiationResult.suggestedTaskBreakdown[${index}]`);
+    requireString(item, "goal", `TaskNegotiationResult.suggestedTaskBreakdown[${index}]`);
+    requireString(item, "expectedOutput", `TaskNegotiationResult.suggestedTaskBreakdown[${index}]`);
+    requireEnum(item, "riskLevel", ["low", "medium", "high"], `TaskNegotiationResult.suggestedTaskBreakdown[${index}]`);
+  });
+  requireEnum(record, "recommendedNextStep", ["ask_human", "proceed_to_feasibility", "split_task", "stop"], "TaskNegotiationResult");
+  requireBoolean(record, "readyToExecute", "TaskNegotiationResult");
+  requireString(record, "reason", "TaskNegotiationResult");
+  requireString(record, "createdAt", "TaskNegotiationResult");
+  return record as TaskNegotiationResult;
 }
 
 function validateTaskBrief(output: unknown): TaskBrief {

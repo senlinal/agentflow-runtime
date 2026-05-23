@@ -1,5 +1,6 @@
 export type AgentRole =
   | "TaskIntake"
+  | "TaskNegotiator"
   | "Researcher"
   | "FeasibilityEvaluator"
   | "CodeExecutor"
@@ -24,6 +25,7 @@ export type RetryPolicy = {
 
 export type OutputSchemaName =
   | "TaskBrief"
+  | "TaskNegotiationResult"
   | "ResearchReport"
   | "FeasibilityReport"
   | "Plan"
@@ -46,6 +48,7 @@ export type OutputSchemaName =
 export type NodeType =
   | "mock"
   | "llm"
+  | "negotiate"
   | "code"
   | "test"
   | "verify"
@@ -99,6 +102,42 @@ export type TaskBrief = {
   successCriteria: string[];
   nonGoals: string[];
   rawUserInput?: string;
+};
+
+export type TaskNegotiationResult = {
+  negotiationId: string;
+  understoodGoal: string;
+  detectedTaskType:
+    | "rag_optimization"
+    | "coding_fix"
+    | "refactor"
+    | "documentation"
+    | "research"
+    | "unknown";
+  targetModule?: string;
+  complexity: "low" | "medium" | "high" | "unknown";
+  ambiguities: string[];
+  clarificationQuestions: string[];
+  proposedScope: {
+    allowedModules: string[];
+    forbiddenModules: string[];
+    allowedFiles?: string[];
+    forbiddenFiles?: string[];
+    allowedActions: string[];
+    blockedActions: string[];
+    qualityConstraints: string[];
+  };
+  suggestedTaskBreakdown: {
+    id: string;
+    title: string;
+    goal: string;
+    expectedOutput: string;
+    riskLevel: "low" | "medium" | "high";
+  }[];
+  recommendedNextStep: "ask_human" | "proceed_to_feasibility" | "split_task" | "stop";
+  readyToExecute: boolean;
+  reason: string;
+  createdAt: string;
 };
 
 export type ResearchReport = {
@@ -420,6 +459,7 @@ export type WorkflowTrace = {
 export type WorkflowContext = TaskSpec & {
   codingTaskContext?: CodingTaskContext | null;
   taskBrief: TaskBrief | null;
+  taskNegotiationResult?: TaskNegotiationResult | null;
   researchReport: ResearchReport | null;
   feasibilityReport: FeasibilityReport | null;
   plan: Plan | null;

@@ -13,6 +13,7 @@ export function createInitialContext(input: {
     successCriteria: input.successCriteria ?? [],
     codingTaskContext: null,
     taskBrief: null,
+    taskNegotiationResult: null,
     researchReport: null,
     feasibilityReport: null,
     plan: null,

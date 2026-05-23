@@ -65,6 +65,27 @@ describe("SchemaValidator", () => {
     assert.deepEqual(SchemaValidator.validate("TaskBrief", output), output);
   });
 
+  it("passes for a valid TaskNegotiationResult", () => {
+    const output = validTaskNegotiationResult();
+    assert.deepEqual(SchemaValidator.validate("TaskNegotiationResult", output), output);
+  });
+
+  it("fails when TaskNegotiationResult recommendedNextStep is invalid", () => {
+    assert.throws(
+      () => SchemaValidator.validate("TaskNegotiationResult", { ...validTaskNegotiationResult(), recommendedNextStep: "execute_now" }),
+      /TaskNegotiationResult\.recommendedNextStep must be one of/,
+    );
+  });
+
+  it("fails when TaskNegotiationResult proposedScope is missing blockedActions", () => {
+    const output = validTaskNegotiationResult() as any;
+    delete output.proposedScope.blockedActions;
+    assert.throws(
+      () => SchemaValidator.validate("TaskNegotiationResult", output),
+      /TaskNegotiationResult\.proposedScope\.blockedActions must be an array/,
+    );
+  });
+
   it("fails when TaskBrief is missing goal", () => {
     const { goal: _goal, ...output } = validTaskBrief();
     assert.throws(() => SchemaValidator.validate("TaskBrief", output), /TaskBrief\.goal must be a string/);
@@ -530,6 +551,38 @@ function validFeasibilityReport() {
     recommendedScope: "scope",
     alternativePlans: [],
     reason: "reason",
+  };
+}
+
+function validTaskNegotiationResult() {
+  return {
+    negotiationId: "neg_1",
+    understoodGoal: "clarify RAG scope",
+    detectedTaskType: "rag_optimization",
+    targetModule: "rag",
+    complexity: "medium",
+    ambiguities: ["Target metric is unclear."],
+    clarificationQuestions: ["Which retrieval metric should be optimized?"],
+    proposedScope: {
+      allowedModules: ["rag"],
+      forbiddenModules: ["billing"],
+      allowedFiles: ["src/rag/retriever.ts"],
+      forbiddenFiles: [".env"],
+      allowedActions: ["inspect_project"],
+      blockedActions: ["execute_code", "modify_files", "delete_files"],
+      qualityConstraints: ["Confirm scope before planning."],
+    },
+    suggestedTaskBreakdown: [{
+      id: "scope_confirmation",
+      title: "Confirm RAG scope",
+      goal: "Confirm module and metric.",
+      expectedOutput: "Confirmed scope.",
+      riskLevel: "medium",
+    }],
+    recommendedNextStep: "ask_human",
+    readyToExecute: false,
+    reason: "Need scope confirmation.",
+    createdAt: "2026-05-23T00:00:00.000Z",
   };
 }
 

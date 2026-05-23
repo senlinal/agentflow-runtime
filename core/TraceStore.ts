@@ -85,6 +85,26 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
         ].join("\n")
       : "No TaskBrief.",
     "",
+    "## TaskNegotiationResult",
+    "",
+    context.taskNegotiationResult
+      ? [
+          `- negotiationId: ${context.taskNegotiationResult.negotiationId}`,
+          `- detectedTaskType: ${context.taskNegotiationResult.detectedTaskType}`,
+          `- targetModule: ${context.taskNegotiationResult.targetModule ?? "n/a"}`,
+          `- complexity: ${context.taskNegotiationResult.complexity}`,
+          `- recommendedNextStep: ${context.taskNegotiationResult.recommendedNextStep}`,
+          `- readyToExecute: ${context.taskNegotiationResult.readyToExecute}`,
+          `- ambiguities: ${context.taskNegotiationResult.ambiguities.join("; ") || "none"}`,
+          `- clarificationQuestions: ${context.taskNegotiationResult.clarificationQuestions.join("; ") || "none"}`,
+          `- allowedModules: ${context.taskNegotiationResult.proposedScope.allowedModules.join("; ") || "none"}`,
+          `- forbiddenModules: ${context.taskNegotiationResult.proposedScope.forbiddenModules.join("; ") || "none"}`,
+          `- blockedActions: ${context.taskNegotiationResult.proposedScope.blockedActions.join("; ")}`,
+          `- reason: ${context.taskNegotiationResult.reason}`,
+          "Human scope confirmation is required before any execution when recommendedNextStep is ask_human, split_task, or stop.",
+        ].join("\n")
+      : "No TaskNegotiationResult.",
+    "",
     "## ResearchReport",
     "",
     context.researchReport

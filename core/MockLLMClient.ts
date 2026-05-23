@@ -8,8 +8,10 @@ import type {
   ResearchReport,
   RevisedPlan,
   SmokeTestResult,
+  TaskNegotiationResult,
   VerificationReport,
 } from "./types.ts";
+import { negotiateTask } from "./negotiation/TaskNegotiatorExecutor.ts";
 import { ExecutionVerifier } from "./verification/ExecutionVerifier.ts";
 
 export class MockLLMClient implements LLMClient {
@@ -28,6 +30,9 @@ export class MockLLMClient implements LLMClient {
     }
 
     switch (request.role) {
+      case "TaskNegotiator":
+        output = this.generateTaskNegotiationResult(request);
+        break;
       case "Planner":
         output = this.generatePlan(request);
         break;
@@ -62,6 +67,13 @@ export class MockLLMClient implements LLMClient {
       model: "mock-structured",
       attempts: 1,
     };
+  }
+
+  private generateTaskNegotiationResult(request: LLMStructuredRequest): TaskNegotiationResult {
+    const context = requiredContext(request);
+    const brief = context.taskBrief;
+    if (!brief) throw new Error("TaskNegotiator requires context.taskBrief.");
+    return negotiateTask(brief);
   }
 
   private generateResearchReport(request: LLMStructuredRequest): ResearchReport {

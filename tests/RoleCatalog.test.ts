@@ -21,6 +21,13 @@ describe("RoleCatalog", () => {
     assert.equal(role.id, "planner");
   });
 
+  it("gets TaskNegotiator by id and supports negotiate defaultType", async () => {
+    const role = await new RoleCatalog().getRoleById("task-negotiator");
+    assert.equal(role.role, "TaskNegotiator");
+    assert.equal(role.defaultType, "negotiate");
+    assert.equal(role.outputSchema, "TaskNegotiationResult");
+  });
+
   it("ignores non-json files", async () => {
     const dir = await mkdtemp(join(tmpdir(), "role-catalog-"));
     await writeFile(join(dir, "planner.json"), JSON.stringify(validRole()), "utf8");
@@ -52,6 +59,7 @@ describe("RoleCatalog", () => {
     assert.equal(catalog.validateRole({ ...validRole(), defaultType: "code" }, "role").defaultType, "code");
     assert.equal(catalog.validateRole({ ...validRole(), defaultType: "test" }, "role").defaultType, "test");
     assert.equal(catalog.validateRole({ ...validRole(), defaultType: "verify" }, "role").defaultType, "verify");
+    assert.equal(catalog.validateRole({ ...validRole(), defaultType: "negotiate" }, "role").defaultType, "negotiate");
   });
 });
 

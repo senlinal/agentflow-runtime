@@ -3,7 +3,7 @@ import { isSupportedOutputSchema } from "./OutputSchemaRegistry.ts";
 import type { AgentNode, WorkflowGraphConfig } from "./types.ts";
 
 const CONDITION_TYPES = ["always", "equals", "exists", "notExists", "in"];
-const NODE_TYPES = ["mock", "llm", "code", "test", "verify", "repair", "approval", "materialize", "executionApproval", "executionDryRun", "execution"];
+const NODE_TYPES = ["mock", "llm", "negotiate", "code", "test", "verify", "repair", "approval", "materialize", "executionApproval", "executionDryRun", "execution"];
 
 export class WorkflowTemplateValidator {
   static validate(raw: unknown): WorkflowGraphConfig {

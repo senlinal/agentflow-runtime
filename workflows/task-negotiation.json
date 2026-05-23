@@ -1,0 +1,40 @@
+{
+  "workflow": {
+    "name": "task-negotiation",
+    "version": "1.0.0",
+    "description": "Clarify task scope, module boundaries, constraints, and human confirmation needs before feasibility or planning.",
+    "start": "taskNegotiator",
+    "maxIterations": 1
+  },
+  "inputSchema": "TaskBrief",
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": ["read", "inspect", "summarize", "draft_scope"],
+      "requireConfirmation": ["planning_after_ambiguous_scope"],
+      "forbiddenWithoutExplicitApproval": ["execute_code", "modify_files", "delete_files", "run_external_llm"]
+    },
+    "costPolicy": {
+      "maxCostLevel": "medium",
+      "stopWhen": ["scope too broad", "target module unclear", "success criteria missing"],
+      "preferredDecisionsWhenOverBudget": ["ask_human", "revise_goal", "stop"]
+    },
+    "qualityPolicy": {
+      "principles": ["scope before planning", "human confirmation before execution", "preserve non-goals"],
+      "requiredChecks": ["target module", "allowed actions", "blocked actions", "clarification questions"],
+      "forbiddenShortcuts": ["execute before scope confirmation", "ignore non-goals", "invent missing scope"]
+    }
+  },
+  "nodes": [
+    {
+      "id": "taskNegotiator",
+      "rolePreset": "task-negotiator"
+    }
+  ],
+  "edges": [
+    {
+      "from": "taskNegotiator",
+      "to": "end",
+      "condition": { "type": "always" }
+    }
+  ]
+}

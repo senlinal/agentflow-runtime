@@ -43,6 +43,7 @@ Report privately through the repository owner's preferred private channel. Inclu
 - External project import copies user-provided projects into a temporary workspace before execution. It rejects the current repository root by default, excludes local/runtime artifacts, does not write changes back to the source project, and stores raw patch output under `.agentflow/external-runs/`.
 - Patch exports are stored under `.agentflow/patch-exports/` with metadata, hash, and a manual apply guide. Patch review commands are read-only and must not run `git apply`, `git reset`, `git checkout`, or write changes back to the source project.
 - `patch:verify` is a read-only safety check. It verifies patch hash integrity, metadata consistency, file scope, deleted files, sensitive paths, binary patches, and obvious dangerous command content. It still does not apply patches, run tests, or modify the source project.
+- `task-negotiation` is a pre-execution scope confirmation step. It can ask for human clarification, propose allowed and forbidden scope, and block actions such as code execution, file modification, file deletion, real LLM calls, and source-project patch application before feasibility or planning begins.
 
 ## High-Risk Areas
 
