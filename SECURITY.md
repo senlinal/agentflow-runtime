@@ -27,6 +27,9 @@ Report privately through the repository owner's preferred private channel. Inclu
 - The controlled code-test verifier fails unsafe execution instead of treating it as success. Unsafe file touches, unexpected files, deleted files, blocked operations, missing checkpoints, and failed tests produce `VerificationReport.pass=false`.
 - A failed code-test verification can create a scoped repair plan and pending approval request, but it does not execute repair operations or retry code execution automatically.
 - Scoped repair plans do not support `delete_file` operations. High-risk repair evidence remains pending for human review and cannot auto-approve.
+- Approval is not execution. An approved repair can only be materialized into a reviewable plan unless a later stage adds a separate explicit execution approval.
+- Approved scoped repair plans can be materialized into `CodeChangePlan`, but materialization is not execution. It does not write files, run commands, run tests, or call `CodeExecutor`.
+- `CodeChangePlan` keeps `requiresExplicitExecutionApproval=true` and rejects pending, rejected, expired, consumed, mismatched, scope-expanding, secret-touching, delete, and high-risk command operations.
 
 ## High-Risk Areas
 

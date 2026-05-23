@@ -11,6 +11,7 @@
     "demo:infeasible": "node --experimental-strip-types demo-feasibility.ts infeasible",
     "demo:code-test-verify": "node --experimental-strip-types cli/run-workflow.ts --template code-test-verify --input inputs/feasible-task.json",
     "demo:code-test-repair-review": "node --experimental-strip-types demo-code-test-repair-review.ts",
+    "demo:approved-repair-materialize": "node --experimental-strip-types demo-approved-repair-materialize.ts",
     "workflow": "node --experimental-strip-types cli/run-workflow.ts",
     "workflow:list": "node --experimental-strip-types cli/list-templates.ts",
     "workflow:validate": "node --experimental-strip-types cli/validate-template.ts",

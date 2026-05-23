@@ -209,6 +209,58 @@ describe("SchemaValidator", () => {
     );
   });
 
+  it("passes for a valid CodeChangePlan", () => {
+    const output = {
+      planId: "code_change_1",
+      repairPlanId: "repair_1",
+      approvalId: "approval_1",
+      status: "materialized",
+      summary: "safe plan",
+      operations: [{
+        id: "op_1",
+        type: "modify_file",
+        targetFile: "src/generated.txt",
+        description: "Prepare a patch.",
+        reason: "Fix failed test.",
+        safetyConstraints: ["No delete."],
+      }],
+      targetFiles: ["src/generated.txt"],
+      forbiddenFiles: [".env"],
+      testCommands: ["npm run test"],
+      riskLevel: "low",
+      safetyChecks: ["approval status is approved"],
+      blockedOperations: [],
+      executable: false,
+      requiresExplicitExecutionApproval: true,
+      createdAt: "2026-05-23T00:00:00.000Z",
+    };
+
+    assert.deepEqual(SchemaValidator.validate("CodeChangePlan", output), output);
+  });
+
+  it("fails when CodeChangePlan is executable", () => {
+    assert.throws(
+      () => SchemaValidator.validate("CodeChangePlan", {
+        planId: "code_change_1",
+        repairPlanId: "repair_1",
+        approvalId: "approval_1",
+        status: "materialized",
+        summary: "unsafe plan",
+        operations: [],
+        targetFiles: [],
+        forbiddenFiles: [],
+        testCommands: [],
+        riskLevel: "low",
+        safetyChecks: [],
+        blockedOperations: [],
+        executable: true,
+        requiresExplicitExecutionApproval: true,
+        createdAt: "2026-05-23T00:00:00.000Z",
+      }),
+      /CodeChangePlan\.executable must be false/,
+    );
+  });
+
   it("fails when SmokeTestResult.ok is not boolean", () => {
     assert.throws(
       () =>

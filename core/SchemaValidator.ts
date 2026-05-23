@@ -3,6 +3,7 @@ import type {
   Critique,
   ExecutionResult,
   FeasibilityReport,
+  CodeChangePlan,
   OutputSchemaName,
   Plan,
   ResearchReport,
@@ -48,6 +49,8 @@ export class SchemaValidator {
         return validateScopedRepairPlan(output);
       case "HumanApprovalRequest":
         return validateHumanApprovalRequest(output);
+      case "CodeChangePlan":
+        return validateCodeChangePlan(output);
       case "CorrectionHint":
         return validateCorrectionHint(output);
       case "SmokeTestResult":
@@ -209,6 +212,36 @@ function validateHumanApprovalRequest(output: unknown): HumanApprovalRequest {
   requireArray(record, "approvalInstructions", "HumanApprovalRequest");
   requireString(record, "createdAt", "HumanApprovalRequest");
   return record as HumanApprovalRequest;
+}
+
+function validateCodeChangePlan(output: unknown): CodeChangePlan {
+  const record = requireObject(output, "CodeChangePlan");
+  requireString(record, "planId", "CodeChangePlan");
+  requireString(record, "repairPlanId", "CodeChangePlan");
+  requireString(record, "approvalId", "CodeChangePlan");
+  requireEnum(record, "status", ["materialized"], "CodeChangePlan");
+  requireString(record, "summary", "CodeChangePlan");
+  requireArray(record, "operations", "CodeChangePlan");
+  requireArray(record, "targetFiles", "CodeChangePlan");
+  requireArray(record, "forbiddenFiles", "CodeChangePlan");
+  requireArray(record, "testCommands", "CodeChangePlan");
+  requireEnum(record, "riskLevel", ["low", "medium", "high"], "CodeChangePlan");
+  requireArray(record, "safetyChecks", "CodeChangePlan");
+  requireArray(record, "blockedOperations", "CodeChangePlan");
+  if (record.executable !== false) throw new Error("CodeChangePlan.executable must be false.");
+  requireBoolean(record, "requiresExplicitExecutionApproval", "CodeChangePlan");
+  requireString(record, "createdAt", "CodeChangePlan");
+  record.operations.forEach((operation, index) => {
+    const item = requireObject(operation, `CodeChangePlan.operations[${index}]`);
+    requireString(item, "id", `CodeChangePlan.operations[${index}]`);
+    requireEnum(item, "type", ["modify_file", "create_file", "run_test", "inspect", "manual_review"], `CodeChangePlan.operations[${index}]`);
+    if ("targetFile" in item && typeof item.targetFile !== "string") throw new Error(`CodeChangePlan.operations[${index}].targetFile must be a string when provided.`);
+    if ("command" in item && typeof item.command !== "string") throw new Error(`CodeChangePlan.operations[${index}].command must be a string when provided.`);
+    requireString(item, "description", `CodeChangePlan.operations[${index}]`);
+    requireString(item, "reason", `CodeChangePlan.operations[${index}]`);
+    requireArray(item, "safetyConstraints", `CodeChangePlan.operations[${index}]`);
+  });
+  return record as CodeChangePlan;
 }
 
 function validateCorrectionHint(output: unknown): CorrectionHint {

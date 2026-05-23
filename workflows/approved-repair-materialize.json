@@ -1,0 +1,39 @@
+{
+  "name": "approved-repair-materialize",
+  "version": "1.0.0",
+  "description": "Materialize an approved scoped repair plan into a safe, non-executable CodeChangePlan.",
+  "start": "repairPlanMaterializer",
+  "maxIterations": 1,
+  "inputSchema": "TaskBrief",
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": ["materialize approved repair plan into a non-executable plan"],
+      "requireConfirmation": ["execute a materialized code change plan", "run tests after materialization"],
+      "forbiddenWithoutExplicitApproval": ["write files", "delete files", "run shell commands", "call CodeExecutor"]
+    },
+    "costPolicy": {
+      "maxCostLevel": "low",
+      "stopWhen": ["approval missing", "approval not approved", "scope expands", "unsafe operation found"],
+      "preferredDecisionsWhenOverBudget": ["ask_human", "stop"]
+    },
+    "qualityPolicy": {
+      "principles": ["materialize only", "do not execute", "preserve scoped repair boundary"],
+      "requiredChecks": ["approved RepairApprovalRecord", "targetFiles boundary", "forbiddenFiles boundary"],
+      "forbiddenShortcuts": ["auto execute CodeExecutor", "auto run tests", "support delete_file"]
+    }
+  },
+  "nodes": [
+    {
+      "id": "repairPlanMaterializer",
+      "type": "materialize",
+      "role": "RepairPlanMaterializer",
+      "description": "Convert an approved ScopedRepairPlan into a safe CodeChangePlan without executing it.",
+      "inputKeys": ["taskBrief", "scopedRepairPlan", "repairApprovalRecord"],
+      "outputKey": "codeChangePlan",
+      "outputSchema": "CodeChangePlan"
+    }
+  ],
+  "edges": [
+    { "from": "repairPlanMaterializer", "to": "end", "condition": { "type": "always" } }
+  ]
+}

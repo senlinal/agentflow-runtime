@@ -11,6 +11,7 @@ export const OUTPUT_SCHEMA_NAMES: OutputSchemaName[] = [
   "VerificationReport",
   "ScopedRepairPlan",
   "HumanApprovalRequest",
+  "CodeChangePlan",
   "CorrectionHint",
   "CodeExecutionResult",
   "TestExecutionResult",
@@ -141,6 +142,32 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
         requiresHumanApproval: "boolean",
         blockedUntilApproved: "boolean",
         approvalInstructions: ["string"],
+        createdAt: "string",
+      };
+    case "CodeChangePlan":
+      return {
+        planId: "string",
+        repairPlanId: "string",
+        approvalId: "string",
+        status: "materialized",
+        summary: "string",
+        operations: [{
+          id: "string",
+          type: "modify_file | create_file | run_test | inspect | manual_review",
+          targetFile: "string optional",
+          command: "string optional",
+          description: "string",
+          reason: "string",
+          safetyConstraints: ["string"],
+        }],
+        targetFiles: ["string"],
+        forbiddenFiles: ["string"],
+        testCommands: ["string"],
+        riskLevel: "low | medium | high",
+        safetyChecks: ["string"],
+        blockedOperations: ["string"],
+        executable: "false",
+        requiresExplicitExecutionApproval: "boolean",
         createdAt: "string",
       };
     case "CorrectionHint":

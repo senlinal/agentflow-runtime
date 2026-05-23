@@ -24,6 +24,8 @@ export function createInitialContext(input: {
     verification: null,
     scopedRepairPlan: null,
     humanApprovalRequest: null,
+    repairApprovalRecord: null,
+    codeChangePlan: null,
     correctionHint: null,
     iteration: 0,
     history: [],

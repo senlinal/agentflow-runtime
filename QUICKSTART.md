@@ -64,6 +64,14 @@ Run the failing review-path demo:
 npm run demo:code-test-repair-review
 ```
 
+Run the approved materialization demo:
+
+```bash
+npm run demo:approved-repair-materialize
+```
+
+This converts an already approved `ScopedRepairPlan` into a non-executable `CodeChangePlan`. It does not write files, run tests, or call `CodeExecutor`.
+
 ## 7. LLM Config Dry-Run
 
 ```bash

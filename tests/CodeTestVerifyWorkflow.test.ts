@@ -5,9 +5,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { describe, it } from "node:test";
+import { createInitialContext } from "../core/context.ts";
+import { NodeRegistry } from "../core/NodeRegistry.ts";
+import { HumanApprovalRequestBuilder, RepairPlanBuilder } from "../core/repair/RepairPlanBuilder.ts";
+import { TraceStore } from "../core/TraceStore.ts";
 import { WorkflowRunner } from "../core/WorkflowRunner.ts";
+import { WorkflowGraph } from "../core/WorkflowGraph.ts";
+import { WorkflowRuntime } from "../core/WorkflowRuntime.ts";
 import { WorkflowTemplateRegistry } from "../core/WorkflowTemplateRegistry.ts";
-import type { AgentNode, TaskBrief, WorkflowGraphConfig } from "../core/types.ts";
+import type { AgentNode, TaskBrief, WorkflowContext, WorkflowGraphConfig } from "../core/types.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -105,6 +111,33 @@ describe("code-test-verify workflow", () => {
     assert.match(result.context.codeExecutionResult?.errors.join("\n") ?? "", /maxFilesChanged/);
     assert.equal(result.trace[0].nodeId, "codeExecutor");
   });
+
+  it("materializes an approved repair plan into a safe CodeChangePlan without execution", async () => {
+    const loaded = await new WorkflowTemplateRegistry().load("approved-repair-materialize");
+    const context = approvedRepairContext();
+
+    const finalContext = await new WorkflowRuntime(
+      new WorkflowGraph(loaded.config),
+      NodeRegistry.withDefaults(),
+    ).run(context);
+    const traceStore = await TraceStore.save(finalContext, {
+      workflowName: loaded.config.workflow.name,
+      templateVersion: loaded.config.workflow.version,
+      baseDir: await mkdtemp(join(tmpdir(), "agentflow-materialize-run-")),
+    });
+    const summary = await readFile(traceStore.summaryPath, "utf8");
+
+    assert.deepEqual(finalContext.trace.map((item) => item.nodeId), ["repairPlanMaterializer"]);
+    assert.equal(finalContext.codeChangePlan?.status, "materialized");
+    assert.equal(finalContext.codeChangePlan?.executable, false);
+    assert.equal(finalContext.codeChangePlan?.requiresExplicitExecutionApproval, true);
+    assert.equal(finalContext.trace.some((item) => item.nodeId === "codeExecutor"), false);
+    assert.match(summary, /CodeChangePlan Summary/);
+    assert.match(summary, /codeChangePlanStatus: materialized/);
+    assert.match(summary, /Materialized code change plans are not executed automatically/);
+    assert.match(summary, /CodeChangePlan was materialized only/);
+    assert.match(summary, /Explicit execution approval is required before applying this plan/);
+  });
 });
 
 function withFixtureExecutorConfig(
@@ -168,4 +201,59 @@ function taskBrief(): TaskBrief {
     successCriteria: ["Generated file exists.", "Fixture test command passes.", "Trace and summary are written."],
     nonGoals: ["Do not call real LLM providers.", "Do not run arbitrary shell commands."],
   };
+}
+
+function approvedRepairContext(): WorkflowContext {
+  const context = createInitialContext({
+    taskId: "approved_repair_fixture",
+    userGoal: "Materialize an approved repair plan.",
+    successCriteria: ["CodeChangePlan is created.", "No execution happens."],
+  });
+  context.taskBrief = taskBrief();
+  context.codingTaskContext = {
+    allowedFiles: ["src/generated.txt"],
+    maxFilesChanged: 3,
+    maxPatchSize: 20000,
+  };
+  context.testExecutionResult = {
+    status: "failed",
+    completedSteps: ["Ran npm run test"],
+    artifacts: [],
+    summary: "tests failed",
+    errors: ["npm run test exited with 1."],
+    rawOutput: JSON.stringify({
+      passed: false,
+      commands: [{ command: "npm", args: ["run", "test"], exitCode: 1 }],
+    }),
+  };
+  context.verification = {
+    pass: false,
+    score: 0.5,
+    failedCriteria: ["test_failed: One or more configured test commands failed."],
+    reason: "Execution verification failed.",
+    nextAction: "retry_execute",
+    feedbackToPlanner: "Fix failed tests.",
+    failureCodes: ["test_failed"],
+    evidence: {
+      filesChanged: ["src/generated.txt"],
+      filesAdded: ["src/generated.txt"],
+      filesModified: [],
+      filesDeleted: [],
+      failedCommands: ["npm run test"],
+      safetyFindings: [],
+    },
+    safetyFindings: [],
+    recommendedFixes: ["Fix the failing test."],
+  };
+  context.scopedRepairPlan = new RepairPlanBuilder().build(context);
+  context.humanApprovalRequest = new HumanApprovalRequestBuilder().build(context.scopedRepairPlan, new Date("2026-05-23T00:00:00.000Z"));
+  context.repairApprovalRecord = {
+    approvalId: context.humanApprovalRequest.approvalId,
+    repairPlanId: context.scopedRepairPlan.planId,
+    status: "approved",
+    approvedAt: "2026-05-23T00:01:00.000Z",
+    approvedBy: "user",
+    note: "Approved for materialization only.",
+  };
+  return context;
 }

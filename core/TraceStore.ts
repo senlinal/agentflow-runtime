@@ -138,7 +138,7 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
 }
 
 function buildRepairSummary(context: WorkflowContext): string {
-  if (!context.scopedRepairPlan && !context.humanApprovalRequest) return "";
+  if (!context.scopedRepairPlan && !context.humanApprovalRequest && !context.codeChangePlan) return "";
   return [
     "## Scoped Repair / Approval",
     "",
@@ -162,8 +162,37 @@ function buildRepairSummary(context: WorkflowContext): string {
           `- blockedUntilApproved: ${context.humanApprovalRequest.blockedUntilApproved}`,
         ].join("\n")
       : "- approval: n/a",
+    context.repairApprovalRecord
+      ? [
+          `- repairApprovalStatus: ${context.repairApprovalRecord.status}`,
+          `- repairApprovalId: ${context.repairApprovalRecord.approvalId}`,
+          `- approvedAt: ${context.repairApprovalRecord.approvedAt ?? "n/a"}`,
+        ].join("\n")
+      : "",
+    context.codeChangePlan
+      ? [
+          "",
+          "## CodeChangePlan Summary",
+          "",
+          `- codeChangePlanId: ${context.codeChangePlan.planId}`,
+          `- sourceRepairPlanId: ${context.codeChangePlan.repairPlanId}`,
+          `- codeChangePlanStatus: ${context.codeChangePlan.status}`,
+          `- operationsCount: ${context.codeChangePlan.operations.length}`,
+          `- expectedFilesChanged: ${context.codeChangePlan.targetFiles.join("; ") || "none"}`,
+          `- testCommands: ${context.codeChangePlan.testCommands.join("; ") || "none"}`,
+          `- safetyNotes: ${context.codeChangePlan.safetyChecks.join("; ") || "none"}`,
+          `- codeChangePlanExecutable: ${context.codeChangePlan.executable}`,
+          `- codeChangeOperations: ${context.codeChangePlan.operations.map((item) => `${item.id}:${item.type}`).join("; ") || "none"}`,
+          `- blockedOperations: ${context.codeChangePlan.blockedOperations.join("; ") || "none"}`,
+          `- requiresExplicitExecutionApproval: ${context.codeChangePlan.requiresExplicitExecutionApproval}`,
+        ].join("\n")
+      : "",
     "",
+    "CodeChangePlan was materialized only.",
     "No repair was executed automatically.",
+    "No repair operations were executed automatically.",
+    "Materialized code change plans are not executed automatically.",
+    "Explicit execution approval is required before applying this plan.",
     "Human approval is required before applying any repair.",
     "",
   ].join("\n");

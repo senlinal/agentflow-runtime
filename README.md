@@ -105,6 +105,14 @@ When verification fails, the template now routes to `repairPlanBuilder -> humanA
 
 The plan is never executed automatically. `HumanApprovalGate` creates a `HumanApprovalRequest` with `status: "pending"` and `blockedUntilApproved: true`; it does not approve itself and it does not loop back into code execution.
 
+### Approved Repair Materialization
+
+After a human records an approved repair decision, `approved-repair-materialize` can convert the approved `ScopedRepairPlan` into a safe `CodeChangePlan`. The materialized plan is still non-executable: it only records scoped operations, target files, tests, safety checks, and the requirement for another explicit execution approval.
+
+```bash
+npm run demo:approved-repair-materialize
+```
+
 Validate and inspect templates:
 
 ```bash

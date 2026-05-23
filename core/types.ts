@@ -11,6 +11,7 @@ export type AgentRole =
   | "Verifier"
   | "RepairPlanBuilder"
   | "HumanApprovalGate"
+  | "RepairPlanMaterializer"
   | "GoalKeeper";
 
 export type RetryPolicy = {
@@ -29,12 +30,13 @@ export type OutputSchemaName =
   | "VerificationReport"
   | "ScopedRepairPlan"
   | "HumanApprovalRequest"
+  | "CodeChangePlan"
   | "CorrectionHint"
   | "CodeExecutionResult"
   | "TestExecutionResult"
   | "SmokeTestResult";
 
-export type NodeType = "mock" | "llm" | "code" | "test" | "verify" | "repair" | "approval";
+export type NodeType = "mock" | "llm" | "code" | "test" | "verify" | "repair" | "approval" | "materialize";
 
 export type AgentNode = {
   id: string;
@@ -199,6 +201,45 @@ export type HumanApprovalRequest = {
   createdAt: string;
 };
 
+export type RepairApprovalRecord = {
+  approvalId: string;
+  repairPlanId: string;
+  status: "pending" | "approved" | "rejected" | "expired" | "consumed";
+  approvedAt?: string;
+  rejectedAt?: string;
+  expiresAt?: string;
+  approvedBy?: string;
+  note?: string;
+};
+
+export type CodeChangeOperation = {
+  id: string;
+  type: "modify_file" | "create_file" | "run_test" | "inspect" | "manual_review";
+  targetFile?: string;
+  command?: string;
+  description: string;
+  reason: string;
+  safetyConstraints: string[];
+};
+
+export type CodeChangePlan = {
+  planId: string;
+  repairPlanId: string;
+  approvalId: string;
+  status: "materialized";
+  summary: string;
+  operations: CodeChangeOperation[];
+  targetFiles: string[];
+  forbiddenFiles: string[];
+  testCommands: string[];
+  riskLevel: ScopedRepairPlan["riskLevel"];
+  safetyChecks: string[];
+  blockedOperations: string[];
+  executable: false;
+  requiresExplicitExecutionApproval: boolean;
+  createdAt: string;
+};
+
 export type CorrectionHint = {
   driftDetected: boolean;
   originalGoalReminder: string;
@@ -241,6 +282,8 @@ export type WorkflowContext = TaskSpec & {
   verification: VerificationReport | null;
   scopedRepairPlan: ScopedRepairPlan | null;
   humanApprovalRequest: HumanApprovalRequest | null;
+  repairApprovalRecord?: RepairApprovalRecord | null;
+  codeChangePlan?: CodeChangePlan | null;
   correctionHint: CorrectionHint | null;
   iteration: number;
   history: unknown[];

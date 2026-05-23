@@ -107,6 +107,29 @@ When `verification.pass=false`, the workflow enters `repairPlanBuilder` and then
 
 This stage does not execute repairs, does not approve itself, does not expand executor permissions, and does not add a retry loop.
 
+## Approved Repair Materialization
+
+`workflows/approved-repair-materialize.json` adds the next controlled step:
+
+```text
+repairPlanMaterializer -> end
+```
+
+It requires an existing `ScopedRepairPlan` plus a `RepairApprovalRecord` with `status: "approved"`. Pending, rejected, consumed, expired, or mismatched approvals are rejected.
+
+`repairPlanMaterializer` produces `CodeChangePlan`:
+
+- `status` is always `materialized`.
+- `executable` is always `false`.
+- `requiresExplicitExecutionApproval` is always `true`.
+- Operations are copied only from the approved scoped repair plan.
+- Operation paths must stay inside `targetFiles` and must not appear in `forbiddenFiles`.
+- Secret-like paths such as `.env`, key, token, credential, or secret files are rejected.
+- `delete_file` is not supported.
+- High-risk shell commands are rejected.
+
+Materialization does not write files, does not run tests, does not call `CodeExecutor`, and does not retry the failed workflow. It only creates a safe reviewable `CodeChangePlan` for a later explicit execution stage.
+
 ## Output
 
 Both `code` and `test` nodes return `ExecutionResult`:
@@ -126,5 +149,6 @@ Both `code` and `test` nodes return `ExecutionResult`:
 - No automatic destructive rollback.
 - No delete operations.
 - No automatic repair execution after verifier failure.
+- No automatic execution of materialized `CodeChangePlan`.
 - The allowlist is intentionally narrow and should be expanded through tests.
 - The execution-aware verifier is rule-based. It does not infer semantic correctness beyond available execution evidence and rule-checkable success criteria.
