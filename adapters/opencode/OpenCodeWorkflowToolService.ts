@@ -75,8 +75,8 @@ export class OpenCodeWorkflowToolService {
   }
 
   async runProfileWorkflow(input: ProfileWorkflowRunRequest): Promise<ProfileWorkflowRunResult> {
-    if (!input.task && !input.inputPath) {
-      throw new Error("run_profile_workflow requires task or inputPath.");
+    if (!input.task && !input.inputPath && !input.answer && !input.sessionId) {
+      throw new Error("run_profile_workflow requires task, inputPath, answer, or sessionId.");
     }
     return new ProfileWorkflowRunner().run({
       ...input,

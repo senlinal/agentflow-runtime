@@ -1,10 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { ProfileWorkflowRunner } from "../core/profile/ProfileWorkflowRunner.ts";
+import { ProfileSessionStore } from "../core/profile/ProfileSessionStore.ts";
+import { ScopeConfirmationStore } from "../core/scope/ScopeConfirmationStore.ts";
 
 test("ProfileWorkflowRunner", async (t) => {
   await t.test("runs active rag profile safe preflight and blocks at missing scope confirmation", async () => {
-    const result = await new ProfileWorkflowRunner().run({
+    const result = await createRunner().run({
       task: "继续 RAG 召回优化，分析上一轮实验结果，给出下一步方案",
     });
 
@@ -17,10 +21,12 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.equal(result.steps[1].status, "blocked");
     assert.match(result.steps[1].reason, /ScopeConfirmationRecord/);
     assert.equal(result.steps[2].status, "skipped");
+    assert.equal(result.session?.status, "pending_scope_confirmation");
+    assert.ok(result.session?.sessionId);
   });
 
   await t.test("dry-run only plans profile workflow chain", async () => {
-    const result = await new ProfileWorkflowRunner().run({
+    const result = await createRunner().run({
       profileId: "rag-optimization",
       task: "检查 RAG 召回指标口径",
       dryRun: true,
@@ -32,7 +38,7 @@ test("ProfileWorkflowRunner", async (t) => {
   });
 
   await t.test("blocks execution-capable coding profile by default", async () => {
-    const result = await new ProfileWorkflowRunner().run({
+    const result = await createRunner().run({
       profileId: "coding-safe-fix",
       task: "修复一个小 bug",
     });
@@ -44,7 +50,7 @@ test("ProfileWorkflowRunner", async (t) => {
   });
 
   await t.test("uses profile default input when task is omitted", async () => {
-    const result = await new ProfileWorkflowRunner().run({
+    const result = await createRunner().run({
       profileId: "rag-optimization",
       dryRun: true,
     });
@@ -52,4 +58,39 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.equal(result.taskBrief.taskId.length > 0, true);
     assert.equal(result.finalStatus, "planned");
   });
+
+  await t.test("resumes pending scope session from user answer", async () => {
+    const runner = createRunner();
+    const first = await runner.run({
+      profileId: "rag-optimization",
+      task: "继续 RAG 召回优化，分析上一轮实验结果，给出下一步方案",
+    });
+    assert.equal(first.finalStatus, "blocked");
+    assert.equal(first.session?.status, "pending_scope_confirmation");
+
+    const resumed = await runner.run({
+      profileId: "rag-optimization",
+      sessionId: first.session?.sessionId,
+      answer: "召回口径按 heading/file，不牺牲回答质量，不改生产索引，可以做 query rewrite 和 reranker 实验。",
+    });
+
+    assert.equal(resumed.session?.status, "completed");
+    assert.ok(resumed.scopeConfirmationId);
+    assert.equal(resumed.steps[1].workflow, "confirmed-scope-gate");
+    assert.equal(resumed.steps[1].status, "ran");
+    assert.equal(resumed.steps[2].workflow, "research-feasibility-execute-verify");
+    assert.equal(resumed.steps[2].status, "ran");
+    assert.equal(resumed.steps.some((step) => step.enteredExecutor === true), true);
+  });
 });
+
+function createRunner(): ProfileWorkflowRunner {
+  const root = join(tmpdir(), `agentflow-profile-runner-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  return new ProfileWorkflowRunner(
+    undefined,
+    undefined,
+    undefined,
+    new ProfileSessionStore(join(root, "sessions")),
+    new ScopeConfirmationStore(join(root, "scopes")),
+  );
+}

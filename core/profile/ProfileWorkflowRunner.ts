@@ -1,15 +1,19 @@
+import { ScopeConfirmationService } from "../scope/ScopeConfirmationService.ts";
 import { ScopeConfirmationStore } from "../scope/ScopeConfirmationStore.ts";
 import { TaskBriefLoader } from "../TaskBriefLoader.ts";
-import type { ScopeConfirmationRecord, TaskBrief, WorkflowGraphConfig } from "../types.ts";
+import type { ProfileSession, ScopeConfirmationRecord, TaskBrief, TaskNegotiationResult, WorkflowGraphConfig } from "../types.ts";
 import { WorkflowRunner, type WorkflowRunnerResult } from "../WorkflowRunner.ts";
 import { WorkflowTemplateRegistry } from "../WorkflowTemplateRegistry.ts";
 import { WorkflowProfileLoader, type WorkflowProfile } from "./WorkflowProfileLoader.ts";
+import { ProfileSessionStore } from "./ProfileSessionStore.ts";
 
 export type ProfileWorkflowRunRequest = {
   profileId?: string;
   task?: string;
   inputPath?: string;
   scopeConfirmationId?: string;
+  sessionId?: string;
+  answer?: string;
   dryRun?: boolean;
   allowExecution?: boolean;
 };
@@ -36,21 +40,29 @@ export type ProfileWorkflowRunResult = {
   warnings: string[];
   finalStatus: "planned" | "completed" | "blocked" | "stopped";
   nextActions: string[];
+  session?: ProfileSession;
+  scopeConfirmationId?: string;
 };
 
 export class ProfileWorkflowRunner {
   private readonly profileLoader: WorkflowProfileLoader;
   private readonly workflowRegistry: WorkflowTemplateRegistry;
   private readonly workflowRunner: WorkflowRunner;
+  private readonly sessionStore: ProfileSessionStore;
+  private readonly scopeStore: ScopeConfirmationStore;
 
   constructor(
     profileLoader = new WorkflowProfileLoader(),
     workflowRegistry = new WorkflowTemplateRegistry(),
     workflowRunner = new WorkflowRunner(),
+    sessionStore = new ProfileSessionStore(),
+    scopeStore = new ScopeConfirmationStore(),
   ) {
     this.profileLoader = profileLoader;
     this.workflowRegistry = workflowRegistry;
     this.workflowRunner = workflowRunner;
+    this.sessionStore = sessionStore;
+    this.scopeStore = scopeStore;
   }
 
   async run(request: ProfileWorkflowRunRequest): Promise<ProfileWorkflowRunResult> {
@@ -61,7 +73,8 @@ export class ProfileWorkflowRunner {
     const validation = await this.profileLoader.validateProfile(profile);
     if (!validation.valid) throw new Error(`Workflow profile is invalid: ${validation.errors.join("; ")}`);
 
-    const taskBrief = await this.resolveTaskBrief(request, profile);
+    const resume = request.answer ? await this.resumeScopeConfirmation(request, profile) : null;
+    const taskBrief = resume?.taskBrief ?? await this.resolveTaskBrief(request, profile);
     const workflowChain = this.profileLoader.resolveProfileWorkflowChain(profile);
     const dryRun = request.dryRun === true;
     const allowExecution = request.allowExecution === true;
@@ -69,9 +82,10 @@ export class ProfileWorkflowRunner {
     const warnings = [...validation.warnings];
     let blocked = false;
 
-    const scopeConfirmation = request.scopeConfirmationId
-      ? await new ScopeConfirmationStore().get(request.scopeConfirmationId)
-      : null;
+    let profileSession: ProfileSession | undefined = resume?.session;
+
+    const scopeConfirmation = resume?.scopeConfirmation
+      ?? (request.scopeConfirmationId ? await this.scopeStore.get(request.scopeConfirmationId) : null);
 
     for (const workflow of workflowChain) {
       if (blocked) {
@@ -112,6 +126,18 @@ export class ProfileWorkflowRunner {
         contextOverrides: scopeConfirmation ? { scopeConfirmationRecord: scopeConfirmation } : undefined,
       });
       steps.push(toStep(workflow, result));
+
+      if (workflow === profile.defaultWorkflow && !profileSession) {
+        const created = await this.createPendingSession(profile, taskBrief, result);
+        if (created) profileSession = created;
+      }
+    }
+
+    if (profileSession && steps.some((step) => step.status === "ran") && !steps.some((step) => step.status === "blocked")) {
+      profileSession = await this.updateSession(profileSession, {
+        status: "completed",
+        lastRunId: [...steps].reverse().find((step) => step.runId)?.runId ?? profileSession.lastRunId,
+      });
     }
 
     return {
@@ -125,7 +151,73 @@ export class ProfileWorkflowRunner {
       warnings,
       finalStatus: finalProfileStatus(steps, dryRun),
       nextActions: nextActions(profile, steps),
+      ...(profileSession ? { session: profileSession } : {}),
+      ...(scopeConfirmation?.confirmationId ? { scopeConfirmationId: scopeConfirmation.confirmationId } : {}),
     };
+  }
+
+  private async createPendingSession(
+    profile: WorkflowProfile,
+    taskBrief: TaskBrief,
+    result: WorkflowRunnerResult,
+  ): Promise<ProfileSession | null> {
+    const negotiation = result.context.taskNegotiationResult;
+    if (!negotiation || negotiation.clarificationQuestions.length === 0 || !profile.scopeWorkflow) return null;
+    const now = new Date().toISOString();
+    const session: ProfileSession = {
+      sessionId: `profile_session_${stableId(profile.id, negotiation.negotiationId, taskBrief.goal)}`,
+      profileId: profile.id,
+      status: "pending_scope_confirmation",
+      task: taskBrief.rawUserInput ?? taskBrief.goal,
+      negotiationId: negotiation.negotiationId,
+      lastRunId: result.runId,
+      pendingQuestions: negotiation.clarificationQuestions,
+      proposedScope: negotiation.proposedScope,
+      taskNegotiationResult: negotiation,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await this.sessionStore.save(session);
+    return session;
+  }
+
+  private async resumeScopeConfirmation(
+    request: ProfileWorkflowRunRequest,
+    profile: WorkflowProfile,
+  ): Promise<{ session: ProfileSession; scopeConfirmation: ScopeConfirmationRecord; taskBrief: TaskBrief }> {
+    const session = request.sessionId
+      ? await this.sessionStore.get(request.sessionId)
+      : await this.sessionStore.getCurrent(profile.id);
+    if (!session) throw new Error(`No pending profile session found for profile ${profile.id}.`);
+    if (session.profileId !== profile.id) throw new Error(`Profile session ${session.sessionId} belongs to ${session.profileId}, not ${profile.id}.`);
+    if (session.status !== "pending_scope_confirmation") throw new Error(`Profile session ${session.sessionId} is ${session.status}, not pending_scope_confirmation.`);
+    if (!session.taskNegotiationResult) throw new Error(`Profile session ${session.sessionId} is missing taskNegotiationResult.`);
+
+    const answer = request.answer ?? "";
+    const record = new ScopeConfirmationService().createRecord({
+      negotiation: session.taskNegotiationResult,
+      confirmedBy: "profile-session-user",
+      confirmedScope: inferConfirmedScope(session.taskNegotiationResult, answer),
+      userAnswers: session.pendingQuestions.map((question) => ({ question, answer })),
+      assumptionsAccepted: session.taskNegotiationResult.ambiguities,
+      notes: `Created from profile session ${session.sessionId}.`,
+    });
+    await this.scopeStore.save(record);
+    const updated = await this.updateSession(session, {
+      status: "scope_confirmed",
+      scopeConfirmationId: record.confirmationId,
+    });
+    return {
+      session: updated,
+      scopeConfirmation: record,
+      taskBrief: await this.resolveTaskBrief({ ...request, task: session.task, inputPath: undefined, answer: undefined }, profile),
+    };
+  }
+
+  private async updateSession(session: ProfileSession, update: Partial<ProfileSession>): Promise<ProfileSession> {
+    const updated = { ...session, ...update, updatedAt: new Date().toISOString() };
+    await this.sessionStore.save(updated);
+    return updated;
   }
 
   private async resolveExplicitProfile(profileId: string) {
@@ -205,4 +297,55 @@ function nextActions(profile: WorkflowProfile, steps: ProfileWorkflowStep[]): st
     ];
   }
   return ["Review generated summary and trace.", "Proceed only within the active profile scope."];
+}
+
+function inferConfirmedScope(
+  negotiation: TaskNegotiationResult,
+  answer: string,
+): Partial<ScopeConfirmationRecord["confirmedScope"]> {
+  const lower = answer.toLowerCase();
+  const recallLevel = lower.includes("heading") || answer.includes("标题")
+    ? "heading"
+    : lower.includes("file") || answer.includes("文件")
+      ? "file"
+      : lower.includes("answer") || answer.includes("答案")
+        ? "answer"
+        : lower.includes("chunk") || answer.includes("分块")
+          ? "chunk"
+          : "unknown";
+  const allowRerankerChanges = /reranker|重排/.test(lower);
+  const allowQueryRewrite = /query rewrite|query[- ]?rewrite|查询改写|改写/.test(lower);
+  const productionChangesAllowed = !/(不改生产|不要改生产|no production|do not.*production)/.test(lower);
+  const allowAnswerQualityRegression = !/(不牺牲回答质量|不降低回答质量|no answer quality regression|do not.*quality)/.test(lower);
+
+  if (negotiation.detectedTaskType !== "rag_optimization") {
+    return {
+      allowedActions: ["inspect_project", "evaluate_feasibility"],
+    };
+  }
+
+  return {
+    allowedActions: ["inspect_project", "evaluate_feasibility"],
+    metricDefinition: {
+      primaryMetric: "RAG retrieval quality using human-confirmed recall and answer-quality constraints",
+      secondaryMetrics: ["answer quality", "citation coverage"],
+      targetValue: "Improve retrieval without violating confirmed answer-quality constraints",
+      evaluationDataset: "User-confirmed evaluation examples or previous experiment results",
+    },
+    ragConstraints: {
+      recallLevel,
+      allowChunkChanges: lower.includes("chunk") || answer.includes("分块"),
+      allowIndexRebuild: !/(不改.*索引|no index|do not.*index|不重建索引)/.test(lower),
+      allowRerankerChanges,
+      allowQueryRewrite,
+      allowAnswerQualityRegression,
+      productionChangesAllowed,
+    },
+  };
+}
+
+function stableId(...values: string[]): string {
+  let hash = 0;
+  for (const value of values.join("\n")) hash = (hash * 31 + value.charCodeAt(0)) >>> 0;
+  return hash.toString(16);
 }

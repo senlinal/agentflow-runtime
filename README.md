@@ -128,6 +128,16 @@ npm run workflow:run-profile -- --profile rag-optimization --task "..."
 
 The first implementation runs only safe pre-execution profile steps by default. It will not run CodeExecutor, tests, execution workflows, or real LLM calls unless a later explicit execution path is used.
 
+Profile runs create resumable sessions when scope confirmation is needed:
+
+```bash
+npm run workflow:profile:sessions
+npm run workflow:profile:session -- --id <sessionId>
+npm run workflow:run-profile -- --sessionId <sessionId> --answer "按 heading/file 口径评估，不改生产索引，可以做 query rewrite 和 reranker 实验。"
+```
+
+The resume step turns the answer into a `ScopeConfirmationRecord`, runs `confirmed-scope-gate`, and continues only inside the active profile's safe chain.
+
 ### Task Negotiation
 
 `task-negotiation` is a pre-flight workflow for complex or ambiguous requests. It produces a `TaskNegotiationResult` with detected task type, target module, ambiguities, clarification questions, proposed allowed/forbidden scope, suggested task breakdown, and a recommended next step.

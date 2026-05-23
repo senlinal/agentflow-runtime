@@ -8,6 +8,7 @@ dist/
 .agentflow/external-runs/
 .agentflow/patch-exports/
 .agentflow/scope-confirmations/
+.agentflow/profile-sessions/
 .opencode/policy-runs/
 .opencode/node_modules/
 .opencode/opencode.db

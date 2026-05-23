@@ -7,6 +7,8 @@ const result = await new ProfileWorkflowRunner().run({
   task: args.task,
   inputPath: args.input,
   scopeConfirmationId: args.scopeConfirmationId,
+  sessionId: args.sessionId,
+  answer: args.answer,
   dryRun: args.dryRun === "true",
   allowExecution: args.allowExecution === "true",
 });
@@ -21,6 +23,12 @@ if (args.format === "json") {
   console.log(`allowExecution: ${result.allowExecution}`);
   console.log(`workflowChain: ${result.workflowChain.join(" -> ")}`);
   console.log(`warnings: ${result.warnings.join("; ") || "none"}`);
+  if (result.session) {
+    console.log(`sessionId: ${result.session.sessionId}`);
+    console.log(`sessionStatus: ${result.session.status}`);
+    if (result.session.scopeConfirmationId) console.log(`scopeConfirmationId: ${result.session.scopeConfirmationId}`);
+    if (result.session.pendingQuestions.length > 0) console.log(`pendingQuestions: ${result.session.pendingQuestions.join(" | ")}`);
+  }
   for (const step of result.steps) {
     console.log(`step: ${step.workflow}\t${step.status}\t${step.reason}`);
     if (step.runId) console.log(`  runId: ${step.runId}`);

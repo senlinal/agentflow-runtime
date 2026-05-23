@@ -203,6 +203,21 @@ export type ConfirmedScopeGateResult = {
   createdAt: string;
 };
 
+export type ProfileSession = {
+  sessionId: string;
+  profileId: string;
+  status: "pending_scope_confirmation" | "scope_confirmed" | "blocked" | "completed";
+  task: string;
+  negotiationId?: string;
+  scopeConfirmationId?: string;
+  lastRunId?: string;
+  pendingQuestions: string[];
+  proposedScope?: unknown;
+  taskNegotiationResult?: TaskNegotiationResult;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ResearchReport = {
   summary: string;
   knownFacts: string[];

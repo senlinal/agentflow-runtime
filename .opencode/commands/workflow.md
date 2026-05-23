@@ -22,7 +22,7 @@ Use this command to run the repository's workflow template runner from opencode 
    - `nonGoals`
    - `rawUserInput`
 6. Default to the active profile's `defaultWorkflow`. Do not ask the user to repeat default constraints already present in `AGENTS.md`, policy files, memory files, or the active profile.
-7. Prefer the custom tool `run_profile_workflow` with `task` and optional `profile`. Fall back to `run_workflow` only when the user explicitly names a template.
+7. Prefer the custom tool `run_profile_workflow` with `task` and optional `profile`. If the user is answering prior scope questions, call `run_profile_workflow` with `answer` and optional `sessionId`. Fall back to `run_workflow` only when the user explicitly names a template.
 8. Do not replace WorkflowRuntime with opencode reasoning. Planner, Executor, Verifier, GoalKeeper, and routing must remain controlled by the configured workflow and Runtime.
 9. Summarize the tool result:
    - decision
@@ -49,6 +49,20 @@ npm run workflow:profile:use -- --profile coding-safe-fix
 ```
 
 The user only needs to provide goal, optional current state, and special constraints. Default rules come from `AGENTS.md`, `docs/WORKER_POLICY.md`, `docs/AUTONOMY_POLICY.md`, and the active profile.
+
+## Scope Resume
+
+When `run_profile_workflow` returns `pending_scope_confirmation`, show the `sessionId` and clarification questions. On the user's next `/workflow` message, if they say they are answering the previous questions, pass the answer back to `run_profile_workflow` instead of starting over:
+
+```json
+{
+  "profileId": "rag-optimization",
+  "sessionId": "<sessionId>",
+  "answer": "..."
+}
+```
+
+The tool will create a `ScopeConfirmationRecord`, run `confirmed-scope-gate`, and continue only within the profile's safe chain.
 
 ## Default Tool Call Shape
 
