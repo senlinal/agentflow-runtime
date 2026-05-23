@@ -30,7 +30,7 @@ export type OutputSchemaName =
   | "TestExecutionResult"
   | "SmokeTestResult";
 
-export type NodeType = "mock" | "llm" | "code" | "test";
+export type NodeType = "mock" | "llm" | "code" | "test" | "verify";
 
 export type AgentNode = {
   id: string;
@@ -132,6 +132,7 @@ export type RevisedPlan = Plan & {
 };
 
 export type ExecutionResult = {
+  status?: "success" | "failed" | "passed";
   completedSteps: string[];
   artifacts: string[];
   summary: string;
@@ -150,6 +151,10 @@ export type VerificationReport = {
   reason: string;
   nextAction: "end" | "replan" | "retry_execute" | "ask_human";
   feedbackToPlanner: string;
+  failureCodes?: string[];
+  evidence?: Record<string, unknown>;
+  safetyFindings?: string[];
+  recommendedFixes?: string[];
 };
 
 export type CorrectionHint = {
@@ -181,6 +186,7 @@ export type WorkflowTrace = {
 };
 
 export type WorkflowContext = TaskSpec & {
+  codingTaskContext?: CodingTaskContext | null;
   taskBrief: TaskBrief | null;
   researchReport: ResearchReport | null;
   feasibilityReport: FeasibilityReport | null;
@@ -199,9 +205,18 @@ export type WorkflowContext = TaskSpec & {
   stopReason?: string;
 };
 
+export type CodingTaskContext = {
+  allowedFiles?: string[];
+  maxFilesChanged?: number;
+  maxPatchSize?: number;
+  allowFileDelete?: boolean;
+  successCriteria?: string[];
+};
+
 export type RuntimeMetadata = {
   llmConfigSummary?: Record<string, unknown>;
   llmCalls?: Array<Record<string, unknown>>;
+  executionVerification?: Record<string, unknown>;
 };
 
 export type WorkflowCondition = {

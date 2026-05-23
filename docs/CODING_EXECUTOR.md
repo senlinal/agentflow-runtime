@@ -75,7 +75,18 @@ The first version is intentionally conservative:
 codeExecutor -> testRunner -> verifier -> end
 ```
 
+The verifier uses the deterministic `ExecutionVerifier` through a `type: "verify"` node. It evaluates code execution output, test output, checkpoint evidence, diff metadata, safety findings, changed files, and success criteria without calling an LLM.
+
 The first version intentionally does not loop back into `codeExecutor` after verifier failure. This prevents repeated code modifications until a later stage adds a stricter patch planning and approval model.
+
+The verifier emits a `VerificationReport` with optional execution-aware fields:
+
+- `failureCodes`: machine-readable reasons such as `test_failed`, `operation_blocked`, `unsafe_file_touched`, `unexpected_files_changed`, `file_deleted`, `missing_checkpoint`, `missing_test_result`, and `missing_code_execution_result`.
+- `evidence`: summarized code status, test status, checkpoint id, changed files, deleted files, failed commands, blocked operations, and diff metadata.
+- `safetyFindings`: sensitive or unsafe paths touched by the execution result.
+- `recommendedFixes`: narrow remediation guidance for the failed checks.
+
+It fails verification when code execution fails, configured tests fail, operations are blocked, files are deleted, unexpected files change, diff or patch limits are exceeded, checkpoint evidence is missing, test evidence is missing, unsafe files are touched, or rule-checkable success criteria are not met. It does not perform semantic code review and it does not automatically retry or rollback.
 
 ## Output
 
@@ -96,3 +107,4 @@ Both `code` and `test` nodes return `ExecutionResult`:
 - No automatic destructive rollback.
 - No delete operations.
 - The allowlist is intentionally narrow and should be expanded through tests.
+- The execution-aware verifier is rule-based. It does not infer semantic correctness beyond available execution evidence and rule-checkable success criteria.

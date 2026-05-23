@@ -98,6 +98,8 @@ The execution support modules are:
 
 See `docs/CODING_EXECUTOR.md` for the safety model and configuration examples.
 
+`verify` nodes can use `VerificationExecutor` to run a deterministic execution-aware verifier. It builds evidence from `CodeExecutionResult` and `TestExecutionResult`, classifies failures, checks constraints, and returns a normal `VerificationReport`.
+
 ## opencode Adapter
 
 opencode files under `.opencode/` and `adapters/opencode/` are adapter layers. They call `WorkflowRunner` and policy services; they do not replace runtime routing.

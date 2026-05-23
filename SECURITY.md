@@ -24,6 +24,7 @@ Report privately through the repository owner's preferred private channel. Inclu
 - Workflow runs are written under `.workflow-runs/` and ignored by Git.
 - Policy audit logs are written under `.opencode/policy-runs/` and ignored by Git.
 - The opencode policy plugin is a guardrail, not a full sandbox.
+- The controlled code-test verifier fails unsafe execution instead of treating it as success. Unsafe file touches, unexpected files, deleted files, blocked operations, missing checkpoints, and failed tests produce `VerificationReport.pass=false`.
 
 ## High-Risk Areas
 
@@ -33,6 +34,7 @@ Report privately through the repository owner's preferred private channel. Inclu
 - LLM provider error redaction;
 - template validation;
 - schema validation before context writes.
+- execution-aware verification of code/test/diff evidence.
 
 ## Maintainer Checklist
 

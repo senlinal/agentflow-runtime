@@ -98,6 +98,7 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
       : "No FeasibilityReport.",
     "",
     buildLlmMetadataSummary(context),
+    buildExecutionVerificationSummary(context),
     "",
     !executionStarted && feasibility
       ? [
@@ -132,6 +133,23 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
     "",
     executionResult?.summary ?? "No execution result.",
     "",
+  ].join("\n");
+}
+
+function buildExecutionVerificationSummary(context: WorkflowContext): string {
+  const evidence = context.runtimeMetadata?.executionVerification;
+  if (!evidence) return "";
+  return [
+    "## Execution Verification Evidence",
+    "",
+    `- codeStatus: ${stringValue(evidence.codeStatus)}`,
+    `- testStatus: ${stringValue(evidence.testStatus)}`,
+    `- checkpointId: ${stringValue(evidence.checkpointId)}`,
+    `- filesChanged: ${arrayValue(evidence.filesChanged).join("; ") || "none"}`,
+    `- filesDeleted: ${arrayValue(evidence.filesDeleted).join("; ") || "none"}`,
+    `- failedCommands: ${arrayValue(evidence.failedCommands).join("; ") || "none"}`,
+    `- blockedOperations: ${arrayValue(evidence.blockedOperations).join("; ") || "none"}`,
+    `- safetyFindings: ${arrayValue(evidence.safetyFindings).join("; ") || "none"}`,
   ].join("\n");
 }
 

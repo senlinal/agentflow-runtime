@@ -156,6 +156,10 @@ function validateVerificationReport(output: unknown): VerificationReport {
   requireString(record, "reason", "VerificationReport");
   requireEnum(record, "nextAction", ALLOWED_NEXT_ACTIONS, "VerificationReport");
   requireString(record, "feedbackToPlanner", "VerificationReport");
+  requireOptionalStringArray(record, "failureCodes", "VerificationReport");
+  if ("evidence" in record) requireObject(record.evidence, "VerificationReport.evidence");
+  requireOptionalStringArray(record, "safetyFindings", "VerificationReport");
+  requireOptionalStringArray(record, "recommendedFixes", "VerificationReport");
   return record as VerificationReport;
 }
 
@@ -201,6 +205,13 @@ function requireBoolean(record: Record<string, unknown>, key: string, label: str
 
 function requireArray(record: Record<string, unknown>, key: string, label: string): void {
   if (!Array.isArray(record[key])) throw new Error(`${label}.${key} must be an array.`);
+}
+
+function requireOptionalStringArray(record: Record<string, unknown>, key: string, label: string): void {
+  if (!(key in record)) return;
+  if (!Array.isArray(record[key]) || !(record[key] as unknown[]).every((item) => typeof item === "string")) {
+    throw new Error(`${label}.${key} must be an array of strings when provided.`);
+  }
 }
 
 function requireEnum<T extends string>(

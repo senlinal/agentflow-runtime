@@ -3,7 +3,7 @@ import { isSupportedOutputSchema } from "./OutputSchemaRegistry.ts";
 import type { AgentNode, WorkflowGraphConfig } from "./types.ts";
 import { WorkflowGraph } from "./WorkflowGraph.ts";
 
-const NODE_TYPES = ["mock", "llm", "code", "test"];
+const NODE_TYPES = ["mock", "llm", "code", "test", "verify"];
 
 export class WorkflowLoader {
   static async loadJson(path: string): Promise<WorkflowGraph> {

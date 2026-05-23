@@ -19,6 +19,7 @@ export class TestExecutor implements NodeExecutor {
     const config = normalizeConfig(node.executorConfig);
     const result = await this.testRunner.run(config);
     return {
+      status: result.passed ? "passed" : "failed",
       completedSteps: result.commands.map((command) => `Ran ${[command.command, ...command.args].join(" ")}`),
       artifacts: [],
       summary: result.summary,

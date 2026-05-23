@@ -114,6 +114,7 @@ export class CodeExecutor implements NodeExecutor {
     }
 
     return {
+      status: errors.length === 0 ? "success" : "failed",
       completedSteps,
       artifacts,
       summary: errors.length === 0

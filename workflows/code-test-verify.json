@@ -56,7 +56,7 @@
     },
     {
       "id": "verifier",
-      "type": "mock",
+      "type": "verify",
       "role": "Verifier",
       "description": "Verify the controlled code and test execution outputs against the task success criteria.",
       "inputKeys": ["taskBrief", "codeExecutionResult", "testExecutionResult"],

@@ -81,12 +81,21 @@ Important examples:
 - `research-feasibility-execute-verify`: Researcher -> FeasibilityEvaluator -> execution flow only if feasible.
 - `abcde-basic`: Planner -> Debater -> PlannerRevision -> Executor -> Verifier -> GoalKeeper loop.
 - `abcde-basic-llm`: opt-in LLM node version. It is not used by default.
+- `code-test-verify`: controlled CodeExecutor -> TestRunner -> deterministic Verifier.
 
 Run a template:
 
 ```bash
 npm run workflow -- --template abcde-basic --input inputs/feasible-task.json
 ```
+
+Run the controlled code/test/verify template:
+
+```bash
+npm run workflow -- --template code-test-verify --input inputs/feasible-task.json
+```
+
+`code-test-verify` uses a `type: "verify"` node. Its deterministic verifier checks code execution status, configured test results, blocked operations, changed/deleted files, diff limits, unsafe paths, and checkpoint evidence before marking the workflow as passed.
 
 Validate and inspect templates:
 
@@ -258,7 +267,8 @@ Do not commit:
 
 ## Current Limits
 
-- No Coding Executor.
+- Coding Executor is controlled and allowlist-based; it is not arbitrary shell execution.
+- Code verification is rule-based and does not infer semantic correctness beyond execution evidence and rule-checkable criteria.
 - No UI.
 - No automatic external LLM calls.
 - Real LLM usage is opt-in through `type: "llm"` templates and explicit environment configuration.

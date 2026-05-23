@@ -11,6 +11,7 @@ export function createInitialContext(input: {
     userGoal: input.userGoal,
     constraints: input.constraints ?? {},
     successCriteria: input.successCriteria ?? [],
+    codingTaskContext: null,
     taskBrief: null,
     researchReport: null,
     feasibilityReport: null,

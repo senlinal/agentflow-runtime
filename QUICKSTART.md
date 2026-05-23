@@ -48,7 +48,15 @@ npm run workflow:inspect -- --template abcde-basic
 npm run workflow:validate -- --template abcde-basic
 ```
 
-## 6. LLM Config Dry-Run
+## 6. Run Controlled Code-Test-Verify
+
+```bash
+npm run workflow -- --template code-test-verify --input inputs/feasible-task.json
+```
+
+This template runs the controlled `CodeExecutor`, then the configured `TestRunner`, then a deterministic `type: "verify"` node that checks test status, diff evidence, blocked operations, and checkpoint metadata.
+
+## 7. LLM Config Dry-Run
 
 ```bash
 npm run llm:config
@@ -57,7 +65,7 @@ npm run llm:smoke
 
 `llm:smoke` is dry-run by default and does not call external providers. Do not run `--execute` unless you intentionally want a real provider call.
 
-## 7. Full Local Verification
+## 8. Full Local Verification
 
 ```bash
 npm run verify

@@ -23,6 +23,7 @@ describe("CodeExecutor and TestExecutor", () => {
 
     const result = await new CodeExecutor({ projectRoot }).execute(node, context());
 
+    assert.equal(result.status, "success");
     assert.equal(result.errors.length, 0);
     assert.ok(result.artifacts.includes("generated/result.txt"));
     assert.equal(await readFile(join(projectRoot, "generated/result.txt"), "utf8"), "ok\n");
@@ -38,6 +39,7 @@ describe("CodeExecutor and TestExecutor", () => {
 
     const result = await new CodeExecutor({ projectRoot }).execute(node, context());
 
+    assert.equal(result.status, "failed");
     assert.match(result.errors[0], /sensitive file/);
   });
 
@@ -62,6 +64,7 @@ describe("CodeExecutor and TestExecutor", () => {
 
     const result = await new TestExecutor().execute(node, context());
 
+    assert.equal(result.status, "passed");
     assert.equal(result.errors.length, 0);
     assert.match(result.summary, /passed/);
     assert.match(result.rawOutput, /tests-ok/);

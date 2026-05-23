@@ -5,6 +5,7 @@ import { isInsidePath } from "./PathSafety.ts";
 export type DiffSummary = {
   hasChanges: boolean;
   filesChanged: string[];
+  statusEntries: Array<{ status: string; path: string }>;
   stat: string;
   patchPreview: string;
 };
@@ -32,9 +33,14 @@ export class DiffCollector {
       ...files.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean),
       ...status.stdout.split(/\r?\n/).map((line) => line.slice(3).trim()).filter(Boolean),
     ]);
+    const statusEntries = status.stdout
+      .split(/\r?\n/)
+      .map((line) => ({ status: line.slice(0, 2).trim(), path: line.slice(3).trim() }))
+      .filter((entry) => entry.path);
     return {
       hasChanges: filesChanged.length > 0,
       filesChanged,
+      statusEntries,
       stat: stat.stdout.trim(),
       patchPreview,
     };

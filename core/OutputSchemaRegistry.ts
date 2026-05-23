@@ -100,6 +100,10 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
         reason: "string",
         nextAction: "end | replan | retry_execute | ask_human",
         feedbackToPlanner: "string",
+        failureCodes: ["string optional"],
+        evidence: "object optional",
+        safetyFindings: ["string optional"],
+        recommendedFixes: ["string optional"],
       };
     case "CorrectionHint":
       return {

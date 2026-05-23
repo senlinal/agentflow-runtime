@@ -52,6 +52,10 @@ describe("SchemaValidator", () => {
       reason: "ok",
       nextAction: "end",
       feedbackToPlanner: "done",
+      failureCodes: [],
+      evidence: { codeStatus: "success" },
+      safetyFindings: [],
+      recommendedFixes: [],
     };
     assert.deepEqual(SchemaValidator.validate("VerificationReport", output), output);
   });

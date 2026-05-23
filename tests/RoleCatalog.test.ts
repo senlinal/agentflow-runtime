@@ -51,6 +51,7 @@ describe("RoleCatalog", () => {
     const catalog = new RoleCatalog();
     assert.equal(catalog.validateRole({ ...validRole(), defaultType: "code" }, "role").defaultType, "code");
     assert.equal(catalog.validateRole({ ...validRole(), defaultType: "test" }, "role").defaultType, "test");
+    assert.equal(catalog.validateRole({ ...validRole(), defaultType: "verify" }, "role").defaultType, "verify");
   });
 });
 

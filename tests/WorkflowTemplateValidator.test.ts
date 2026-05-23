@@ -87,17 +87,28 @@ describe("WorkflowTemplateValidator", () => {
         outputSchema: "ExecutionResult",
         executorConfig: { commands: ["node -v"] },
       },
+      {
+        id: "execution_verifier",
+        type: "verify",
+        role: "Verifier",
+        description: "verify execution evidence",
+        inputKeys: ["codeExecutionResult", "testExecutionResult"],
+        outputKey: "verification",
+        outputSchema: "VerificationReport",
+      },
     ];
     template.start = "code_executor";
     template.edges = [
       { from: "code_executor", to: "test_runner", condition: { type: "always" } },
-      { from: "test_runner", to: "end", condition: { type: "always" } },
+      { from: "test_runner", to: "execution_verifier", condition: { type: "always" } },
+      { from: "execution_verifier", to: "end", condition: { type: "always" } },
     ];
 
     const config = WorkflowTemplateValidator.validate(template);
 
     assert.equal(config.nodes[0].type, "code");
     assert.equal(config.nodes[1].type, "test");
+    assert.equal(config.nodes[2].type, "verify");
     assert.deepEqual(config.nodes[0].executorConfig, { dryRun: true });
   });
 

@@ -16,7 +16,7 @@ describe("code-test-verify workflow", () => {
     const loaded = await new WorkflowTemplateRegistry().load("code-test-verify");
 
     assert.equal(loaded.config.workflow.name, "code-test-verify");
-    assert.deepEqual(loaded.config.nodes.map((node) => node.type), ["code", "test", "mock"]);
+    assert.deepEqual(loaded.config.nodes.map((node) => node.type), ["code", "test", "verify"]);
     assert.equal(loaded.config.nodes[0].outputSchema, "CodeExecutionResult");
     assert.equal(loaded.config.nodes[1].outputSchema, "TestExecutionResult");
   });
@@ -38,8 +38,41 @@ describe("code-test-verify workflow", () => {
     assert.match(result.context.codeExecutionResult.rawOutput, /checkpoint_/);
     assert.match(result.context.codeExecutionResult.rawOutput, /src\/generated\.txt/);
     assert.match(result.context.testExecutionResult.rawOutput, /fixture-ok/);
+    assert.equal(result.context.verification.pass, true);
+    assert.ok(result.context.verification.evidence);
+    assert.deepEqual(result.context.verification.failureCodes, []);
     assert.match(summary, /codeExecutionResult/);
     assert.match(summary, /testExecutionResult/);
+    assert.match(summary, /Execution Verification Evidence/);
+  });
+
+  it("returns pass=false when the configured test command fails", async () => {
+    const workspace = await createFixtureWorkspace();
+    const loaded = await new WorkflowTemplateRegistry().load("code-test-verify");
+    const config = withFixtureExecutorConfig(loaded.config, workspace, {}, {
+      commands: ["node -e \"process.exit(1)\""],
+    });
+
+    const result = await new WorkflowRunner().run(config, taskBrief());
+
+    assert.equal(result.context.verification?.pass, false);
+    assert.ok(result.context.verification?.failureCodes?.includes("test_failed"));
+    assert.equal(result.trace.at(-1)?.nodeId, "verifier");
+  });
+
+  it("returns pass=false when a code operation is blocked", async () => {
+    const workspace = await createFixtureWorkspace();
+    const loaded = await new WorkflowTemplateRegistry().load("code-test-verify");
+    const config = withFixtureExecutorConfig(loaded.config, workspace, {
+      fileWrites: [{ path: "../outside.txt", content: "nope\n" }],
+      commands: [],
+    });
+
+    const result = await new WorkflowRunner().run(config, taskBrief());
+
+    assert.equal(result.context.verification?.pass, false);
+    assert.ok(result.context.verification?.failureCodes?.includes("code_execution_failed"));
+    assert.ok(result.context.verification?.failureCodes?.includes("operation_blocked"));
   });
 
   it("stops with a structured code execution error when diff limits are exceeded", async () => {
@@ -58,6 +91,7 @@ function withFixtureExecutorConfig(
   config: WorkflowGraphConfig,
   workspace: string,
   overrides: Record<string, unknown> = {},
+  testOverrides: Record<string, unknown> = {},
 ): WorkflowGraphConfig {
   const nodes = config.nodes.map((node): AgentNode => {
     if (node.id === "codeExecutor") {
@@ -83,6 +117,7 @@ function withFixtureExecutorConfig(
           commands: [
             "node -e \"require('fs').existsSync('src/generated.txt') ? console.log('fixture-ok') : process.exit(1)\"",
           ],
+          ...testOverrides,
         },
       };
     }

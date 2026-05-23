@@ -3,6 +3,7 @@ import { TestExecutor } from "./execution/TestExecutor.ts";
 import { LLMExecutor } from "./LLMExecutor.ts";
 import { MockExecutor } from "./MockExecutor.ts";
 import type { AgentNode, NodeExecutor } from "./types.ts";
+import { VerificationExecutor } from "./verification/VerificationExecutor.ts";
 
 export class NodeRegistry {
   private readonly executors = new Map<string, NodeExecutor>();
@@ -12,6 +13,7 @@ export class NodeRegistry {
     registry.register("mock", new MockExecutor());
     registry.register("code", new CodeExecutor());
     registry.register("test", new TestExecutor());
+    registry.register("verify", new VerificationExecutor());
     return registry;
   }
 
