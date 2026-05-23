@@ -86,6 +86,34 @@ describe("SchemaValidator", () => {
     );
   });
 
+  it("passes for a valid ScopeConfirmationRecord", () => {
+    const output = validScopeConfirmationRecord();
+    assert.deepEqual(SchemaValidator.validate("ScopeConfirmationRecord", output), output);
+  });
+
+  it("fails when ScopeConfirmationRecord status is invalid", () => {
+    assert.throws(
+      () => SchemaValidator.validate("ScopeConfirmationRecord", { ...validScopeConfirmationRecord(), status: "approved" }),
+      /ScopeConfirmationRecord\.status must be one of/,
+    );
+  });
+
+  it("passes for a valid ConfirmedScopeGateResult", () => {
+    const output = {
+      gateId: "gate_1",
+      confirmationId: "scope_1",
+      negotiationId: "neg_1",
+      allowed: true,
+      status: "allowed",
+      reason: "ok",
+      blockedReasons: [],
+      confirmedScope: validScopeConfirmationRecord().confirmedScope,
+      recommendedNextStep: "proceed_to_feasibility",
+      createdAt: "2026-05-23T00:00:00.000Z",
+    };
+    assert.deepEqual(SchemaValidator.validate("ConfirmedScopeGateResult", output), output);
+  });
+
   it("fails when TaskBrief is missing goal", () => {
     const { goal: _goal, ...output } = validTaskBrief();
     assert.throws(() => SchemaValidator.validate("TaskBrief", output), /TaskBrief\.goal must be a string/);
@@ -582,6 +610,49 @@ function validTaskNegotiationResult() {
     recommendedNextStep: "ask_human",
     readyToExecute: false,
     reason: "Need scope confirmation.",
+    createdAt: "2026-05-23T00:00:00.000Z",
+  };
+}
+
+function validScopeConfirmationRecord() {
+  return {
+    confirmationId: "scope_1",
+    negotiationId: "neg_1",
+    sourceTaskBriefId: "task_1",
+    status: "confirmed",
+    confirmedAt: "2026-05-23T00:00:00.000Z",
+    confirmedBy: "human",
+    humanOverride: false,
+    confirmedScope: {
+      goal: "Improve RAG retrieval quality.",
+      targetModule: "rag",
+      allowedModules: ["rag"],
+      forbiddenModules: [],
+      allowedFiles: ["src/rag/retriever.ts"],
+      forbiddenFiles: [".env"],
+      allowedActions: ["inspect_project", "evaluate_feasibility"],
+      blockedActions: ["execute_code", "modify_files", "delete_files"],
+      qualityConstraints: ["No answer quality regression."],
+      metricDefinition: {
+        primaryMetric: "answer relevance",
+        secondaryMetrics: ["citation coverage"],
+        targetValue: "improve relevance",
+        evaluationDataset: "offline eval set",
+      },
+      ragConstraints: {
+        recallLevel: "chunk",
+        allowChunkChanges: true,
+        allowIndexRebuild: false,
+        allowRerankerChanges: false,
+        allowQueryRewrite: true,
+        allowAnswerQualityRegression: false,
+        productionChangesAllowed: false,
+      },
+    },
+    userAnswers: [{ question: "Metric?", answer: "answer relevance" }],
+    assumptionsAccepted: [],
+    assumptionsRejected: [],
+    notes: "confirmed",
     createdAt: "2026-05-23T00:00:00.000Z",
   };
 }

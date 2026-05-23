@@ -1,0 +1,10 @@
+{
+  "id": "confirmed-scope-gate",
+  "role": "ConfirmedScopeGate",
+  "description": "Check whether a human-confirmed scope record permits a workflow to proceed to feasibility.",
+  "defaultType": "scopeGate",
+  "defaultInputKeys": ["taskNegotiationResult", "scopeConfirmationRecord"],
+  "defaultOutputKey": "confirmedScopeGateResult",
+  "outputSchema": "ConfirmedScopeGateResult",
+  "defaultSystemPrompt": "You are a deterministic scope gate. Allow continuation only when a ScopeConfirmationRecord is confirmed, unexpired, and complete."
+}

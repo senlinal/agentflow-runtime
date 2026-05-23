@@ -132,6 +132,7 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
       : "No FeasibilityReport.",
     "",
     buildLlmMetadataSummary(context),
+    buildScopeConfirmationSummary(context),
     buildExecutionVerificationSummary(context),
     buildRepairSummary(context),
     buildCodeChangeExecutionApprovalSummary(context),
@@ -172,6 +173,44 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
     "## Final Result",
     "",
     executionResult?.summary ?? "No execution result.",
+    "",
+  ].join("\n");
+}
+
+function buildScopeConfirmationSummary(context: WorkflowContext): string {
+  if (!context.scopeConfirmationRecord && !context.confirmedScopeGateResult) return "";
+  const record = context.scopeConfirmationRecord;
+  const gate = context.confirmedScopeGateResult;
+  return [
+    "## Scope Confirmation",
+    "",
+    record
+      ? [
+          `- confirmationId: ${record.confirmationId}`,
+          `- negotiationId: ${record.negotiationId}`,
+          `- status: ${record.status}`,
+          `- targetModule: ${record.confirmedScope.targetModule ?? "n/a"}`,
+          `- allowedModules: ${record.confirmedScope.allowedModules.join("; ") || "none"}`,
+          `- forbiddenModules: ${record.confirmedScope.forbiddenModules.join("; ") || "none"}`,
+          `- allowedActions: ${record.confirmedScope.allowedActions.join("; ") || "none"}`,
+          `- blockedActions: ${record.confirmedScope.blockedActions.join("; ") || "none"}`,
+          `- qualityConstraints: ${record.confirmedScope.qualityConstraints.join("; ") || "none"}`,
+          `- humanOverride: ${record.humanOverride}`,
+        ].join("\n")
+      : "No ScopeConfirmationRecord.",
+    "",
+    gate
+      ? [
+          `- gateId: ${gate.gateId}`,
+          `- allowed: ${gate.allowed}`,
+          `- status: ${gate.status}`,
+          `- recommendedNextStep: ${gate.recommendedNextStep}`,
+          `- blockedReasons: ${gate.blockedReasons.join("; ") || "none"}`,
+          `- reason: ${gate.reason}`,
+        ].join("\n")
+      : "No ConfirmedScopeGateResult.",
+    "",
+    "Scope confirmation is a gate only. It does not execute code, run tests, call CodeExecutor, or call a real LLM.",
     "",
   ].join("\n");
 }

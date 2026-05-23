@@ -110,6 +110,19 @@ npm run demo:task-negotiation
 
 The negotiator does not plan implementation, write files, run tests, call `CodeExecutor`, or run real LLMs. If scope or module boundaries are unclear it returns `recommendedNextStep: "ask_human"` or `split_task`, so the human can confirm the boundary before feasibility analysis or execution.
 
+### Scope Confirmation Gate
+
+`ScopeConfirmationRecord` is the explicit human-confirmed boundary for a negotiated task. It records allowed modules, forbidden modules, allowed actions, blocked actions, quality constraints, user answers, accepted assumptions, and optional RAG metrics/constraints.
+
+```bash
+npm run demo:scope-confirmation
+npm run scope:list
+npm run scope:show -- --id <confirmationId>
+npm run scope:gate -- --id <confirmationId>
+```
+
+`confirmed-scope-gate` only allows continuation when the confirmation is `confirmed`, unexpired, complete, and bound to the negotiation. A `TaskNegotiationResult` alone is not confirmation. The gate does not execute code, run tests, call `CodeExecutor`, or call a real LLM.
+
 ### Scoped Repair Plans
 
 `ScopedRepairPlan` turns failed verification evidence into a bounded review artifact. It lists failure codes, failed criteria, target files, forbidden files, proposed inspect/modify/test/manual-review operations, test commands, risk level, and safety notes.

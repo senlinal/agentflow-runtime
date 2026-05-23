@@ -14,6 +14,8 @@ export function createInitialContext(input: {
     codingTaskContext: null,
     taskBrief: null,
     taskNegotiationResult: null,
+    scopeConfirmationRecord: null,
+    confirmedScopeGateResult: null,
     researchReport: null,
     feasibilityReport: null,
     plan: null,

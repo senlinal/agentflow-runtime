@@ -58,6 +58,17 @@ npm run demo:task-negotiation
 
 This generates a `TaskNegotiationResult` with target module, ambiguity, clarification questions, proposed scope, blocked actions, and a recommended next step. It does not call `CodeExecutor`, does not modify files, and does not run tests.
 
+Record and check a confirmed scope:
+
+```bash
+npm run demo:scope-confirmation
+npm run scope:list
+npm run scope:show -- --id <confirmationId>
+npm run scope:gate -- --id <confirmationId>
+```
+
+The scope gate is a continuation gate only. It confirms whether the human-approved scope may proceed to feasibility. It does not execute code, run tests, or call `CodeExecutor`.
+
 ```bash
 npm run workflow -- --template code-test-verify --input inputs/feasible-task.json
 ```

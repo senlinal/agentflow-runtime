@@ -4,6 +4,7 @@ import { LLMExecutor } from "./LLMExecutor.ts";
 import { MockExecutor } from "./MockExecutor.ts";
 import type { AgentNode, NodeExecutor } from "./types.ts";
 import { TaskNegotiatorExecutor } from "./negotiation/TaskNegotiatorExecutor.ts";
+import { ConfirmedScopeGateExecutor } from "./scope/ConfirmedScopeGateExecutor.ts";
 import { HumanApprovalExecutor } from "./repair/HumanApprovalExecutor.ts";
 import { CodeChangePlanDryRunExecutor } from "./repair/CodeChangePlanDryRunExecutor.ts";
 import { CodeChangePlanExecutionExecutor } from "./repair/CodeChangePlanExecutionExecutor.ts";
@@ -19,6 +20,7 @@ export class NodeRegistry {
     const registry = new NodeRegistry();
     registry.register("mock", new MockExecutor());
     registry.register("negotiate", new TaskNegotiatorExecutor());
+    registry.register("scopeGate", new ConfirmedScopeGateExecutor());
     registry.register("code", new CodeExecutor());
     registry.register("test", new TestExecutor());
     registry.register("verify", new VerificationExecutor());

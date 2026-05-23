@@ -3,6 +3,8 @@ import type { OutputSchemaName } from "./types.ts";
 export const OUTPUT_SCHEMA_NAMES: OutputSchemaName[] = [
   "TaskBrief",
   "TaskNegotiationResult",
+  "ScopeConfirmationRecord",
+  "ConfirmedScopeGateResult",
   "ResearchReport",
   "FeasibilityReport",
   "Plan",
@@ -69,6 +71,49 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
         recommendedNextStep: "ask_human | proceed_to_feasibility | split_task | stop",
         readyToExecute: "boolean",
         reason: "string",
+        createdAt: "string",
+      };
+    case "ScopeConfirmationRecord":
+      return {
+        confirmationId: "string",
+        negotiationId: "string",
+        sourceTaskBriefId: "string optional",
+        status: "confirmed | rejected | needs_revision | expired",
+        confirmedAt: "string optional",
+        rejectedAt: "string optional",
+        expiresAt: "string optional",
+        confirmedBy: "string optional",
+        humanOverride: "boolean",
+        confirmedScope: {
+          goal: "string",
+          targetModule: "string optional",
+          allowedModules: ["string"],
+          forbiddenModules: ["string"],
+          allowedFiles: ["string optional"],
+          forbiddenFiles: ["string optional"],
+          allowedActions: ["string"],
+          blockedActions: ["string"],
+          qualityConstraints: ["string"],
+          metricDefinition: "object optional",
+          ragConstraints: "object optional",
+        },
+        userAnswers: [{ question: "string", answer: "string" }],
+        assumptionsAccepted: ["string"],
+        assumptionsRejected: ["string"],
+        notes: "string optional",
+        createdAt: "string",
+      };
+    case "ConfirmedScopeGateResult":
+      return {
+        gateId: "string",
+        confirmationId: "string optional",
+        negotiationId: "string optional",
+        allowed: "boolean",
+        status: "allowed | blocked",
+        reason: "string",
+        blockedReasons: ["string"],
+        confirmedScope: "object optional",
+        recommendedNextStep: "proceed_to_feasibility | ask_human | revise_scope | stop",
         createdAt: "string",
       };
     case "ResearchReport":

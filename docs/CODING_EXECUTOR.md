@@ -14,6 +14,17 @@ npm run demo:task-negotiation
 
 This node is non-executing. It does not call `CodeExecutor`, does not write files, does not run tests, does not call real LLM providers, and does not route directly to implementation. It exists to confirm human scope before the controlled execution layers below are used.
 
+`ScopeConfirmationRecord` captures the human-confirmed boundary after negotiation. It is distinct from the negotiation result and can be queried locally:
+
+```bash
+npm run demo:scope-confirmation
+npm run scope:list
+npm run scope:show -- --id <confirmationId>
+npm run scope:gate -- --id <confirmationId>
+```
+
+`confirmed-scope-gate` allows only confirmed, unexpired, complete scope records to continue to feasibility. RAG scopes must include metric definition and RAG constraints such as recall level, whether chunk/index/reranker/query-rewrite changes are allowed, and whether production changes are allowed. The gate does not call `CodeExecutor`, does not run tests, and does not perform implementation.
+
 ## Scope
 
 The runtime now supports two additional workflow node types:

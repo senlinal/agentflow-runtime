@@ -1,6 +1,7 @@
 export type AgentRole =
   | "TaskIntake"
   | "TaskNegotiator"
+  | "ConfirmedScopeGate"
   | "Researcher"
   | "FeasibilityEvaluator"
   | "CodeExecutor"
@@ -26,6 +27,8 @@ export type RetryPolicy = {
 export type OutputSchemaName =
   | "TaskBrief"
   | "TaskNegotiationResult"
+  | "ScopeConfirmationRecord"
+  | "ConfirmedScopeGateResult"
   | "ResearchReport"
   | "FeasibilityReport"
   | "Plan"
@@ -49,6 +52,7 @@ export type NodeType =
   | "mock"
   | "llm"
   | "negotiate"
+  | "scopeGate"
   | "code"
   | "test"
   | "verify"
@@ -137,6 +141,65 @@ export type TaskNegotiationResult = {
   recommendedNextStep: "ask_human" | "proceed_to_feasibility" | "split_task" | "stop";
   readyToExecute: boolean;
   reason: string;
+  createdAt: string;
+};
+
+export type ScopeConfirmationRecord = {
+  confirmationId: string;
+  negotiationId: string;
+  sourceTaskBriefId?: string;
+  status: "confirmed" | "rejected" | "needs_revision" | "expired";
+  confirmedAt?: string;
+  rejectedAt?: string;
+  expiresAt?: string;
+  confirmedBy?: string;
+  humanOverride: boolean;
+  confirmedScope: {
+    goal: string;
+    targetModule?: string;
+    allowedModules: string[];
+    forbiddenModules: string[];
+    allowedFiles?: string[];
+    forbiddenFiles?: string[];
+    allowedActions: string[];
+    blockedActions: string[];
+    qualityConstraints: string[];
+    metricDefinition?: {
+      primaryMetric?: string;
+      secondaryMetrics?: string[];
+      targetValue?: string;
+      evaluationDataset?: string;
+    };
+    ragConstraints?: {
+      recallLevel?: "file" | "heading" | "chunk" | "answer" | "unknown";
+      allowChunkChanges: boolean;
+      allowIndexRebuild: boolean;
+      allowRerankerChanges: boolean;
+      allowQueryRewrite: boolean;
+      allowAnswerQualityRegression: boolean;
+      productionChangesAllowed: boolean;
+    };
+  };
+  userAnswers: {
+    question: string;
+    answer: string;
+  }[];
+  assumptionsAccepted: string[];
+  assumptionsRejected: string[];
+  notes?: string;
+  createdAt: string;
+};
+
+export type ConfirmedScopeGateResult = {
+  gateId: string;
+  confirmationId?: string;
+  negotiationId?: string;
+  allowed: boolean;
+  status: "allowed" | "blocked";
+  reason: string;
+  blockedReasons: string[];
+  confirmedScope?: ScopeConfirmationRecord["confirmedScope"];
+  recommendedNextStep: "proceed_to_feasibility" | "ask_human" | "revise_scope" | "stop";
   createdAt: string;
 };
 
@@ -460,6 +523,8 @@ export type WorkflowContext = TaskSpec & {
   codingTaskContext?: CodingTaskContext | null;
   taskBrief: TaskBrief | null;
   taskNegotiationResult?: TaskNegotiationResult | null;
+  scopeConfirmationRecord?: ScopeConfirmationRecord | null;
+  confirmedScopeGateResult?: ConfirmedScopeGateResult | null;
   researchReport: ResearchReport | null;
   feasibilityReport: FeasibilityReport | null;
   plan: Plan | null;

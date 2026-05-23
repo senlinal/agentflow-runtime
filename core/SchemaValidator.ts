@@ -7,6 +7,7 @@ import type {
   CodeChangePlanDryRunExecutionPlan,
   CodeChangePlanExecutionRecord,
   CodeChangePlanExecutionApprovalRequest,
+  ConfirmedScopeGateResult,
   OutputSchemaName,
   PatchExportRecord,
   Plan,
@@ -16,6 +17,7 @@ import type {
   SmokeTestResult,
   TaskBrief,
   TaskNegotiationResult,
+  ScopeConfirmationRecord,
   VerificationReport,
   HumanApprovalRequest,
 } from "./types.ts";
@@ -34,6 +36,10 @@ export class SchemaValidator {
         return validateTaskBrief(output);
       case "TaskNegotiationResult":
         return validateTaskNegotiationResult(output);
+      case "ScopeConfirmationRecord":
+        return validateScopeConfirmationRecord(output);
+      case "ConfirmedScopeGateResult":
+        return validateConfirmedScopeGateResult(output);
       case "ResearchReport":
         return validateResearchReport(output);
       case "FeasibilityReport":
@@ -74,6 +80,69 @@ export class SchemaValidator {
         throw new Error(`Unsupported output schema: ${String(schemaName)}`);
     }
   }
+}
+
+function validateScopeConfirmationRecord(output: unknown): ScopeConfirmationRecord {
+  const record = requireObject(output, "ScopeConfirmationRecord");
+  requireString(record, "confirmationId", "ScopeConfirmationRecord");
+  requireString(record, "negotiationId", "ScopeConfirmationRecord");
+  if ("sourceTaskBriefId" in record && typeof record.sourceTaskBriefId !== "string") throw new Error("ScopeConfirmationRecord.sourceTaskBriefId must be a string when provided.");
+  requireEnum(record, "status", ["confirmed", "rejected", "needs_revision", "expired"], "ScopeConfirmationRecord");
+  if ("confirmedAt" in record && typeof record.confirmedAt !== "string") throw new Error("ScopeConfirmationRecord.confirmedAt must be a string when provided.");
+  if ("rejectedAt" in record && typeof record.rejectedAt !== "string") throw new Error("ScopeConfirmationRecord.rejectedAt must be a string when provided.");
+  if ("expiresAt" in record && typeof record.expiresAt !== "string") throw new Error("ScopeConfirmationRecord.expiresAt must be a string when provided.");
+  if ("confirmedBy" in record && typeof record.confirmedBy !== "string") throw new Error("ScopeConfirmationRecord.confirmedBy must be a string when provided.");
+  requireBoolean(record, "humanOverride", "ScopeConfirmationRecord");
+  const scope = requireObject(record.confirmedScope, "ScopeConfirmationRecord.confirmedScope");
+  requireString(scope, "goal", "ScopeConfirmationRecord.confirmedScope");
+  if ("targetModule" in scope && typeof scope.targetModule !== "string") throw new Error("ScopeConfirmationRecord.confirmedScope.targetModule must be a string when provided.");
+  requireArray(scope, "allowedModules", "ScopeConfirmationRecord.confirmedScope");
+  requireArray(scope, "forbiddenModules", "ScopeConfirmationRecord.confirmedScope");
+  if ("allowedFiles" in scope) requireArray(scope, "allowedFiles", "ScopeConfirmationRecord.confirmedScope");
+  if ("forbiddenFiles" in scope) requireArray(scope, "forbiddenFiles", "ScopeConfirmationRecord.confirmedScope");
+  requireArray(scope, "allowedActions", "ScopeConfirmationRecord.confirmedScope");
+  requireArray(scope, "blockedActions", "ScopeConfirmationRecord.confirmedScope");
+  requireArray(scope, "qualityConstraints", "ScopeConfirmationRecord.confirmedScope");
+  if ("metricDefinition" in scope) {
+    const metric = requireObject(scope.metricDefinition, "ScopeConfirmationRecord.confirmedScope.metricDefinition");
+    for (const key of ["primaryMetric", "targetValue", "evaluationDataset"]) {
+      if (key in metric && typeof metric[key] !== "string") throw new Error(`ScopeConfirmationRecord.confirmedScope.metricDefinition.${key} must be a string when provided.`);
+    }
+    if ("secondaryMetrics" in metric) requireArray(metric, "secondaryMetrics", "ScopeConfirmationRecord.confirmedScope.metricDefinition");
+  }
+  if ("ragConstraints" in scope) {
+    const rag = requireObject(scope.ragConstraints, "ScopeConfirmationRecord.confirmedScope.ragConstraints");
+    if ("recallLevel" in rag) requireEnum(rag, "recallLevel", ["file", "heading", "chunk", "answer", "unknown"], "ScopeConfirmationRecord.confirmedScope.ragConstraints");
+    for (const key of ["allowChunkChanges", "allowIndexRebuild", "allowRerankerChanges", "allowQueryRewrite", "allowAnswerQualityRegression", "productionChangesAllowed"]) {
+      requireBoolean(rag, key, "ScopeConfirmationRecord.confirmedScope.ragConstraints");
+    }
+  }
+  requireArray(record, "userAnswers", "ScopeConfirmationRecord");
+  record.userAnswers.forEach((answer, index) => {
+    const item = requireObject(answer, `ScopeConfirmationRecord.userAnswers[${index}]`);
+    requireString(item, "question", `ScopeConfirmationRecord.userAnswers[${index}]`);
+    requireString(item, "answer", `ScopeConfirmationRecord.userAnswers[${index}]`);
+  });
+  requireArray(record, "assumptionsAccepted", "ScopeConfirmationRecord");
+  requireArray(record, "assumptionsRejected", "ScopeConfirmationRecord");
+  if ("notes" in record && typeof record.notes !== "string") throw new Error("ScopeConfirmationRecord.notes must be a string when provided.");
+  requireString(record, "createdAt", "ScopeConfirmationRecord");
+  return record as ScopeConfirmationRecord;
+}
+
+function validateConfirmedScopeGateResult(output: unknown): ConfirmedScopeGateResult {
+  const record = requireObject(output, "ConfirmedScopeGateResult");
+  requireString(record, "gateId", "ConfirmedScopeGateResult");
+  if ("confirmationId" in record && typeof record.confirmationId !== "string") throw new Error("ConfirmedScopeGateResult.confirmationId must be a string when provided.");
+  if ("negotiationId" in record && typeof record.negotiationId !== "string") throw new Error("ConfirmedScopeGateResult.negotiationId must be a string when provided.");
+  requireBoolean(record, "allowed", "ConfirmedScopeGateResult");
+  requireEnum(record, "status", ["allowed", "blocked"], "ConfirmedScopeGateResult");
+  requireString(record, "reason", "ConfirmedScopeGateResult");
+  requireArray(record, "blockedReasons", "ConfirmedScopeGateResult");
+  if ("confirmedScope" in record) requireObject(record.confirmedScope, "ConfirmedScopeGateResult.confirmedScope");
+  requireEnum(record, "recommendedNextStep", ["proceed_to_feasibility", "ask_human", "revise_scope", "stop"], "ConfirmedScopeGateResult");
+  requireString(record, "createdAt", "ConfirmedScopeGateResult");
+  return record as ConfirmedScopeGateResult;
 }
 
 function validateTaskNegotiationResult(output: unknown): TaskNegotiationResult {

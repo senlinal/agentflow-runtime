@@ -1,0 +1,40 @@
+{
+  "workflow": {
+    "name": "confirmed-scope-gate",
+    "version": "1.0.0",
+    "description": "Validate a human ScopeConfirmationRecord before allowing continuation to feasibility.",
+    "start": "confirmedScopeGate",
+    "maxIterations": 1
+  },
+  "inputSchema": "TaskBrief",
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": ["read_scope_confirmation", "validate_scope_gate"],
+      "requireConfirmation": ["missing_or_rejected_scope"],
+      "forbiddenWithoutExplicitApproval": ["execute_code", "modify_files", "delete_files", "run_tests"]
+    },
+    "costPolicy": {
+      "maxCostLevel": "low",
+      "stopWhen": ["scope confirmation missing", "scope rejected", "scope expired"],
+      "preferredDecisionsWhenOverBudget": ["ask_human", "stop"]
+    },
+    "qualityPolicy": {
+      "principles": ["confirmed scope gates execution", "confirmation records must be explicit"],
+      "requiredChecks": ["status", "expiry", "allowedModules", "allowedActions", "blockedActions", "qualityConstraints"],
+      "forbiddenShortcuts": ["treat negotiation suggestion as confirmation", "execute without confirmed scope"]
+    }
+  },
+  "nodes": [
+    {
+      "id": "confirmedScopeGate",
+      "rolePreset": "confirmed-scope-gate"
+    }
+  ],
+  "edges": [
+    {
+      "from": "confirmedScopeGate",
+      "to": "end",
+      "condition": { "type": "always" }
+    }
+  ]
+}
