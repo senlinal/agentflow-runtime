@@ -25,6 +25,8 @@ Report privately through the repository owner's preferred private channel. Inclu
 - Policy audit logs are written under `.opencode/policy-runs/` and ignored by Git.
 - The opencode policy plugin is a guardrail, not a full sandbox.
 - The controlled code-test verifier fails unsafe execution instead of treating it as success. Unsafe file touches, unexpected files, deleted files, blocked operations, missing checkpoints, and failed tests produce `VerificationReport.pass=false`.
+- A failed code-test verification can create a scoped repair plan and pending approval request, but it does not execute repair operations or retry code execution automatically.
+- Scoped repair plans do not support `delete_file` operations. High-risk repair evidence remains pending for human review and cannot auto-approve.
 
 ## High-Risk Areas
 

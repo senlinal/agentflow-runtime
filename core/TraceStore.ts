@@ -99,6 +99,7 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
     "",
     buildLlmMetadataSummary(context),
     buildExecutionVerificationSummary(context),
+    buildRepairSummary(context),
     "",
     !executionStarted && feasibility
       ? [
@@ -132,6 +133,38 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
     "## Final Result",
     "",
     executionResult?.summary ?? "No execution result.",
+    "",
+  ].join("\n");
+}
+
+function buildRepairSummary(context: WorkflowContext): string {
+  if (!context.scopedRepairPlan && !context.humanApprovalRequest) return "";
+  return [
+    "## Scoped Repair / Approval",
+    "",
+    context.scopedRepairPlan
+      ? [
+          `- repairPlanId: ${context.scopedRepairPlan.planId}`,
+          `- riskLevel: ${context.scopedRepairPlan.riskLevel}`,
+          `- requiresHumanApproval: ${context.scopedRepairPlan.requiresHumanApproval}`,
+          `- failureCodes: ${context.scopedRepairPlan.basedOnFailureCodes.join("; ") || "none"}`,
+          `- targetFiles: ${context.scopedRepairPlan.targetFiles.join("; ") || "none"}`,
+          `- forbiddenFiles: ${context.scopedRepairPlan.forbiddenFiles.join("; ") || "none"}`,
+          `- proposedOperations: ${context.scopedRepairPlan.proposedOperations.map((item) => `${item.id}:${item.type}`).join("; ") || "none"}`,
+          `- proposedOperationCount: ${context.scopedRepairPlan.proposedOperations.length}`,
+          `- safetyNotes: ${context.scopedRepairPlan.safetyNotes.join("; ") || "none"}`,
+        ].join("\n")
+      : "- repairPlan: n/a",
+    context.humanApprovalRequest
+      ? [
+          `- approvalId: ${context.humanApprovalRequest.approvalId}`,
+          `- approvalStatus: ${context.humanApprovalRequest.status}`,
+          `- blockedUntilApproved: ${context.humanApprovalRequest.blockedUntilApproved}`,
+        ].join("\n")
+      : "- approval: n/a",
+    "",
+    "No repair was executed automatically.",
+    "Human approval is required before applying any repair.",
     "",
   ].join("\n");
 }

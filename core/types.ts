@@ -9,6 +9,8 @@ export type AgentRole =
   | "Executor"
   | "TestRunner"
   | "Verifier"
+  | "RepairPlanBuilder"
+  | "HumanApprovalGate"
   | "GoalKeeper";
 
 export type RetryPolicy = {
@@ -25,12 +27,14 @@ export type OutputSchemaName =
   | "RevisedPlan"
   | "ExecutionResult"
   | "VerificationReport"
+  | "ScopedRepairPlan"
+  | "HumanApprovalRequest"
   | "CorrectionHint"
   | "CodeExecutionResult"
   | "TestExecutionResult"
   | "SmokeTestResult";
 
-export type NodeType = "mock" | "llm" | "code" | "test" | "verify";
+export type NodeType = "mock" | "llm" | "code" | "test" | "verify" | "repair" | "approval";
 
 export type AgentNode = {
   id: string;
@@ -157,6 +161,44 @@ export type VerificationReport = {
   recommendedFixes?: string[];
 };
 
+export type ProposedRepairOperation = {
+  id: string;
+  type: "modify_file" | "create_file" | "run_test" | "inspect" | "manual_review";
+  description: string;
+  targetFile?: string;
+  command?: string;
+  reason: string;
+  safetyConstraints: string[];
+};
+
+export type ScopedRepairPlan = {
+  planId: string;
+  summary: string;
+  basedOnFailureCodes: string[];
+  basedOnFailedCriteria: string[];
+  targetFiles: string[];
+  forbiddenFiles: string[];
+  proposedOperations: ProposedRepairOperation[];
+  testCommands: string[];
+  riskLevel: "low" | "medium" | "high";
+  requiresHumanApproval: boolean;
+  rationale: string;
+  safetyNotes: string[];
+};
+
+export type HumanApprovalRequest = {
+  approvalId: string;
+  status: "pending";
+  summary: string;
+  repairPlanId: string;
+  requestedAction: "approve_scoped_repair_plan";
+  riskLevel: ScopedRepairPlan["riskLevel"];
+  requiresHumanApproval: boolean;
+  blockedUntilApproved: boolean;
+  approvalInstructions: string[];
+  createdAt: string;
+};
+
 export type CorrectionHint = {
   driftDetected: boolean;
   originalGoalReminder: string;
@@ -197,6 +239,8 @@ export type WorkflowContext = TaskSpec & {
   codeExecutionResult: CodeExecutionResult | null;
   testExecutionResult: TestExecutionResult | null;
   verification: VerificationReport | null;
+  scopedRepairPlan: ScopedRepairPlan | null;
+  humanApprovalRequest: HumanApprovalRequest | null;
   correctionHint: CorrectionHint | null;
   iteration: number;
   history: unknown[];

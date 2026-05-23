@@ -56,6 +56,14 @@ npm run workflow -- --template code-test-verify --input inputs/feasible-task.jso
 
 This template runs the controlled `CodeExecutor`, then the configured `TestRunner`, then a deterministic `type: "verify"` node that checks test status, diff evidence, blocked operations, and checkpoint metadata.
 
+If verification fails, the template stops through `repairPlanBuilder -> humanApprovalGate` with a scoped repair plan and a pending human approval request. It does not automatically retry code execution.
+
+Run the failing review-path demo:
+
+```bash
+npm run demo:code-test-repair-review
+```
+
 ## 7. LLM Config Dry-Run
 
 ```bash

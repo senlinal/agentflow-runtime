@@ -9,6 +9,8 @@ export const OUTPUT_SCHEMA_NAMES: OutputSchemaName[] = [
   "RevisedPlan",
   "ExecutionResult",
   "VerificationReport",
+  "ScopedRepairPlan",
+  "HumanApprovalRequest",
   "CorrectionHint",
   "CodeExecutionResult",
   "TestExecutionResult",
@@ -104,6 +106,42 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
         evidence: "object optional",
         safetyFindings: ["string optional"],
         recommendedFixes: ["string optional"],
+      };
+    case "ScopedRepairPlan":
+      return {
+        planId: "string",
+        summary: "string",
+        basedOnFailureCodes: ["string"],
+        basedOnFailedCriteria: ["string"],
+        targetFiles: ["string"],
+        forbiddenFiles: ["string"],
+        proposedOperations: [{
+          id: "string",
+          type: "modify_file | create_file | run_test | inspect | manual_review",
+          description: "string",
+          targetFile: "string optional",
+          command: "string optional",
+          reason: "string",
+          safetyConstraints: ["string"],
+        }],
+        testCommands: ["string"],
+        riskLevel: "low | medium | high",
+        requiresHumanApproval: "boolean",
+        rationale: "string",
+        safetyNotes: ["string"],
+      };
+    case "HumanApprovalRequest":
+      return {
+        approvalId: "string",
+        status: "pending",
+        summary: "string",
+        repairPlanId: "string",
+        requestedAction: "approve_scoped_repair_plan",
+        riskLevel: "low | medium | high",
+        requiresHumanApproval: "boolean",
+        blockedUntilApproved: "boolean",
+        approvalInstructions: ["string"],
+        createdAt: "string",
       };
     case "CorrectionHint":
       return {

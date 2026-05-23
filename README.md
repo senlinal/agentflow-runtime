@@ -97,6 +97,14 @@ npm run workflow -- --template code-test-verify --input inputs/feasible-task.jso
 
 `code-test-verify` uses a `type: "verify"` node. Its deterministic verifier checks code execution status, configured test results, blocked operations, changed/deleted files, diff limits, unsafe paths, and checkpoint evidence before marking the workflow as passed.
 
+When verification fails, the template now routes to `repairPlanBuilder -> humanApprovalGate -> end`. That branch creates a scoped repair plan and a pending human approval request only; it does not automatically rerun `CodeExecutor`.
+
+### Scoped Repair Plans
+
+`ScopedRepairPlan` turns failed verification evidence into a bounded review artifact. It lists failure codes, failed criteria, target files, forbidden files, proposed inspect/modify/test/manual-review operations, test commands, risk level, and safety notes.
+
+The plan is never executed automatically. `HumanApprovalGate` creates a `HumanApprovalRequest` with `status: "pending"` and `blockedUntilApproved: true`; it does not approve itself and it does not loop back into code execution.
+
 Validate and inspect templates:
 
 ```bash
@@ -269,6 +277,7 @@ Do not commit:
 
 - Coding Executor is controlled and allowlist-based; it is not arbitrary shell execution.
 - Code verification is rule-based and does not infer semantic correctness beyond execution evidence and rule-checkable criteria.
+- Verification failure creates a scoped repair plan and approval request, but does not execute repairs automatically.
 - No UI.
 - No automatic external LLM calls.
 - Real LLM usage is opt-in through `type: "llm"` templates and explicit environment configuration.

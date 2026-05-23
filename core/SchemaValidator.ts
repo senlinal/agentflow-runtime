@@ -7,9 +7,11 @@ import type {
   Plan,
   ResearchReport,
   RevisedPlan,
+  ScopedRepairPlan,
   SmokeTestResult,
   TaskBrief,
   VerificationReport,
+  HumanApprovalRequest,
 } from "./types.ts";
 
 const ALLOWED_NEXT_ACTIONS: VerificationReport["nextAction"][] = [
@@ -42,6 +44,10 @@ export class SchemaValidator {
         return validateExecutionResult(output);
       case "VerificationReport":
         return validateVerificationReport(output);
+      case "ScopedRepairPlan":
+        return validateScopedRepairPlan(output);
+      case "HumanApprovalRequest":
+        return validateHumanApprovalRequest(output);
       case "CorrectionHint":
         return validateCorrectionHint(output);
       case "SmokeTestResult":
@@ -161,6 +167,48 @@ function validateVerificationReport(output: unknown): VerificationReport {
   requireOptionalStringArray(record, "safetyFindings", "VerificationReport");
   requireOptionalStringArray(record, "recommendedFixes", "VerificationReport");
   return record as VerificationReport;
+}
+
+function validateScopedRepairPlan(output: unknown): ScopedRepairPlan {
+  const record = requireObject(output, "ScopedRepairPlan");
+  requireString(record, "planId", "ScopedRepairPlan");
+  requireString(record, "summary", "ScopedRepairPlan");
+  requireArray(record, "basedOnFailureCodes", "ScopedRepairPlan");
+  requireArray(record, "basedOnFailedCriteria", "ScopedRepairPlan");
+  requireArray(record, "targetFiles", "ScopedRepairPlan");
+  requireArray(record, "forbiddenFiles", "ScopedRepairPlan");
+  requireArray(record, "proposedOperations", "ScopedRepairPlan");
+  requireArray(record, "testCommands", "ScopedRepairPlan");
+  requireEnum(record, "riskLevel", ["low", "medium", "high"], "ScopedRepairPlan");
+  requireBoolean(record, "requiresHumanApproval", "ScopedRepairPlan");
+  requireString(record, "rationale", "ScopedRepairPlan");
+  requireArray(record, "safetyNotes", "ScopedRepairPlan");
+  record.proposedOperations.forEach((operation, index) => {
+    const item = requireObject(operation, `ScopedRepairPlan.proposedOperations[${index}]`);
+    requireString(item, "id", `ScopedRepairPlan.proposedOperations[${index}]`);
+    requireEnum(item, "type", ["modify_file", "create_file", "run_test", "inspect", "manual_review"], `ScopedRepairPlan.proposedOperations[${index}]`);
+    requireString(item, "description", `ScopedRepairPlan.proposedOperations[${index}]`);
+    if ("targetFile" in item && typeof item.targetFile !== "string") throw new Error(`ScopedRepairPlan.proposedOperations[${index}].targetFile must be a string when provided.`);
+    if ("command" in item && typeof item.command !== "string") throw new Error(`ScopedRepairPlan.proposedOperations[${index}].command must be a string when provided.`);
+    requireString(item, "reason", `ScopedRepairPlan.proposedOperations[${index}]`);
+    requireArray(item, "safetyConstraints", `ScopedRepairPlan.proposedOperations[${index}]`);
+  });
+  return record as ScopedRepairPlan;
+}
+
+function validateHumanApprovalRequest(output: unknown): HumanApprovalRequest {
+  const record = requireObject(output, "HumanApprovalRequest");
+  requireString(record, "approvalId", "HumanApprovalRequest");
+  requireEnum(record, "status", ["pending"], "HumanApprovalRequest");
+  requireString(record, "summary", "HumanApprovalRequest");
+  requireString(record, "repairPlanId", "HumanApprovalRequest");
+  requireEnum(record, "requestedAction", ["approve_scoped_repair_plan"], "HumanApprovalRequest");
+  requireEnum(record, "riskLevel", ["low", "medium", "high"], "HumanApprovalRequest");
+  requireBoolean(record, "requiresHumanApproval", "HumanApprovalRequest");
+  requireBoolean(record, "blockedUntilApproved", "HumanApprovalRequest");
+  requireArray(record, "approvalInstructions", "HumanApprovalRequest");
+  requireString(record, "createdAt", "HumanApprovalRequest");
+  return record as HumanApprovalRequest;
 }
 
 function validateCorrectionHint(output: unknown): CorrectionHint {

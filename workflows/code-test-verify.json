@@ -62,11 +62,32 @@
       "inputKeys": ["taskBrief", "codeExecutionResult", "testExecutionResult"],
       "outputKey": "verification",
       "outputSchema": "VerificationReport"
+    },
+    {
+      "id": "repairPlanBuilder",
+      "type": "repair",
+      "role": "RepairPlanBuilder",
+      "description": "Create a scoped repair plan from failed verification evidence without executing it.",
+      "inputKeys": ["taskBrief", "verification", "codeExecutionResult", "testExecutionResult"],
+      "outputKey": "scopedRepairPlan",
+      "outputSchema": "ScopedRepairPlan"
+    },
+    {
+      "id": "humanApprovalGate",
+      "type": "approval",
+      "role": "HumanApprovalGate",
+      "description": "Create a pending human approval request for the scoped repair plan.",
+      "inputKeys": ["taskBrief", "verification", "scopedRepairPlan"],
+      "outputKey": "humanApprovalRequest",
+      "outputSchema": "HumanApprovalRequest"
     }
   ],
   "edges": [
     { "from": "codeExecutor", "to": "testRunner", "condition": { "type": "always" } },
     { "from": "testRunner", "to": "verifier", "condition": { "type": "always" } },
-    { "from": "verifier", "to": "end", "condition": { "type": "always" } }
+    { "from": "verifier", "to": "end", "condition": { "type": "equals", "path": "verification.pass", "value": true } },
+    { "from": "verifier", "to": "repairPlanBuilder", "condition": { "type": "equals", "path": "verification.pass", "value": false } },
+    { "from": "repairPlanBuilder", "to": "humanApprovalGate", "condition": { "type": "always" } },
+    { "from": "humanApprovalGate", "to": "end", "condition": { "type": "always" } }
   ]
 }

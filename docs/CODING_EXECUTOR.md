@@ -72,12 +72,14 @@ The first version is intentionally conservative:
 `workflows/code-test-verify.json` provides a reusable three-step template:
 
 ```text
-codeExecutor -> testRunner -> verifier -> end
+codeExecutor -> testRunner -> verifier
+  pass=true  -> end
+  pass=false -> repairPlanBuilder -> humanApprovalGate -> end
 ```
 
 The verifier uses the deterministic `ExecutionVerifier` through a `type: "verify"` node. It evaluates code execution output, test output, checkpoint evidence, diff metadata, safety findings, changed files, and success criteria without calling an LLM.
 
-The first version intentionally does not loop back into `codeExecutor` after verifier failure. This prevents repeated code modifications until a later stage adds a stricter patch planning and approval model.
+The failure branch intentionally does not loop back into `codeExecutor` after verifier failure. Instead, it creates a scoped repair plan and a pending human approval request. This prevents repeated code modifications until a later stage adds a stricter patch planning and approval replay model.
 
 The verifier emits a `VerificationReport` with optional execution-aware fields:
 
@@ -87,6 +89,23 @@ The verifier emits a `VerificationReport` with optional execution-aware fields:
 - `recommendedFixes`: narrow remediation guidance for the failed checks.
 
 It fails verification when code execution fails, configured tests fail, operations are blocked, files are deleted, unexpected files change, diff or patch limits are exceeded, checkpoint evidence is missing, test evidence is missing, unsafe files are touched, or rule-checkable success criteria are not met. It does not perform semantic code review and it does not automatically retry or rollback.
+
+## Scoped Repair Plan And Approval Gate
+
+When `verification.pass=false`, the workflow enters `repairPlanBuilder` and then `humanApprovalGate`.
+
+`repairPlanBuilder` produces `ScopedRepairPlan`:
+
+- `basedOnFailureCodes` and `basedOnFailedCriteria` copy the verifier evidence.
+- `targetFiles` is derived from changed files and allowed files, excluding secret-like paths.
+- `forbiddenFiles` includes deleted files, unsafe files, and secret-like path patterns.
+- `proposedOperations` describes bounded inspect / modify / run-test / manual-review actions.
+- `testCommands` comes from configured TestRunner evidence.
+- `requiresHumanApproval` is always `true`.
+
+`humanApprovalGate` produces `HumanApprovalRequest` with `status: "pending"` and `blockedUntilApproved: true`.
+
+This stage does not execute repairs, does not approve itself, does not expand executor permissions, and does not add a retry loop.
 
 ## Output
 
@@ -106,5 +125,6 @@ Both `code` and `test` nodes return `ExecutionResult`:
 - No LLM-driven command execution.
 - No automatic destructive rollback.
 - No delete operations.
+- No automatic repair execution after verifier failure.
 - The allowlist is intentionally narrow and should be expanded through tests.
 - The execution-aware verifier is rule-based. It does not infer semantic correctness beyond available execution evidence and rule-checkable success criteria.

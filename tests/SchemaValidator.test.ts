@@ -112,6 +112,103 @@ describe("SchemaValidator", () => {
     assert.deepEqual(SchemaValidator.validate("SmokeTestResult", output), output);
   });
 
+  it("passes for a valid ScopedRepairPlan", () => {
+    const output = {
+      planId: "repair_1",
+      summary: "repair",
+      basedOnFailureCodes: ["test_failed"],
+      basedOnFailedCriteria: ["test_failed: tests failed"],
+      targetFiles: ["src/index.ts"],
+      forbiddenFiles: [".env"],
+      proposedOperations: [{
+        id: "op_1",
+        type: "modify_file",
+        description: "Patch target file",
+        targetFile: "src/index.ts",
+        reason: "test failed",
+        safetyConstraints: ["No deletion"],
+      }],
+      testCommands: ["npm run test"],
+      riskLevel: "low",
+      requiresHumanApproval: true,
+      rationale: "verification failed",
+      safetyNotes: ["No automatic execution"],
+    };
+    assert.deepEqual(SchemaValidator.validate("ScopedRepairPlan", output), output);
+  });
+
+  it("fails when ScopedRepairPlan riskLevel is invalid", () => {
+    assert.throws(
+      () => SchemaValidator.validate("ScopedRepairPlan", {
+        planId: "repair_1",
+        summary: "repair",
+        basedOnFailureCodes: [],
+        basedOnFailedCriteria: [],
+        targetFiles: [],
+        forbiddenFiles: [],
+        proposedOperations: [],
+        testCommands: [],
+        riskLevel: "critical",
+        requiresHumanApproval: true,
+        rationale: "reason",
+        safetyNotes: [],
+      }),
+      /ScopedRepairPlan\.riskLevel must be one of/,
+    );
+  });
+
+  it("fails when ScopedRepairPlan is missing targetFiles", () => {
+    assert.throws(
+      () => SchemaValidator.validate("ScopedRepairPlan", {
+        planId: "repair_1",
+        summary: "repair",
+        basedOnFailureCodes: [],
+        basedOnFailedCriteria: [],
+        forbiddenFiles: [],
+        proposedOperations: [],
+        testCommands: [],
+        riskLevel: "low",
+        requiresHumanApproval: true,
+        rationale: "reason",
+        safetyNotes: [],
+      }),
+      /ScopedRepairPlan\.targetFiles must be an array/,
+    );
+  });
+
+  it("passes for a valid HumanApprovalRequest", () => {
+    const output = {
+      approvalId: "approval_1",
+      status: "pending",
+      summary: "approval",
+      repairPlanId: "repair_1",
+      requestedAction: "approve_scoped_repair_plan",
+      riskLevel: "medium",
+      requiresHumanApproval: true,
+      blockedUntilApproved: true,
+      approvalInstructions: ["Review the plan"],
+      createdAt: "2026-05-23T00:00:00.000Z",
+    };
+    assert.deepEqual(SchemaValidator.validate("HumanApprovalRequest", output), output);
+  });
+
+  it("fails when HumanApprovalRequest is missing status", () => {
+    assert.throws(
+      () => SchemaValidator.validate("HumanApprovalRequest", {
+        approvalId: "approval_1",
+        summary: "approval",
+        repairPlanId: "repair_1",
+        requestedAction: "approve_scoped_repair_plan",
+        riskLevel: "medium",
+        requiresHumanApproval: true,
+        blockedUntilApproved: true,
+        approvalInstructions: ["Review the plan"],
+        createdAt: "2026-05-23T00:00:00.000Z",
+      }),
+      /HumanApprovalRequest\.status must be one of/,
+    );
+  });
+
   it("fails when SmokeTestResult.ok is not boolean", () => {
     assert.throws(
       () =>

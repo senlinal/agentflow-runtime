@@ -16,9 +16,12 @@ describe("code-test-verify workflow", () => {
     const loaded = await new WorkflowTemplateRegistry().load("code-test-verify");
 
     assert.equal(loaded.config.workflow.name, "code-test-verify");
-    assert.deepEqual(loaded.config.nodes.map((node) => node.type), ["code", "test", "verify"]);
+    assert.deepEqual(loaded.config.nodes.map((node) => node.type), ["code", "test", "verify", "repair", "approval"]);
     assert.equal(loaded.config.nodes[0].outputSchema, "CodeExecutionResult");
     assert.equal(loaded.config.nodes[1].outputSchema, "TestExecutionResult");
+    assert.equal(loaded.config.nodes[2].outputSchema, "VerificationReport");
+    assert.equal(loaded.config.nodes[3].outputSchema, "ScopedRepairPlan");
+    assert.equal(loaded.config.nodes[4].outputSchema, "HumanApprovalRequest");
   });
 
   it("runs code -> test -> verify in a temporary fixture workspace", async () => {
@@ -54,10 +57,25 @@ describe("code-test-verify workflow", () => {
     });
 
     const result = await new WorkflowRunner().run(config, taskBrief());
+    const summary = await readFile(result.summaryPath, "utf8");
 
+    assert.deepEqual(result.trace.map((item) => item.nodeId), [
+      "codeExecutor",
+      "testRunner",
+      "verifier",
+      "repairPlanBuilder",
+      "humanApprovalGate",
+    ]);
     assert.equal(result.context.verification?.pass, false);
     assert.ok(result.context.verification?.failureCodes?.includes("test_failed"));
-    assert.equal(result.trace.at(-1)?.nodeId, "verifier");
+    assert.ok(result.context.scopedRepairPlan?.basedOnFailureCodes.includes("test_failed"));
+    assert.equal(result.context.scopedRepairPlan?.requiresHumanApproval, true);
+    assert.equal(result.context.humanApprovalRequest?.status, "pending");
+    assert.equal(result.context.humanApprovalRequest?.blockedUntilApproved, true);
+    assert.equal(result.trace.filter((item) => item.nodeId === "codeExecutor").length, 1);
+    assert.match(summary, /Scoped Repair \/ Approval/);
+    assert.match(summary, /No repair was executed automatically/);
+    assert.match(summary, /Human approval is required before applying any repair/);
   });
 
   it("returns pass=false when a code operation is blocked", async () => {
@@ -73,6 +91,8 @@ describe("code-test-verify workflow", () => {
     assert.equal(result.context.verification?.pass, false);
     assert.ok(result.context.verification?.failureCodes?.includes("code_execution_failed"));
     assert.ok(result.context.verification?.failureCodes?.includes("operation_blocked"));
+    assert.ok(result.context.scopedRepairPlan);
+    assert.equal(result.context.humanApprovalRequest?.requestedAction, "approve_scoped_repair_plan");
   });
 
   it("stops with a structured code execution error when diff limits are exceeded", async () => {
