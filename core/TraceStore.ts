@@ -118,6 +118,7 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
     buildCodeChangeDryRunSummary(context),
     buildCodeChangeExecutionSummary(context),
     buildE2ERealProjectSummary(context),
+    buildExternalProjectSummary(context),
     "",
     !executionStarted && feasibility
       ? [
@@ -354,6 +355,38 @@ function buildE2ERealProjectSummary(context: WorkflowContext): string {
     `- executionId: ${executionId}`,
     `- executionRecordPath: ${stringValue(e2e.executionRecordPath)}`,
     `- rollbackGuidePath: ${stringValue(e2e.rollbackGuidePath)}`,
+    "",
+    "Suggested execution queries:",
+    "",
+    "`npm run execution:list`",
+    `\`npm run execution:show -- --id ${executionId}\``,
+    `\`npm run execution:rollback-guide -- --id ${executionId}\``,
+    "",
+  ].join("\n");
+}
+
+function buildExternalProjectSummary(context: WorkflowContext): string {
+  const external = context.runtimeMetadata?.externalProject;
+  if (!external) return "";
+  const executionId = stringValue(external.executionId);
+  return [
+    "## External Project Scoped Workspace",
+    "",
+    `- importId: ${stringValue(external.importId)}`,
+    `- sourceProjectPath: ${stringValue(external.sourceProjectPath)}`,
+    `- workspaceRoot: ${stringValue(external.workspaceRoot)}`,
+    `- copiedFilesCount: ${stringValue(external.copiedFilesCount)}`,
+    `- excludedPaths: ${arrayValue(external.excludedPaths).join("; ") || "none"}`,
+    `- initialTestStatus: ${stringValue(external.initialTestStatus)}`,
+    `- finalTestStatus: ${stringValue(external.finalTestStatus)}`,
+    `- changedFiles: ${arrayValue(external.changedFiles).join("; ") || "none"}`,
+    `- patchPath: ${stringValue(external.patchPath)}`,
+    `- executionId: ${executionId}`,
+    `- executionRecordPath: ${stringValue(external.executionRecordPath)}`,
+    `- rollbackGuidePath: ${stringValue(external.rollbackGuidePath)}`,
+    "",
+    "External project execution happened in a copied temporary workspace only.",
+    "No changes were written back to the source project automatically.",
     "",
     "Suggested execution queries:",
     "",

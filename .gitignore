@@ -5,6 +5,7 @@ node_modules/
 dist/
 .workflow-runs/
 .agentflow/executions/
+.agentflow/external-runs/
 .opencode/policy-runs/
 .opencode/node_modules/
 .opencode/opencode.db

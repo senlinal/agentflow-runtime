@@ -112,6 +112,20 @@ npm run demo:e2e-real-project
 
 This copies a small fixture project to a temporary workspace, confirms the initial tests fail, applies an approved scoped `CodeChangePlan` to `src/calculator.ts`, reruns tests, verifies the result, and prints execution record query commands. The fixture original is not modified.
 
+Run the external project import demo:
+
+```bash
+npm run demo:external-project-import
+```
+
+Run against a user-provided project path without modifying the source project:
+
+```bash
+npm run external:run -- --source /path/to/project --target src/file.ts --contentFile /path/to/fixed-file.ts --testCommand "npm run test"
+```
+
+The runner copies the project to a temporary workspace first, then writes patch and execution metadata for review.
+
 ## 7. LLM Config Dry-Run
 
 ```bash

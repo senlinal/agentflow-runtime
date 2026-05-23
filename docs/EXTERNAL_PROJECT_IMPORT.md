@@ -1,0 +1,64 @@
+# External Project Import
+
+The external project runner copies a user-provided project into a temporary workspace before running any controlled execution.
+
+It is designed for first-pass trials where the original project must remain untouched.
+
+## What It Does
+
+`ExternalProjectImporter`:
+
+- validates that the source path exists and is a directory;
+- rejects the current repository root by default;
+- rejects system-sensitive directories;
+- copies the project into a temporary workspace;
+- excludes common local/runtime artifacts such as `node_modules`, `.git`, `dist`, `coverage`, `.env`, `.workflow-runs`, `.opencode/policy-runs`, and `.agentflow/executions`;
+- returns an `ImportedProjectWorkspace` with import id, source path, workspace path, copied file count, excluded paths, and timestamp.
+
+`ExternalProjectWorkspaceRunner` then runs the existing `code-change-plan-execution` workflow against the copied workspace only.
+
+## Demo
+
+```bash
+npm run demo:external-project-import
+```
+
+The demo uses the E2E fixture as the external source project, copies it to a temp workspace, confirms the initial tests fail, applies a scoped `CodeChangePlan` to `src/calculator.ts`, runs tests, verifies the result, writes a patch file, and saves execution records.
+
+## CLI
+
+```bash
+npm run external:run -- \
+  --source /path/to/project \
+  --target src/calculator.ts \
+  --contentFile /path/to/fixed-calculator.ts \
+  --testCommand "npm run test"
+```
+
+Optional:
+
+```bash
+--input inputs/e2e-real-project-fix-task.json
+--allowedFiles src/calculator.ts
+--forbiddenFiles src/string-utils.ts,.env,.env.local
+```
+
+The CLI does not write changes back to the source project. It prints the copied workspace, patch path, execution id, execution record path, rollback guide path, summary path, and trace path.
+
+## Safety Properties
+
+- The source project is not modified.
+- Execution happens only inside the copied temporary workspace.
+- `delete_file` remains unsupported.
+- High-risk shell remains blocked by the existing controlled execution layer.
+- No real LLM is called.
+- Patch output is written under `.agentflow/external-runs/`, which is ignored by Git.
+- Rollback guidance remains read-only and non-destructive.
+
+## Current Limits
+
+- The first version requires explicit target file content.
+- It does not synthesize code changes from natural language.
+- It does not write patches back to the source project.
+- It does not run dependency installation.
+- It does not support destructive rollback.

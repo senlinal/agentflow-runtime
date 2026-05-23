@@ -424,6 +424,7 @@ export type RuntimeMetadata = {
   llmCalls?: Array<Record<string, unknown>>;
   executionVerification?: Record<string, unknown>;
   e2eRealProject?: Record<string, unknown>;
+  externalProject?: Record<string, unknown>;
 };
 
 export type WorkflowCondition = {

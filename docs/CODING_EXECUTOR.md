@@ -215,6 +215,26 @@ The demo copies the fixture to a temporary workspace, initializes Git, confirms 
 
 The fixture original is treated as read-only. The demo does not call a real LLM, does not support `delete_file`, does not run high-risk shell, and does not perform destructive rollback.
 
+## External Project Import
+
+`ExternalProjectImporter` and `ExternalProjectWorkspaceRunner` extend the E2E trial to user-provided project paths while preserving the same safety boundary.
+
+Run:
+
+```bash
+npm run demo:external-project-import
+```
+
+Or provide a project path explicitly:
+
+```bash
+npm run external:run -- --source /path/to/project --target src/file.ts --contentFile /path/to/fixed-file.ts --testCommand "npm run test"
+```
+
+The importer validates the source directory, rejects the current repository root by default, excludes `node_modules`, `.git`, `dist`, `coverage`, `.env`, workflow runs, policy logs, and execution records, then copies the project into a temporary workspace. The controlled execution workflow runs only inside that copied workspace.
+
+The runner outputs a patch path, execution record, rollback guide, workflow summary, and trace. It does not write changes back to the original project.
+
 ## Output
 
 Both `code` and `test` nodes return `ExecutionResult`:
