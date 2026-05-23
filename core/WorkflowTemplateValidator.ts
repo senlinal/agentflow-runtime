@@ -1,19 +1,9 @@
 import { RoleCatalog } from "./RoleCatalog.ts";
-import type { AgentNode, OutputSchemaName, WorkflowGraphConfig } from "./types.ts";
-
-const OUTPUT_SCHEMAS: OutputSchemaName[] = [
-  "TaskBrief",
-  "ResearchReport",
-  "FeasibilityReport",
-  "Plan",
-  "Critique",
-  "RevisedPlan",
-  "ExecutionResult",
-  "VerificationReport",
-  "CorrectionHint",
-];
+import { isSupportedOutputSchema } from "./OutputSchemaRegistry.ts";
+import type { AgentNode, WorkflowGraphConfig } from "./types.ts";
 
 const CONDITION_TYPES = ["always", "equals", "exists", "notExists", "in"];
+const NODE_TYPES = ["mock", "llm", "code", "test"];
 
 export class WorkflowTemplateValidator {
   static validate(raw: unknown): WorkflowGraphConfig {
@@ -111,6 +101,7 @@ async function validateNodeWithPreset(node: unknown, index: number, roleCatalog:
       outputSchema: item.outputSchema ?? role.outputSchema,
       systemPrompt: item.systemPrompt ?? role.defaultSystemPrompt,
       retryPolicy: item.retryPolicy,
+      executorConfig: item.executorConfig,
     };
     return validateFullNode(fullNode, index);
   }
@@ -123,14 +114,14 @@ function validateFullNode(node: unknown, index: number): AgentNode {
     if (!(key in item)) throw new Error(`nodes[${index}].${key} is required.`);
   }
   if (typeof item.id !== "string" || !item.id) throw new Error(`nodes[${index}].id must be a string.`);
-  if (item.type !== "mock" && item.type !== "llm") {
+  if (!NODE_TYPES.includes(String(item.type))) {
     throw new Error(`nodes[${index}].type is unsupported: ${String(item.type)}`);
   }
   if (typeof item.role !== "string" || !item.role) throw new Error(`nodes[${index}].role must be a string.`);
   if (!Array.isArray(item.inputKeys)) throw new Error(`nodes[${index}].inputKeys must be an array.`);
   if (typeof item.outputKey !== "string" || !item.outputKey) throw new Error(`nodes[${index}].outputKey must be a string.`);
   if (typeof item.outputSchema !== "string" || !item.outputSchema) throw new Error(`nodes[${index}].outputSchema is required.`);
-  if (!OUTPUT_SCHEMAS.includes(item.outputSchema as OutputSchemaName)) {
+  if (!isSupportedOutputSchema(item.outputSchema)) {
     throw new Error(`nodes[${index}].outputSchema is unsupported: ${item.outputSchema}`);
   }
 
@@ -145,12 +136,17 @@ function validateFullNode(node: unknown, index: number): AgentNode {
     outputSchema: item.outputSchema as AgentNode["outputSchema"],
     systemPrompt: typeof item.systemPrompt === "string" ? item.systemPrompt : undefined,
     retryPolicy: item.retryPolicy as AgentNode["retryPolicy"],
+    executorConfig: isRecord(item.executorConfig) ? item.executorConfig : undefined,
   };
 }
 
 function requireNodeObject(node: unknown, index: number): Record<string, unknown> {
   if (!node || typeof node !== "object" || Array.isArray(node)) throw new Error(`nodes[${index}] must be an object.`);
   return node as Record<string, unknown>;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function normalizeWorkflow(record: Record<string, unknown>): Record<string, unknown> {

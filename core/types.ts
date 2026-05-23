@@ -2,10 +2,12 @@ export type AgentRole =
   | "TaskIntake"
   | "Researcher"
   | "FeasibilityEvaluator"
+  | "CodeExecutor"
   | "Planner"
   | "Debater"
   | "PlannerRevision"
   | "Executor"
+  | "TestRunner"
   | "Verifier"
   | "GoalKeeper";
 
@@ -24,12 +26,16 @@ export type OutputSchemaName =
   | "ExecutionResult"
   | "VerificationReport"
   | "CorrectionHint"
+  | "CodeExecutionResult"
+  | "TestExecutionResult"
   | "SmokeTestResult";
+
+export type NodeType = "mock" | "llm" | "code" | "test";
 
 export type AgentNode = {
   id: string;
   rolePreset?: string;
-  type: "mock" | "llm";
+  type: NodeType;
   role: AgentRole;
   description: string;
   inputKeys: string[];
@@ -37,13 +43,14 @@ export type AgentNode = {
   outputSchema: OutputSchemaName;
   systemPrompt?: string;
   retryPolicy?: RetryPolicy;
+  executorConfig?: Record<string, unknown>;
 };
 
 export type RoleDefinition = {
   id: string;
   role: AgentRole;
   description: string;
-  defaultType: "mock" | "llm";
+  defaultType: NodeType;
   defaultInputKeys: string[];
   defaultOutputKey: keyof WorkflowContext;
   outputSchema: OutputSchemaName;
@@ -132,6 +139,10 @@ export type ExecutionResult = {
   rawOutput: string;
 };
 
+export type CodeExecutionResult = ExecutionResult;
+
+export type TestExecutionResult = ExecutionResult;
+
 export type VerificationReport = {
   pass: boolean;
   score: number;
@@ -177,6 +188,8 @@ export type WorkflowContext = TaskSpec & {
   critique: Critique | null;
   revisedPlan: RevisedPlan | null;
   executionResult: ExecutionResult | null;
+  codeExecutionResult: CodeExecutionResult | null;
+  testExecutionResult: TestExecutionResult | null;
   verification: VerificationReport | null;
   correctionHint: CorrectionHint | null;
   iteration: number;

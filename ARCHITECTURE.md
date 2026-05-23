@@ -83,6 +83,21 @@ The LLM stack is:
 
 DeepSeek reuses the OpenAI-compatible client. Runtime does not know provider details.
 
+## Controlled Execution
+
+`code` and `test` node types are implemented as executors behind `NodeRegistry`. They return `ExecutionResult` and keep `WorkflowRuntime` unaware of command execution details.
+
+The execution support modules are:
+
+- `CommandRunner`
+- `DiffCollector`
+- `CheckpointManager`
+- `TestRunner`
+- `CodeExecutor`
+- `TestExecutor`
+
+See `docs/CODING_EXECUTOR.md` for the safety model and configuration examples.
+
 ## opencode Adapter
 
 opencode files under `.opencode/` and `adapters/opencode/` are adapter layers. They call `WorkflowRunner` and policy services; they do not replace runtime routing.

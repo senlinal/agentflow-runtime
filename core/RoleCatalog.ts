@@ -1,18 +1,9 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { OutputSchemaName, RoleDefinition } from "./types.ts";
+import { isSupportedOutputSchema } from "./OutputSchemaRegistry.ts";
+import type { RoleDefinition } from "./types.ts";
 
-const OUTPUT_SCHEMAS: OutputSchemaName[] = [
-  "TaskBrief",
-  "ResearchReport",
-  "FeasibilityReport",
-  "Plan",
-  "Critique",
-  "RevisedPlan",
-  "ExecutionResult",
-  "VerificationReport",
-  "CorrectionHint",
-];
+const ROLE_TYPES = ["mock", "llm", "code", "test"];
 
 export class RoleCatalog {
   private rolesCache: RoleDefinition[] | null = null;
@@ -65,11 +56,11 @@ export class RoleCatalog {
     ]) {
       if (!(key in record)) throw new Error(`${source}.${key} is required.`);
     }
-    if (record.defaultType !== "mock" && record.defaultType !== "llm") {
+    if (!ROLE_TYPES.includes(String(record.defaultType))) {
       throw new Error(`${source}.defaultType is unsupported: ${String(record.defaultType)}`);
     }
     if (!Array.isArray(record.defaultInputKeys)) throw new Error(`${source}.defaultInputKeys must be an array.`);
-    if (!OUTPUT_SCHEMAS.includes(record.outputSchema as OutputSchemaName)) {
+    if (!isSupportedOutputSchema(record.outputSchema)) {
       throw new Error(`${source}.outputSchema is unsupported: ${String(record.outputSchema)}`);
     }
     return {

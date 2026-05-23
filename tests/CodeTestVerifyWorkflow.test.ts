@@ -1,0 +1,116 @@
+import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
+import { describe, it } from "node:test";
+import { WorkflowRunner } from "../core/WorkflowRunner.ts";
+import { WorkflowTemplateRegistry } from "../core/WorkflowTemplateRegistry.ts";
+import type { AgentNode, TaskBrief, WorkflowGraphConfig } from "../core/types.ts";
+
+const execFileAsync = promisify(execFile);
+
+describe("code-test-verify workflow", () => {
+  it("validates the formal workflow template", async () => {
+    const loaded = await new WorkflowTemplateRegistry().load("code-test-verify");
+
+    assert.equal(loaded.config.workflow.name, "code-test-verify");
+    assert.deepEqual(loaded.config.nodes.map((node) => node.type), ["code", "test", "mock"]);
+    assert.equal(loaded.config.nodes[0].outputSchema, "CodeExecutionResult");
+    assert.equal(loaded.config.nodes[1].outputSchema, "TestExecutionResult");
+  });
+
+  it("runs code -> test -> verify in a temporary fixture workspace", async () => {
+    const workspace = await createFixtureWorkspace();
+    const loaded = await new WorkflowTemplateRegistry().load("code-test-verify");
+    const config = withFixtureExecutorConfig(loaded.config, workspace);
+
+    const result = await new WorkflowRunner().run(config, taskBrief());
+    const nodeIds = result.trace.map((item) => item.nodeId);
+    const summary = await readFile(result.summaryPath, "utf8");
+
+    assert.deepEqual(nodeIds, ["codeExecutor", "testRunner", "verifier"]);
+    assert.ok(result.context.codeExecutionResult);
+    assert.ok(result.context.testExecutionResult);
+    assert.ok(result.context.verification);
+    assert.ok(result.context.codeExecutionResult.artifacts.includes("src/generated.txt"));
+    assert.match(result.context.codeExecutionResult.rawOutput, /checkpoint_/);
+    assert.match(result.context.codeExecutionResult.rawOutput, /src\/generated\.txt/);
+    assert.match(result.context.testExecutionResult.rawOutput, /fixture-ok/);
+    assert.match(summary, /codeExecutionResult/);
+    assert.match(summary, /testExecutionResult/);
+  });
+
+  it("stops with a structured code execution error when diff limits are exceeded", async () => {
+    const workspace = await createFixtureWorkspace();
+    const loaded = await new WorkflowTemplateRegistry().load("code-test-verify");
+    const config = withFixtureExecutorConfig(loaded.config, workspace, { maxFilesChanged: 0 });
+
+    const result = await new WorkflowRunner().run(config, taskBrief());
+
+    assert.match(result.context.codeExecutionResult?.errors.join("\n") ?? "", /maxFilesChanged/);
+    assert.equal(result.trace[0].nodeId, "codeExecutor");
+  });
+});
+
+function withFixtureExecutorConfig(
+  config: WorkflowGraphConfig,
+  workspace: string,
+  overrides: Record<string, unknown> = {},
+): WorkflowGraphConfig {
+  const nodes = config.nodes.map((node): AgentNode => {
+    if (node.id === "codeExecutor") {
+      return {
+        ...node,
+        executorConfig: {
+          ...node.executorConfig,
+          projectRoot: workspace,
+          cwd: workspace,
+          fileWrites: [{ path: "src/generated.txt", content: "fixture-ok\n" }],
+          commands: ["node -e \"console.log('code-step-ok')\""],
+          ...overrides,
+        },
+      };
+    }
+    if (node.id === "testRunner") {
+      return {
+        ...node,
+        executorConfig: {
+          ...node.executorConfig,
+          projectRoot: workspace,
+          cwd: workspace,
+          commands: [
+            "node -e \"require('fs').existsSync('src/generated.txt') ? console.log('fixture-ok') : process.exit(1)\"",
+          ],
+        },
+      };
+    }
+    return node;
+  });
+  return { ...config, nodes };
+}
+
+async function createFixtureWorkspace(): Promise<string> {
+  const workspace = await mkdtemp(join(tmpdir(), "agentflow-code-test-"));
+  await execFileAsync("git", ["init"], { cwd: workspace });
+  await execFileAsync("git", ["config", "user.email", "test@example.com"], { cwd: workspace });
+  await execFileAsync("git", ["config", "user.name", "Test User"], { cwd: workspace });
+  await writeFile(join(workspace, "README.md"), "# fixture\n", "utf8");
+  await execFileAsync("git", ["add", "README.md"], { cwd: workspace });
+  await execFileAsync("git", ["commit", "-m", "init"], { cwd: workspace });
+  return workspace;
+}
+
+function taskBrief(): TaskBrief {
+  return {
+    taskId: "code_test_verify_fixture",
+    goal: "Create a fixture file, run a fixture test, and verify the controlled execution trace.",
+    currentState: "Temporary fixture workspace with a clean git repository.",
+    constraints: ["Use only declared file writes.", "Use only allowlisted local commands."],
+    resources: ["CodeExecutor", "TestRunner", "WorkflowRunner"],
+    budget: "low",
+    successCriteria: ["Generated file exists.", "Fixture test command passes.", "Trace and summary are written."],
+    nonGoals: ["Do not call real LLM providers.", "Do not run arbitrary shell commands."],
+  };
+}

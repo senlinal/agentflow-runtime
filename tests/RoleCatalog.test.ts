@@ -46,6 +46,12 @@ describe("RoleCatalog", () => {
     const role = new RoleCatalog().validateRole({ ...validRole(), defaultType: "llm" }, "role");
     assert.equal(role.defaultType, "llm");
   });
+
+  it("allows code and test defaultType for tool-backed roles", () => {
+    const catalog = new RoleCatalog();
+    assert.equal(catalog.validateRole({ ...validRole(), defaultType: "code" }, "role").defaultType, "code");
+    assert.equal(catalog.validateRole({ ...validRole(), defaultType: "test" }, "role").defaultType, "test");
+  });
 });
 
 function validRole() {

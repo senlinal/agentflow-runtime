@@ -41,7 +41,8 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
   const verification = context.verification;
   const feasibility = context.feasibilityReport;
   const finalStatus = context.stopReason ? "stopped" : verification?.pass ? "passed" : "not-passed";
-  const executionStarted = Boolean(context.executionResult);
+  const executionResult = context.executionResult ?? context.testExecutionResult ?? context.codeExecutionResult;
+  const executionStarted = Boolean(executionResult);
   return [
     `# Workflow Run ${runId}`,
     "",
@@ -114,6 +115,8 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
           "## Execution Result",
           "",
           `- plan: ${context.plan?.summary ?? "n/a"}`,
+          `- codeExecutionResult: ${context.codeExecutionResult?.summary ?? "n/a"}`,
+          `- testExecutionResult: ${context.testExecutionResult?.summary ?? "n/a"}`,
           `- executionResult: ${context.executionResult?.summary ?? "n/a"}`,
           `- verification: pass=${verification?.pass ?? "n/a"}, score=${verification?.score ?? "n/a"}`,
           "",
@@ -127,7 +130,7 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
     "",
     "## Final Result",
     "",
-    context.executionResult?.summary ?? "No execution result.",
+    executionResult?.summary ?? "No execution result.",
     "",
   ].join("\n");
 }

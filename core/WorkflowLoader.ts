@@ -1,18 +1,9 @@
 import { readFile } from "node:fs/promises";
-import type { AgentNode, OutputSchemaName, WorkflowGraphConfig } from "./types.ts";
+import { isSupportedOutputSchema } from "./OutputSchemaRegistry.ts";
+import type { AgentNode, WorkflowGraphConfig } from "./types.ts";
 import { WorkflowGraph } from "./WorkflowGraph.ts";
 
-const OUTPUT_SCHEMAS: OutputSchemaName[] = [
-  "TaskBrief",
-  "ResearchReport",
-  "FeasibilityReport",
-  "Plan",
-  "Critique",
-  "RevisedPlan",
-  "ExecutionResult",
-  "VerificationReport",
-  "CorrectionHint",
-];
+const NODE_TYPES = ["mock", "llm", "code", "test"];
 
 export class WorkflowLoader {
   static async loadJson(path: string): Promise<WorkflowGraph> {
@@ -100,7 +91,7 @@ function validateNode(node: unknown, index: number): AgentNode {
     if (!(key in item)) throw new Error(`nodes[${index}].${key} is required.`);
   }
   if (typeof item.id !== "string" || !item.id) throw new Error(`nodes[${index}].id must be a string.`);
-  if (item.type !== "mock" && item.type !== "llm") {
+  if (!NODE_TYPES.includes(String(item.type))) {
     throw new Error(`nodes[${index}].type is unsupported: ${String(item.type)}`);
   }
   if (typeof item.role !== "string" || !item.role) throw new Error(`nodes[${index}].role must be a string.`);
@@ -111,7 +102,7 @@ function validateNode(node: unknown, index: number): AgentNode {
   if (typeof item.outputSchema !== "string" || !item.outputSchema) {
     throw new Error(`nodes[${index}].outputSchema must be a string.`);
   }
-  if (!OUTPUT_SCHEMAS.includes(item.outputSchema as OutputSchemaName)) {
+  if (!isSupportedOutputSchema(item.outputSchema)) {
     throw new Error(`nodes[${index}].outputSchema is unsupported: ${item.outputSchema}`);
   }
 
@@ -125,7 +116,12 @@ function validateNode(node: unknown, index: number): AgentNode {
     outputSchema: item.outputSchema as AgentNode["outputSchema"],
     systemPrompt: typeof item.systemPrompt === "string" ? item.systemPrompt : undefined,
     retryPolicy: item.retryPolicy as AgentNode["retryPolicy"],
+    executorConfig: isRecord(item.executorConfig) ? item.executorConfig : undefined,
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function validateCondition(condition: unknown, edgeIndex: number): void {

@@ -54,7 +54,9 @@ export class OpenCodeWorkflowToolService {
     const result = await new WorkflowRunner().run(config, taskBrief);
     const context = result.context;
     const finalStatus = context.stopReason ? "stopped" : context.verification?.pass ? "passed" : "not-passed";
-    const enteredExecutor = context.trace.some((item) => item.role === "Executor" || item.nodeId === "executor");
+    const enteredExecutor = context.trace.some((item) =>
+      item.role === "Executor" || item.role === "CodeExecutor" || item.role === "TestRunner" || item.nodeId === "executor"
+    );
 
     return {
       runId: result.runId,

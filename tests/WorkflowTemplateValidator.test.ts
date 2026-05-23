@@ -64,6 +64,43 @@ describe("WorkflowTemplateValidator", () => {
     assert.deepEqual(config.nodes[0].retryPolicy, { maxAttempts: 2 });
   });
 
+  it("passes explicit code and test nodes", () => {
+    const template = validTemplate();
+    template.nodes = [
+      {
+        id: "code_executor",
+        type: "code",
+        role: "Executor",
+        description: "safe code execution",
+        inputKeys: ["revisedPlan"],
+        outputKey: "executionResult",
+        outputSchema: "ExecutionResult",
+        executorConfig: { dryRun: true },
+      },
+      {
+        id: "test_runner",
+        type: "test",
+        role: "Executor",
+        description: "safe test execution",
+        inputKeys: ["executionResult"],
+        outputKey: "executionResult",
+        outputSchema: "ExecutionResult",
+        executorConfig: { commands: ["node -v"] },
+      },
+    ];
+    template.start = "code_executor";
+    template.edges = [
+      { from: "code_executor", to: "test_runner", condition: { type: "always" } },
+      { from: "test_runner", to: "end", condition: { type: "always" } },
+    ];
+
+    const config = WorkflowTemplateValidator.validate(template);
+
+    assert.equal(config.nodes[0].type, "code");
+    assert.equal(config.nodes[1].type, "test");
+    assert.deepEqual(config.nodes[0].executorConfig, { dryRun: true });
+  });
+
   it("passes rolePreset nodes with RoleCatalog", async () => {
     const config = await WorkflowTemplateValidator.validateWithRoleCatalog(rolePresetTemplate());
     assert.equal(config.nodes[0].role, "Planner");

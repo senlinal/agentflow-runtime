@@ -1,0 +1,72 @@
+{
+  "name": "code-test-verify",
+  "version": "1.0.0",
+  "description": "Run a controlled code execution step, run configured tests, then verify the result.",
+  "start": "codeExecutor",
+  "maxIterations": 1,
+  "inputSchema": "TaskBrief",
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": ["create declared project files", "modify declared project files", "run allowlisted local commands"],
+      "requireConfirmation": ["delete existing project files", "change execution allowlists", "write outside project root"],
+      "forbiddenWithoutExplicitApproval": ["rm -rf", "git reset --hard", "git clean -fd", "curl pipe shell", "real external LLM calls"]
+    },
+    "costPolicy": {
+      "maxCostLevel": "low",
+      "stopWhen": ["unsafe command requested", "too many files changed", "patch too large"],
+      "preferredDecisionsWhenOverBudget": ["ask_human", "stop"]
+    },
+    "qualityPolicy": {
+      "principles": ["controlled execution", "traceable diff", "schema-validated outputs"],
+      "requiredChecks": ["configured TestRunner commands"],
+      "forbiddenShortcuts": ["arbitrary shell execution", "LLM-generated command execution", "automatic destructive rollback"]
+    }
+  },
+  "nodes": [
+    {
+      "id": "codeExecutor",
+      "type": "code",
+      "role": "CodeExecutor",
+      "description": "Apply declared safe file writes and collect a checkpoint and diff.",
+      "inputKeys": ["taskBrief", "codingTaskContext"],
+      "outputKey": "codeExecutionResult",
+      "outputSchema": "CodeExecutionResult",
+      "executorConfig": {
+        "fileWrites": [],
+        "commands": [],
+        "maxFilesChanged": 3,
+        "maxPatchSize": 20000,
+        "allowFileCreate": true,
+        "allowFileModify": true,
+        "allowFileDelete": false
+      }
+    },
+    {
+      "id": "testRunner",
+      "type": "test",
+      "role": "TestRunner",
+      "description": "Run configured local test commands through the safe CommandRunner.",
+      "inputKeys": ["taskBrief", "codeExecutionResult"],
+      "outputKey": "testExecutionResult",
+      "outputSchema": "TestExecutionResult",
+      "executorConfig": {
+        "commands": ["npm run test", "npm run typecheck"],
+        "timeoutMs": 120000
+      }
+    },
+    {
+      "id": "verifier",
+      "type": "mock",
+      "role": "Verifier",
+      "description": "Verify the controlled code and test execution outputs against the task success criteria.",
+      "inputKeys": ["taskBrief", "codeExecutionResult", "testExecutionResult"],
+      "outputKey": "verification",
+      "outputSchema": "VerificationReport"
+    }
+  ],
+  "edges": [
+    { "from": "codeExecutor", "to": "testRunner", "condition": { "type": "always" } },
+    { "from": "testRunner", "to": "verifier", "condition": { "type": "always" } },
+    { "from": "verifier", "to": "end", "condition": { "type": "always" } }
+  ]
+}

@@ -36,6 +36,10 @@ export class SchemaValidator {
         return validateRevisedPlan(output);
       case "ExecutionResult":
         return validateExecutionResult(output);
+      case "CodeExecutionResult":
+        return validateExecutionResult(output);
+      case "TestExecutionResult":
+        return validateExecutionResult(output);
       case "VerificationReport":
         return validateVerificationReport(output);
       case "CorrectionHint":

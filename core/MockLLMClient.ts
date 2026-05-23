@@ -221,6 +221,27 @@ export class MockLLMClient implements LLMClient {
   }
 
   private generateVerificationReport(request: LLMStructuredRequest): VerificationReport {
+    const context = requiredContext(request);
+    if (context.codeExecutionResult || context.testExecutionResult) {
+      const errors = [
+        ...(context.codeExecutionResult?.errors ?? []),
+        ...(context.testExecutionResult?.errors ?? []),
+      ];
+      const pass = errors.length === 0;
+      return {
+        pass,
+        score: pass ? 0.95 : 0.45,
+        failedCriteria: pass ? [] : errors,
+        reason: pass
+          ? "Controlled code execution and configured test commands completed without reported errors."
+          : "Controlled code execution or configured tests reported errors.",
+        nextAction: pass ? "end" : "retry_execute",
+        feedbackToPlanner: pass
+          ? "No further execution required."
+          : "Review CodeExecutionResult and TestExecutionResult errors before retrying execution.",
+      };
+    }
+
     this.verifierCalls += 1;
     if (this.verifierCalls === 1) {
       return {

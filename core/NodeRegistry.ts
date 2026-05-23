@@ -1,3 +1,5 @@
+import { CodeExecutor } from "./execution/CodeExecutor.ts";
+import { TestExecutor } from "./execution/TestExecutor.ts";
 import { LLMExecutor } from "./LLMExecutor.ts";
 import { MockExecutor } from "./MockExecutor.ts";
 import type { AgentNode, NodeExecutor } from "./types.ts";
@@ -8,6 +10,8 @@ export class NodeRegistry {
   static withDefaults(): NodeRegistry {
     const registry = new NodeRegistry();
     registry.register("mock", new MockExecutor());
+    registry.register("code", new CodeExecutor());
+    registry.register("test", new TestExecutor());
     return registry;
   }
 

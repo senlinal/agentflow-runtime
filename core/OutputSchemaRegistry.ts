@@ -10,6 +10,8 @@ export const OUTPUT_SCHEMA_NAMES: OutputSchemaName[] = [
   "ExecutionResult",
   "VerificationReport",
   "CorrectionHint",
+  "CodeExecutionResult",
+  "TestExecutionResult",
   "SmokeTestResult",
 ];
 
@@ -81,6 +83,8 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
         revisionNotes: ["string"],
       };
     case "ExecutionResult":
+    case "CodeExecutionResult":
+    case "TestExecutionResult":
       return {
         completedSteps: ["string"],
         artifacts: ["string"],

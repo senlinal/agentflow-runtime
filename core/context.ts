@@ -18,6 +18,8 @@ export function createInitialContext(input: {
     critique: null,
     revisedPlan: null,
     executionResult: null,
+    codeExecutionResult: null,
+    testExecutionResult: null,
     verification: null,
     correctionHint: null,
     iteration: 0,

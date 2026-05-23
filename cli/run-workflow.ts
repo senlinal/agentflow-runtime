@@ -12,7 +12,9 @@ const { config, path } = await registry.load(args.template);
 const taskBrief = await TaskBriefLoader.loadJson(args.input);
 const result = await new WorkflowRunner().run(config, taskBrief);
 const context = result.context;
-const enteredExecutor = context.trace.some((item) => item.nodeId === "executor");
+const enteredExecutor = context.trace.some((item) =>
+  item.nodeId === "executor" || item.role === "Executor" || item.role === "CodeExecutor" || item.role === "TestRunner"
+);
 const finalStatus = context.stopReason ? "stopped" : context.verification?.pass ? "passed" : "not-passed";
 
 console.log(JSON.stringify({
