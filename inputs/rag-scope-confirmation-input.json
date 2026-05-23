@@ -1,0 +1,14 @@
+{
+  "confirmationMode": "manual",
+  "profile": "rag-optimization",
+  "requiredFields": [
+    "goal",
+    "allowedModules",
+    "allowedActions",
+    "blockedActions",
+    "qualityConstraints",
+    "metricDefinition",
+    "ragConstraints"
+  ],
+  "notes": "This file documents the expected shape for RAG scope confirmation input. A real ScopeConfirmationRecord is created by the scope confirmation flow."
+}

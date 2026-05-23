@@ -26,6 +26,12 @@ Real LLM calls are opt-in. Default templates should stay on `type: "mock"` unles
 
 Do not bypass `SchemaValidator` for LLM output, and do not make `WorkflowRuntime` depend on a concrete LLM provider. Provider selection belongs in `LLMClientFactory` / `LLMConfigLoader`.
 
+`/workflow` uses `profiles/current.json` by default. Do not ask the user to repeat standing safety rules already captured by the active profile, `docs/WORKER_POLICY.md`, or `docs/AUTONOMY_POLICY.md`. The current profile decides the default workflow chain and policy context.
+
+Use `rag-optimization` for complex RAG, retrieval, recall, and answer-quality workflows. Use `coding-safe-fix` for scoped code fixes. Use `external-project-fix` for external project import, temp-workspace execution, patch export, and manual review. If a user request does not fit the active profile, recommend switching profile before running a workflow.
+
+`ai-daily/` is unrelated to this project. Do not read, modify, stage, commit, clean, or summarize `ai-daily/` unless the user explicitly changes scope.
+
 ## Operating Principle
 
 Agents should do low-risk work autonomously and ask the human only at judgment, boundary, risk, or approval points.

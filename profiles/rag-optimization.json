@@ -1,0 +1,44 @@
+{
+  "id": "rag-optimization",
+  "name": "RAG Optimization Worker Profile",
+  "description": "Default worker profile for RAG retrieval, recall evaluation, answer-quality-aware optimization, and knowledge-base experiment workflows.",
+  "defaultWorkflow": "task-negotiation",
+  "scopeWorkflow": "confirmed-scope-gate",
+  "followupWorkflows": [
+    "research-feasibility-execute-verify"
+  ],
+  "defaultInput": "inputs/task-negotiation-rag-task.json",
+  "scopeInput": "inputs/rag-scope-confirmation-input.json",
+  "policyFiles": [
+    "docs/AGENT_POLICY.md",
+    "docs/WORKER_POLICY.md",
+    "docs/AUTONOMY_POLICY.md",
+    "docs/TASK_NEGOTIATION.md",
+    "docs/SCOPE_CONFIRMATION.md"
+  ],
+  "memoryFiles": [
+    "docs/PROJECT_MEMORY.md",
+    "docs/RAG_OPTIMIZATION_MEMORY.md"
+  ],
+  "defaultConstraints": [
+    "do_not_modify_production_index",
+    "do_not_deploy",
+    "do_not_delete_files",
+    "do_not_trade_answer_quality_for_recall_without_confirmation",
+    "confirm_metric_definition_before_execution"
+  ],
+  "defaultBlockedActions": [
+    "deploy",
+    "modify_production_index",
+    "delete_knowledge_base",
+    "destructive_shell",
+    "auto_apply_patch"
+  ],
+  "autonomyMode": "balanced",
+  "defaultOutput": [
+    "summary",
+    "trace",
+    "scope_questions",
+    "next_actions"
+  ]
+}

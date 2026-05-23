@@ -100,6 +100,25 @@ npm run workflow -- --template code-test-verify --input inputs/feasible-task.jso
 
 When verification fails, the template now routes to `repairPlanBuilder -> humanApprovalGate -> end`. That branch creates a scoped repair plan and a pending human approval request only; it does not automatically rerun `CodeExecutor`.
 
+### Workflow Profiles
+
+Profiles live in `profiles/` and define the current working mode for `/workflow`. `profiles/current.json` selects the active profile, so users do not need to repeat standing safety rules, default workflows, policy files, or memory files on every request.
+
+```bash
+npm run workflow:profiles
+npm run workflow:profile
+npm run workflow:profile:use -- --profile rag-optimization
+npm run workflow:profile:inspect -- --profile rag-optimization
+```
+
+Built-in profiles:
+
+- `rag-optimization`: starts with `task-negotiation`, uses `confirmed-scope-gate`, then proceeds to feasibility. It blocks production index changes, deployment, deletion, and unconfirmed metric changes.
+- `coding-safe-fix`: defaults to the controlled code/test/verify and approval chain for small scoped fixes.
+- `external-project-fix`: copies external projects into temporary workspaces and exports patches for manual review.
+
+The opencode `/workflow` command reads the active profile before choosing a default workflow. If a request does not fit the active profile, the agent should recommend a profile switch instead of forcing the task through the wrong template. See `docs/WORKFLOW_PROFILES.md`.
+
 ### Task Negotiation
 
 `task-negotiation` is a pre-flight workflow for complex or ambiguous requests. It produces a `TaskNegotiationResult` with detected task type, target module, ambiguities, clarification questions, proposed allowed/forbidden scope, suggested task breakdown, and a recommended next step.

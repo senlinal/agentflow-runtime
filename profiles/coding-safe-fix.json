@@ -1,0 +1,42 @@
+{
+  "id": "coding-safe-fix",
+  "name": "Coding Safe Fix Profile",
+  "description": "Profile for scoped code fixes that require tests, verification, and explicit approval before execution.",
+  "defaultWorkflow": "code-test-verify",
+  "followupWorkflows": [
+    "approved-repair-materialize",
+    "code-change-plan-execution-approval",
+    "code-change-plan-execution-dry-run",
+    "code-change-plan-execution"
+  ],
+  "defaultInput": "inputs/feasible-task.json",
+  "policyFiles": [
+    "docs/AGENT_POLICY.md",
+    "docs/WORKER_POLICY.md",
+    "docs/AUTONOMY_POLICY.md",
+    "docs/CODING_EXECUTOR.md"
+  ],
+  "memoryFiles": [
+    "docs/PROJECT_MEMORY.md"
+  ],
+  "defaultConstraints": [
+    "do_not_delete_files",
+    "use_temp_workspace",
+    "require_explicit_execution_approval",
+    "run_tests_before_verification"
+  ],
+  "defaultBlockedActions": [
+    "delete_files",
+    "destructive_shell",
+    "auto_approve_execution",
+    "auto_retry_code_executor"
+  ],
+  "autonomyMode": "guarded",
+  "defaultOutput": [
+    "summary",
+    "trace",
+    "test_result",
+    "verification",
+    "next_actions"
+  ]
+}

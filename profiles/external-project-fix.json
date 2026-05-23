@@ -1,0 +1,44 @@
+{
+  "id": "external-project-fix",
+  "name": "External Project Patch Profile",
+  "description": "Profile for importing an external project into a temporary workspace, running controlled execution, exporting a patch, and requiring manual review.",
+  "defaultWorkflow": "code-change-plan-execution",
+  "followupWorkflows": [
+    "code-change-plan-execution-dry-run"
+  ],
+  "externalProjectMode": "copy_to_temp_workspace",
+  "patchFlow": [
+    "external-project-import",
+    "patch-export",
+    "patch-verify"
+  ],
+  "policyFiles": [
+    "docs/AGENT_POLICY.md",
+    "docs/WORKER_POLICY.md",
+    "docs/AUTONOMY_POLICY.md",
+    "docs/EXTERNAL_PROJECT_IMPORT.md"
+  ],
+  "memoryFiles": [
+    "docs/PROJECT_MEMORY.md"
+  ],
+  "defaultConstraints": [
+    "never_modify_source_project_directly",
+    "export_patch_only",
+    "manual_review_required",
+    "do_not_delete_files"
+  ],
+  "defaultBlockedActions": [
+    "modify_source_project_directly",
+    "git_apply_to_source_project",
+    "delete_files",
+    "destructive_shell"
+  ],
+  "autonomyMode": "guarded",
+  "defaultOutput": [
+    "summary",
+    "trace",
+    "execution_record",
+    "patch_export",
+    "apply_guide"
+  ]
+}

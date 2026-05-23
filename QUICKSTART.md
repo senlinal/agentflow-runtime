@@ -48,7 +48,20 @@ npm run workflow:inspect -- --template abcde-basic
 npm run workflow:validate -- --template abcde-basic
 ```
 
-## 6. Run Controlled Code-Test-Verify
+## 6. Choose The Current Workflow Profile
+
+`/workflow` uses `profiles/current.json` to choose the active working template. Inspect and switch profiles with:
+
+```bash
+npm run workflow:profiles
+npm run workflow:profile
+npm run workflow:profile:inspect -- --profile rag-optimization
+npm run workflow:profile:use -- --profile rag-optimization
+```
+
+The default `rag-optimization` profile starts with task negotiation, then uses confirmed scope as a gate before feasibility. `coding-safe-fix` is for scoped code fixes, and `external-project-fix` is for temp-workspace external project runs and patch export.
+
+## 7. Run Controlled Code-Test-Verify
 
 For ambiguous or broad work, run task negotiation before feasibility or execution:
 
@@ -156,7 +169,7 @@ npm run patch:verify -- --id <patchExportId>
 
 Patch commands are read-only. They do not run `git apply`, do not run tests, and do not write changes back to the source project. `patch:verify` checks hash integrity, file scope, sensitive paths, deleted files, binary patches, and obvious dangerous command content before manual review.
 
-## 7. LLM Config Dry-Run
+## 8. LLM Config Dry-Run
 
 ```bash
 npm run llm:config
@@ -165,7 +178,7 @@ npm run llm:smoke
 
 `llm:smoke` is dry-run by default and does not call external providers. Do not run `--execute` unless you intentionally want a real provider call.
 
-## 8. Full Local Verification
+## 9. Full Local Verification
 
 ```bash
 npm run verify

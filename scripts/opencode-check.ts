@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 const requiredFiles = [
   ".opencode/commands/workflow.md",
+  ".opencode/commands/workflow-profile.md",
   ".opencode/tools/run-workflow.ts",
   ".opencode/plugins/agentflow-policy.ts",
   "adapters/opencode/PolicyAuditLogger.ts",
@@ -20,6 +21,10 @@ const requiredFiles = [
   "docs/AGENT_POLICY.md",
   "AGENTS.md",
   "opencode.json",
+  "profiles/current.json",
+  "profiles/rag-optimization.json",
+  "profiles/coding-safe-fix.json",
+  "profiles/external-project-fix.json",
 ];
 
 const missing: string[] = [];
@@ -40,6 +45,14 @@ const gitignore = readFileSync(".gitignore", "utf8");
 if (!gitignore.split("\n").includes(".opencode/policy-runs/")) {
   console.error("Missing .opencode/policy-runs/ in .gitignore");
   process.exit(1);
+}
+
+const workflowCommand = readFileSync(".opencode/commands/workflow.md", "utf8");
+for (const requiredText of ["profiles/current.json", "WORKER_POLICY", "AUTONOMY_POLICY"]) {
+  if (!workflowCommand.includes(requiredText)) {
+    console.error(`workflow.md does not reference ${requiredText}`);
+    process.exit(1);
+  }
 }
 
 console.log(`OpenCode adapter files OK: ${requiredFiles.length}`);
