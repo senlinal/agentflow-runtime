@@ -138,6 +138,16 @@ npm run workflow:run-profile -- --sessionId <sessionId> --answer "按 heading/fi
 
 The resume step turns the answer into a `ScopeConfirmationRecord`, runs `confirmed-scope-gate`, and continues only inside the active profile's safe chain.
 
+Confirmed scopes and profile routes are also written into local Project Memory:
+
+```bash
+npm run memory:list -- --profile rag-optimization
+npm run memory:summary -- --profile rag-optimization
+npm run memory:show -- --id <memoryId>
+```
+
+Project Memory records confirmed boundaries, decisions, tried routes, rejected routes, and next actions under `.agentflow/project-memory/`. Later profile runs load recent memory summaries so `/workflow` can avoid asking the user to repeat the same confirmed scope and avoid retrying known blocked routes.
+
 ### Task Negotiation
 
 `task-negotiation` is a pre-flight workflow for complex or ambiguous requests. It produces a `TaskNegotiationResult` with detected task type, target module, ambiguities, clarification questions, proposed allowed/forbidden scope, suggested task breakdown, and a recommended next step.

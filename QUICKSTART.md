@@ -77,6 +77,14 @@ npm run workflow:profile:session -- --id <sessionId>
 npm run workflow:run-profile -- --sessionId <sessionId> --answer "召回口径按 heading/file，不牺牲回答质量，不改生产索引，可以做 query rewrite 和 reranker 实验。"
 ```
 
+Inspect project memory created by confirmed scopes and profile routes:
+
+```bash
+npm run memory:list -- --profile rag-optimization
+npm run memory:summary -- --profile rag-optimization
+npm run memory:show -- --id <memoryId>
+```
+
 ## 7. Run Controlled Code-Test-Verify
 
 For ambiguous or broad work, run task negotiation before feasibility or execution:

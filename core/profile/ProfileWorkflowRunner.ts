@@ -1,11 +1,12 @@
 import { ScopeConfirmationService } from "../scope/ScopeConfirmationService.ts";
 import { ScopeConfirmationStore } from "../scope/ScopeConfirmationStore.ts";
 import { TaskBriefLoader } from "../TaskBriefLoader.ts";
-import type { ProfileSession, ScopeConfirmationRecord, TaskBrief, TaskNegotiationResult, WorkflowGraphConfig } from "../types.ts";
+import type { ProfileSession, ProjectMemoryRecord, ProjectMemorySummary, ScopeConfirmationRecord, TaskBrief, TaskNegotiationResult, WorkflowGraphConfig } from "../types.ts";
 import { WorkflowRunner, type WorkflowRunnerResult } from "../WorkflowRunner.ts";
 import { WorkflowTemplateRegistry } from "../WorkflowTemplateRegistry.ts";
 import { WorkflowProfileLoader, type WorkflowProfile } from "./WorkflowProfileLoader.ts";
 import { ProfileSessionStore } from "./ProfileSessionStore.ts";
+import { ProjectMemoryStore } from "./ProjectMemoryStore.ts";
 
 export type ProfileWorkflowRunRequest = {
   profileId?: string;
@@ -42,6 +43,7 @@ export type ProfileWorkflowRunResult = {
   nextActions: string[];
   session?: ProfileSession;
   scopeConfirmationId?: string;
+  memorySummary?: ProjectMemorySummary;
 };
 
 export class ProfileWorkflowRunner {
@@ -50,6 +52,7 @@ export class ProfileWorkflowRunner {
   private readonly workflowRunner: WorkflowRunner;
   private readonly sessionStore: ProfileSessionStore;
   private readonly scopeStore: ScopeConfirmationStore;
+  private readonly memoryStore: ProjectMemoryStore;
 
   constructor(
     profileLoader = new WorkflowProfileLoader(),
@@ -57,12 +60,14 @@ export class ProfileWorkflowRunner {
     workflowRunner = new WorkflowRunner(),
     sessionStore = new ProfileSessionStore(),
     scopeStore = new ScopeConfirmationStore(),
+    memoryStore = new ProjectMemoryStore(),
   ) {
     this.profileLoader = profileLoader;
     this.workflowRegistry = workflowRegistry;
     this.workflowRunner = workflowRunner;
     this.sessionStore = sessionStore;
     this.scopeStore = scopeStore;
+    this.memoryStore = memoryStore;
   }
 
   async run(request: ProfileWorkflowRunRequest): Promise<ProfileWorkflowRunResult> {
@@ -74,12 +79,17 @@ export class ProfileWorkflowRunner {
     if (!validation.valid) throw new Error(`Workflow profile is invalid: ${validation.errors.join("; ")}`);
 
     const resume = request.answer ? await this.resumeScopeConfirmation(request, profile) : null;
-    const taskBrief = resume?.taskBrief ?? await this.resolveTaskBrief(request, profile);
+    let taskBrief = resume?.taskBrief ?? await this.resolveTaskBrief(request, profile);
     const workflowChain = this.profileLoader.resolveProfileWorkflowChain(profile);
     const dryRun = request.dryRun === true;
     const allowExecution = request.allowExecution === true;
     const steps: ProfileWorkflowStep[] = [];
     const warnings = [...validation.warnings];
+    const initialMemorySummary = await this.memoryStore.summarize(profile.id, 10);
+    if (initialMemorySummary.records.length > 0) {
+      warnings.push(`Loaded ${initialMemorySummary.records.length} project memory record(s) for profile ${profile.id}.`);
+      taskBrief = withMemoryResources(taskBrief, initialMemorySummary);
+    }
     let blocked = false;
 
     let profileSession: ProfileSession | undefined = resume?.session;
@@ -139,6 +149,8 @@ export class ProfileWorkflowRunner {
         lastRunId: [...steps].reverse().find((step) => step.runId)?.runId ?? profileSession.lastRunId,
       });
     }
+    await this.writeRouteMemory(profile.id, profileSession, steps);
+    const memorySummary = await this.memoryStore.summarize(profile.id, 10);
 
     return {
       profileId: profile.id,
@@ -150,7 +162,8 @@ export class ProfileWorkflowRunner {
       steps,
       warnings,
       finalStatus: finalProfileStatus(steps, dryRun),
-      nextActions: nextActions(profile, steps),
+      nextActions: nextActions(profile, steps, memorySummary),
+      memorySummary,
       ...(profileSession ? { session: profileSession } : {}),
       ...(scopeConfirmation?.confirmationId ? { scopeConfirmationId: scopeConfirmation.confirmationId } : {}),
     };
@@ -203,6 +216,7 @@ export class ProfileWorkflowRunner {
       notes: `Created from profile session ${session.sessionId}.`,
     });
     await this.scopeStore.save(record);
+    await this.writeScopeMemory(profile, session, record, answer);
     const updated = await this.updateSession(session, {
       status: "scope_confirmed",
       scopeConfirmationId: record.confirmationId,
@@ -212,6 +226,94 @@ export class ProfileWorkflowRunner {
       scopeConfirmation: record,
       taskBrief: await this.resolveTaskBrief({ ...request, task: session.task, inputPath: undefined, answer: undefined }, profile),
     };
+  }
+
+  private async writeScopeMemory(
+    profile: WorkflowProfile,
+    session: ProfileSession,
+    record: ScopeConfirmationRecord,
+    answer: string,
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    const baseSource = {
+      sessionId: session.sessionId,
+      confirmationId: record.confirmationId,
+      workflowRunId: session.lastRunId,
+    };
+    await this.memoryStore.save({
+      memoryId: `memory_scope_${stableId(profile.id, record.confirmationId)}`,
+      profileId: profile.id,
+      type: "confirmed_scope",
+      title: `Confirmed scope for ${record.confirmedScope.targetModule ?? profile.id}`,
+      summary: [
+        `Goal: ${record.confirmedScope.goal}`,
+        `Allowed modules: ${record.confirmedScope.allowedModules.join(", ") || "none"}`,
+        `Blocked actions: ${record.confirmedScope.blockedActions.join(", ") || "none"}`,
+        `Quality constraints: ${record.confirmedScope.qualityConstraints.join("; ") || "none"}`,
+      ].join(" | "),
+      source: baseSource,
+      tags: ["scope", profile.id, record.confirmedScope.targetModule ?? "general"],
+      status: "active",
+      createdAt: now,
+    });
+    await this.memoryStore.save({
+      memoryId: `memory_decision_${stableId(profile.id, record.confirmationId, "answer")}`,
+      profileId: profile.id,
+      type: "decision",
+      title: "Human scope confirmation captured",
+      summary: `User confirmed scope answer: ${answer.slice(0, 240)}`,
+      source: baseSource,
+      tags: ["decision", "human-confirmed-scope", profile.id],
+      status: "active",
+      createdAt: now,
+    });
+    await this.memoryStore.save({
+      memoryId: `memory_next_${stableId(profile.id, record.confirmationId, "next")}`,
+      profileId: profile.id,
+      type: "next_action",
+      title: "Proceed within confirmed scope",
+      summary: "Use confirmed scope as the boundary for feasibility and followup planning. Do not expand scope without another confirmation.",
+      source: baseSource,
+      tags: ["next-action", "scope-gated", profile.id],
+      status: "active",
+      createdAt: now,
+    });
+  }
+
+  private async writeRouteMemory(
+    profileId: string,
+    session: ProfileSession | undefined,
+    steps: ProfileWorkflowStep[],
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    for (const step of steps) {
+      if (step.status === "ran") {
+        await this.memoryStore.save({
+          memoryId: `memory_route_${stableId(profileId, session?.sessionId ?? "no-session", step.workflow, step.runId ?? "no-run")}`,
+          profileId,
+          type: "tried_route",
+          title: `Ran workflow ${step.workflow}`,
+          summary: `${step.workflow} completed with status ${step.finalStatus ?? "unknown"}. enteredExecutor=${step.enteredExecutor ?? false}.`,
+          source: { sessionId: session?.sessionId, workflowRunId: step.runId },
+          tags: ["route", step.workflow],
+          status: "active",
+          createdAt: now,
+        });
+      }
+      if (step.status === "blocked") {
+        await this.memoryStore.save({
+          memoryId: `memory_rejected_route_${stableId(profileId, session?.sessionId ?? "no-session", step.workflow, step.reason)}`,
+          profileId,
+          type: "rejected_route",
+          title: `Blocked workflow ${step.workflow}`,
+          summary: step.reason,
+          source: { sessionId: session?.sessionId, workflowRunId: step.runId },
+          tags: ["blocked-route", step.workflow],
+          status: "active",
+          createdAt: now,
+        });
+      }
+    }
   }
 
   private async updateSession(session: ProfileSession, update: Partial<ProfileSession>): Promise<ProfileSession> {
@@ -281,7 +383,17 @@ function finalProfileStatus(steps: ProfileWorkflowStep[], dryRun: boolean): Prof
   return "completed";
 }
 
-function nextActions(profile: WorkflowProfile, steps: ProfileWorkflowStep[]): string[] {
+function withMemoryResources(taskBrief: TaskBrief, memorySummary: ProjectMemorySummary): TaskBrief {
+  const memoryResources = memorySummary.records.slice(0, 5).map((record) =>
+    `ProjectMemory(${record.type}): ${record.title} - ${record.summary}`
+  );
+  return {
+    ...taskBrief,
+    resources: [...taskBrief.resources, ...memoryResources],
+  };
+}
+
+function nextActions(profile: WorkflowProfile, steps: ProfileWorkflowStep[], memorySummary?: ProjectMemorySummary): string[] {
   const blocked = steps.find((step) => step.status === "blocked");
   if (blocked?.workflow === profile.scopeWorkflow) {
     return [
@@ -296,7 +408,11 @@ function nextActions(profile: WorkflowProfile, steps: ProfileWorkflowStep[]): st
       "Use explicit approval and a dedicated execution workflow only when safe.",
     ];
   }
-  return ["Review generated summary and trace.", "Proceed only within the active profile scope."];
+  const memoryAction = memorySummary?.nextActions[0]?.summary;
+  return [
+    "Review generated summary and trace.",
+    memoryAction ?? "Proceed only within the active profile scope.",
+  ];
 }
 
 function inferConfirmedScope(

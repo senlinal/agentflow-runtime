@@ -50,6 +50,28 @@ npm run workflow:run-profile -- --sessionId <sessionId> --answer "召回口径�
 
 The resume command creates a `ScopeConfirmationRecord`, runs `confirmed-scope-gate`, and continues only within the profile's safe workflow chain. The session store is local runtime state and is ignored by Git.
 
+## Project Memory
+
+Profile runs write durable local memory records under `.agentflow/project-memory/`. This memory is ignored by Git and is intended to prevent long-running tasks from losing confirmed scope, repeating failed routes, or asking for the same boundary decisions.
+
+Recorded memory types include:
+
+- `confirmed_scope`: human-confirmed task boundaries from `ScopeConfirmationRecord`.
+- `decision`: key human decisions, including scope answers.
+- `tried_route`: workflows that were already attempted.
+- `rejected_route`: workflows blocked by missing scope, safety policy, or profile constraints.
+- `next_action`: recommended next steps that later `/workflow` runs can reuse.
+
+Use:
+
+```bash
+npm run memory:list -- --profile rag-optimization
+npm run memory:summary -- --profile rag-optimization
+npm run memory:show -- --id <memoryId>
+```
+
+`workflow:run-profile` loads recent memory summaries for the active profile and includes them in the result. Memory records must not contain secrets, credentials, API keys, or production data.
+
 ## Daily Use
 
 With a profile active, the user only needs to provide the goal, optional current state, and special constraints. Standing rules come from `AGENTS.md`, policy files, memory files, and the active profile.

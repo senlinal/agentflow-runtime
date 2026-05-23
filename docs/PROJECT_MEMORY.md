@@ -1,0 +1,15 @@
+# Project Memory
+
+This file is a human-readable seed for project memory. Runtime memory records are stored locally under `.agentflow/project-memory/` and are ignored by Git.
+
+Use project memory to preserve confirmed scope, important decisions, tried routes, rejected routes, open questions, current best understanding, and next actions across profile-aware workflow runs.
+
+The CLI entrypoints are:
+
+```bash
+npm run memory:list
+npm run memory:summary -- --profile rag-optimization
+npm run memory:show -- --id <memoryId>
+```
+
+Do not store secrets, API keys, credentials, production data, or private tokens in memory records.

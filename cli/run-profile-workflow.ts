@@ -29,6 +29,11 @@ if (args.format === "json") {
     if (result.session.scopeConfirmationId) console.log(`scopeConfirmationId: ${result.session.scopeConfirmationId}`);
     if (result.session.pendingQuestions.length > 0) console.log(`pendingQuestions: ${result.session.pendingQuestions.join(" | ")}`);
   }
+  if (result.memorySummary) {
+    console.log(`memoryRecords: ${result.memorySummary.records.length}`);
+    console.log(`activeConfirmedScopes: ${result.memorySummary.activeConfirmedScopes.length}`);
+    console.log(`memoryNextActions: ${result.memorySummary.nextActions.map((record) => record.summary).join(" | ") || "none"}`);
+  }
   for (const step of result.steps) {
     console.log(`step: ${step.workflow}\t${step.status}\t${step.reason}`);
     if (step.runId) console.log(`  runId: ${step.runId}`);

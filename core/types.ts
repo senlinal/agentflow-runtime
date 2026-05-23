@@ -218,6 +218,44 @@ export type ProfileSession = {
   updatedAt: string;
 };
 
+export type ProjectMemoryRecord = {
+  memoryId: string;
+  profileId: string;
+  type:
+    | "confirmed_scope"
+    | "decision"
+    | "tried_route"
+    | "rejected_route"
+    | "open_question"
+    | "current_best"
+    | "next_action"
+    | "progress_summary";
+  title: string;
+  summary: string;
+  source?: {
+    sessionId?: string;
+    confirmationId?: string;
+    workflowRunId?: string;
+    executionId?: string;
+    patchExportId?: string;
+  };
+  tags: string[];
+  status: "active" | "resolved" | "rejected" | "archived";
+  createdAt: string;
+  updatedAt?: string;
+};
+
+export type ProjectMemorySummary = {
+  profileId: string;
+  generatedAt: string;
+  records: ProjectMemoryRecord[];
+  activeConfirmedScopes: ProjectMemoryRecord[];
+  triedRoutes: ProjectMemoryRecord[];
+  rejectedRoutes: ProjectMemoryRecord[];
+  nextActions: ProjectMemoryRecord[];
+  warnings: string[];
+};
+
 export type ResearchReport = {
   summary: string;
   knownFacts: string[];

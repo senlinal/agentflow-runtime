@@ -26,6 +26,10 @@ const requiredFiles = [
   "profiles/rag-optimization.json",
   "profiles/coding-safe-fix.json",
   "profiles/external-project-fix.json",
+  "core/profile/ProjectMemoryStore.ts",
+  "cli/project-memory-list.ts",
+  "cli/project-memory-summary.ts",
+  "docs/PROJECT_MEMORY.md",
 ];
 
 const missing: string[] = [];
@@ -47,9 +51,13 @@ if (!gitignore.split("\n").includes(".opencode/policy-runs/")) {
   console.error("Missing .opencode/policy-runs/ in .gitignore");
   process.exit(1);
 }
+if (!gitignore.split("\n").includes(".agentflow/project-memory/")) {
+  console.error("Missing .agentflow/project-memory/ in .gitignore");
+  process.exit(1);
+}
 
 const workflowCommand = readFileSync(".opencode/commands/workflow.md", "utf8");
-for (const requiredText of ["profiles/current.json", "WORKER_POLICY", "AUTONOMY_POLICY"]) {
+for (const requiredText of ["profiles/current.json", "WORKER_POLICY", "AUTONOMY_POLICY", "memory:summary"]) {
   if (!workflowCommand.includes(requiredText)) {
     console.error(`workflow.md does not reference ${requiredText}`);
     process.exit(1);
