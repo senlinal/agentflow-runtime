@@ -39,6 +39,7 @@ Report privately through the repository owner's preferred private channel. Inclu
 - Controlled execution creates a checkpoint before writes, runs scoped tests afterward, runs execution-aware verification, records a rollback guide, and consumes approval only after execution starts and an execution record is generated.
 - Controlled execution still rejects `delete_file`, forbidden or sensitive paths, high-risk shell, scope expansion, automatic approval, infinite retry, and destructive rollback.
 - CodeChangePlan execution records and rollback guides are persisted under `.agentflow/executions/` for local audit. The directory is ignored by Git, stores redacted/truncated execution data, and rollback guide commands are informational only.
+- The real-project E2E demo copies its fixture to a temporary workspace before execution. It must not modify fixture originals, project source files, or committed runtime logs.
 
 ## High-Risk Areas
 

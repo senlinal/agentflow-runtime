@@ -117,6 +117,7 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
     buildCodeChangeExecutionApprovalSummary(context),
     buildCodeChangeDryRunSummary(context),
     buildCodeChangeExecutionSummary(context),
+    buildE2ERealProjectSummary(context),
     "",
     !executionStarted && feasibility
       ? [
@@ -205,12 +206,19 @@ function buildRepairSummary(context: WorkflowContext): string {
         ].join("\n")
       : "",
     "",
-    "CodeChangePlan was materialized only.",
-    "No repair was executed automatically.",
-    "No repair operations were executed automatically.",
-    "Materialized code change plans are not executed automatically.",
-    "Explicit execution approval is required before applying this plan.",
-    "Human approval is required before applying any repair.",
+    ...(context.codeChangePlanExecutionRecord
+      ? [
+          "CodeChangePlan execution details are shown in the execution section.",
+          "Repair was not retried automatically.",
+        ]
+      : [
+          "CodeChangePlan was materialized only.",
+          "No repair was executed automatically.",
+          "No repair operations were executed automatically.",
+          "Materialized code change plans are not executed automatically.",
+          "Explicit execution approval is required before applying this plan.",
+          "Human approval is required before applying any repair.",
+        ]),
     "",
   ].join("\n");
 }
@@ -326,6 +334,32 @@ function buildCodeChangeExecutionSummary(context: WorkflowContext): string {
     "",
     `\`npm run execution:show -- --id ${record.executionId}\``,
     `\`npm run execution:rollback-guide -- --id ${record.executionId}\``,
+    "",
+  ].join("\n");
+}
+
+function buildE2ERealProjectSummary(context: WorkflowContext): string {
+  const e2e = context.runtimeMetadata?.e2eRealProject;
+  if (!e2e) return "";
+  const executionId = stringValue(e2e.executionId);
+  return [
+    "## Real Project E2E Trial",
+    "",
+    `- tempWorkspace: ${stringValue(e2e.tempWorkspace)}`,
+    `- initialTestStatus: ${stringValue(e2e.initialTestStatus)}`,
+    `- finalTestStatus: ${stringValue(e2e.finalTestStatus)}`,
+    `- changedFiles: ${arrayValue(e2e.changedFiles).join("; ") || "none"}`,
+    `- successCriteriaResult: ${stringValue(e2e.successCriteriaResult)}`,
+    `- fixtureOriginalUnchanged: ${stringValue(e2e.fixtureOriginalUnchanged)}`,
+    `- executionId: ${executionId}`,
+    `- executionRecordPath: ${stringValue(e2e.executionRecordPath)}`,
+    `- rollbackGuidePath: ${stringValue(e2e.rollbackGuidePath)}`,
+    "",
+    "Suggested execution queries:",
+    "",
+    "`npm run execution:list`",
+    `\`npm run execution:show -- --id ${executionId}\``,
+    `\`npm run execution:rollback-guide -- --id ${executionId}\``,
     "",
   ].join("\n");
 }

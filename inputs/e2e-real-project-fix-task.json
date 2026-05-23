@@ -1,0 +1,29 @@
+{
+  "taskId": "e2e_real_project_fix_task",
+  "goal": "Fix the failing calculator add test in the E2E fixture project.",
+  "currentState": "calculator.add currently subtracts instead of adding, causing the calculator test to fail while string-utils tests pass.",
+  "constraints": [
+    "Only modify src/calculator.ts.",
+    "Do not modify src/string-utils.ts.",
+    "Do not delete files.",
+    "Run npm test.",
+    "Do not call a real LLM."
+  ],
+  "resources": [
+    "testCommands: [\"npm run test\"]",
+    "allowedFiles: [\"src/calculator.ts\"]"
+  ],
+  "budget": "low",
+  "successCriteria": [
+    "npm test passes.",
+    "Only src/calculator.ts changes.",
+    "add returns a + b.",
+    "No files deleted."
+  ],
+  "nonGoals": [
+    "Do not modify string utility behavior.",
+    "Do not add dependencies.",
+    "Do not perform destructive rollback."
+  ],
+  "rawUserInput": "Fix the calculator.add implementation in a copied E2E fixture workspace."
+}

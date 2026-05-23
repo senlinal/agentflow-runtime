@@ -104,6 +104,14 @@ npm run execution:show -- --id <executionId>
 npm run execution:rollback-guide -- --id <executionId>
 ```
 
+Run the real-project E2E trial:
+
+```bash
+npm run demo:e2e-real-project
+```
+
+This copies a small fixture project to a temporary workspace, confirms the initial tests fail, applies an approved scoped `CodeChangePlan` to `src/calculator.ts`, reruns tests, verifies the result, and prints execution record query commands. The fixture original is not modified.
+
 ## 7. LLM Config Dry-Run
 
 ```bash

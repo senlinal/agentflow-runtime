@@ -201,6 +201,20 @@ npm run execution:rollback-guide -- --id <executionId>
 
 The rollback guide CLI is read-only. It displays checkpoint, changed files, suggested commands, and manual review steps, but it does not run rollback commands.
 
+## Real Project E2E Trial
+
+`tests/fixtures/e2e-real-project/` provides a small project with two source files and two tests. `calculator.add` intentionally starts broken, while `string-utils` remains correct.
+
+Run:
+
+```bash
+npm run demo:e2e-real-project
+```
+
+The demo copies the fixture to a temporary workspace, initializes Git, confirms the initial `npm run test` fails, runs `code-change-plan-execution` with a hash-bound approved plan that only modifies `src/calculator.ts`, reruns tests, verifies the result, and persists an execution record plus rollback guide.
+
+The fixture original is treated as read-only. The demo does not call a real LLM, does not support `delete_file`, does not run high-risk shell, and does not perform destructive rollback.
+
 ## Output
 
 Both `code` and `test` nodes return `ExecutionResult`:

@@ -155,6 +155,25 @@ npm run execution:show -- --id <executionId>
 npm run execution:rollback-guide -- --id <executionId>
 ```
 
+### Real Project E2E Demo
+
+`demo:e2e-real-project` runs the approved execution chain against a copied fixture project with multiple source and test files. The fixture starts with a failing `calculator.add` test, while unrelated `string-utils` tests pass.
+
+The demo copies `tests/fixtures/e2e-real-project/` to a temporary workspace, confirms the initial `npm run test` fails, applies a hash-bound `CodeChangePlan` that only modifies `src/calculator.ts`, runs the scoped test command, verifies the result, persists an execution record, and leaves the fixture original unchanged.
+
+```bash
+npm run demo:e2e-real-project
+```
+
+Use the printed `executionId` with:
+
+```bash
+npm run execution:show -- --id <executionId>
+npm run execution:rollback-guide -- --id <executionId>
+```
+
+More details are in `docs/REAL_PROJECT_E2E.md`.
+
 Validate and inspect templates:
 
 ```bash
