@@ -144,12 +144,15 @@ Confirmed scopes and profile routes are also written into local Project Memory:
 npm run memory:list -- --profile rag-optimization
 npm run memory:summary -- --profile rag-optimization
 npm run memory:compact -- --profile rag-optimization
+npm run memory:autonomy -- --profile rag-optimization --task "continue RAG optimization"
 npm run memory:show -- --id <memoryId>
 ```
 
 Project Memory records confirmed boundaries, decisions, tried routes, rejected routes, and next actions under `.agentflow/project-memory/`. Later profile runs load recent memory summaries so `/workflow` can avoid asking the user to repeat the same confirmed scope and avoid retrying known blocked routes.
 
 `memory:compact` produces a conflict-aware compact summary with current facts, active decisions, rejected routes, open questions, resolved questions, and next actions. It is local and deterministic; no LLM is called.
+
+`memory:autonomy` evaluates a proposed task against compacted memory. High-severity conflicts, blocking open questions, and rejected-route repeats block continuation before the profile runner proceeds.
 
 ### Task Negotiation
 

@@ -114,6 +114,18 @@ describe("SchemaValidator", () => {
     assert.deepEqual(SchemaValidator.validate("ConfirmedScopeGateResult", output), output);
   });
 
+  it("passes for a valid AutonomyDecision", () => {
+    const output = validAutonomyDecision();
+    assert.deepEqual(SchemaValidator.validate("AutonomyDecision", output), output);
+  });
+
+  it("fails when AutonomyDecision decision is invalid", () => {
+    assert.throws(
+      () => SchemaValidator.validate("AutonomyDecision", { ...validAutonomyDecision(), decision: "maybe" }),
+      /AutonomyDecision\.decision must be one of/,
+    );
+  });
+
   it("fails when TaskBrief is missing goal", () => {
     const { goal: _goal, ...output } = validTaskBrief();
     assert.throws(() => SchemaValidator.validate("TaskBrief", output), /TaskBrief\.goal must be a string/);
@@ -653,6 +665,23 @@ function validScopeConfirmationRecord() {
     assumptionsAccepted: [],
     assumptionsRejected: [],
     notes: "confirmed",
+    createdAt: "2026-05-23T00:00:00.000Z",
+  };
+}
+
+function validAutonomyDecision() {
+  return {
+    decision: "proceed",
+    reason: "No blockers.",
+    confidence: "high",
+    canProceed: true,
+    mustAskHuman: false,
+    assumptions: [],
+    questionsToAsk: [],
+    blockedReasons: [],
+    safetyFindings: [],
+    referencedMemoryIds: [],
+    nextAllowedActions: ["run_task_negotiation"],
     createdAt: "2026-05-23T00:00:00.000Z",
   };
 }

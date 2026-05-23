@@ -5,6 +5,7 @@ export const OUTPUT_SCHEMA_NAMES: OutputSchemaName[] = [
   "TaskNegotiationResult",
   "ScopeConfirmationRecord",
   "ConfirmedScopeGateResult",
+  "AutonomyDecision",
   "ResearchReport",
   "FeasibilityReport",
   "Plan",
@@ -114,6 +115,26 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
         blockedReasons: ["string"],
         confirmedScope: "object optional",
         recommendedNextStep: "proceed_to_feasibility | ask_human | revise_scope | stop",
+        createdAt: "string",
+      };
+    case "AutonomyDecision":
+      return {
+        decision: "proceed | proceed_with_assumptions | ask_human | blocked | stop",
+        reason: "string",
+        confidence: "low | medium | high",
+        canProceed: "boolean",
+        mustAskHuman: "boolean",
+        assumptions: ["string"],
+        questionsToAsk: [{
+          question: "string",
+          reason: "string",
+          blocking: "boolean",
+          relatedMemoryIds: ["string optional"],
+        }],
+        blockedReasons: ["string"],
+        safetyFindings: ["string"],
+        referencedMemoryIds: ["string"],
+        nextAllowedActions: ["string"],
         createdAt: "string",
       };
     case "ResearchReport":

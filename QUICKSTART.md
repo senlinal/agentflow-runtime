@@ -83,6 +83,7 @@ Inspect project memory created by confirmed scopes and profile routes:
 npm run memory:list -- --profile rag-optimization
 npm run memory:summary -- --profile rag-optimization
 npm run memory:compact -- --profile rag-optimization
+npm run memory:autonomy -- --profile rag-optimization --task "continue RAG optimization"
 npm run memory:show -- --id <memoryId>
 ```
 

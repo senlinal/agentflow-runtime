@@ -1,9 +1,11 @@
 import { ScopeConfirmationService } from "../scope/ScopeConfirmationService.ts";
 import { ScopeConfirmationStore } from "../scope/ScopeConfirmationStore.ts";
 import { TaskBriefLoader } from "../TaskBriefLoader.ts";
-import type { CompactMemorySummary, ProfileSession, ProjectMemoryRecord, ProjectMemorySummary, ScopeConfirmationRecord, TaskBrief, TaskNegotiationResult, WorkflowGraphConfig } from "../types.ts";
+import type { AutonomyDecision, CompactMemorySummary, ProfileSession, ProjectMemoryRecord, ProjectMemorySummary, ScopeConfirmationRecord, TaskBrief, TaskNegotiationResult, WorkflowGraphConfig } from "../types.ts";
 import { WorkflowRunner, type WorkflowRunnerResult } from "../WorkflowRunner.ts";
 import { WorkflowTemplateRegistry } from "../WorkflowTemplateRegistry.ts";
+import { EscalationGate } from "./EscalationGate.ts";
+import { MemoryAutonomyGate } from "./MemoryAutonomyGate.ts";
 import { WorkflowProfileLoader, type WorkflowProfile } from "./WorkflowProfileLoader.ts";
 import { ProfileSessionStore } from "./ProfileSessionStore.ts";
 import { ProjectMemoryStore } from "./ProjectMemoryStore.ts";
@@ -41,6 +43,7 @@ export type ProfileWorkflowRunResult = {
   warnings: string[];
   finalStatus: "planned" | "completed" | "blocked" | "stopped";
   nextActions: string[];
+  autonomyDecision?: AutonomyDecision;
   session?: ProfileSession;
   scopeConfirmationId?: string;
   memorySummary?: ProjectMemorySummary;
@@ -53,6 +56,8 @@ export class ProfileWorkflowRunner {
   private readonly sessionStore: ProfileSessionStore;
   private readonly scopeStore: ScopeConfirmationStore;
   private readonly memoryStore: ProjectMemoryStore;
+  private readonly autonomyGate: MemoryAutonomyGate;
+  private readonly escalationGate: EscalationGate;
 
   constructor(
     profileLoader = new WorkflowProfileLoader(),
@@ -61,6 +66,8 @@ export class ProfileWorkflowRunner {
     sessionStore = new ProfileSessionStore(),
     scopeStore = new ScopeConfirmationStore(),
     memoryStore = new ProjectMemoryStore(),
+    autonomyGate = new MemoryAutonomyGate(),
+    escalationGate = new EscalationGate(),
   ) {
     this.profileLoader = profileLoader;
     this.workflowRegistry = workflowRegistry;
@@ -68,6 +75,8 @@ export class ProfileWorkflowRunner {
     this.sessionStore = sessionStore;
     this.scopeStore = scopeStore;
     this.memoryStore = memoryStore;
+    this.autonomyGate = autonomyGate;
+    this.escalationGate = escalationGate;
   }
 
   async run(request: ProfileWorkflowRunRequest): Promise<ProfileWorkflowRunResult> {
@@ -85,6 +94,7 @@ export class ProfileWorkflowRunner {
     const allowExecution = request.allowExecution === true;
     const steps: ProfileWorkflowStep[] = [];
     const warnings = [...validation.warnings];
+    let profileSession: ProfileSession | undefined = resume?.session;
     const compactedMemory = await this.memoryStore.getCompacted(profile.id);
     const initialMemorySummary = await this.memoryStore.summarize(profile.id, 10);
     if (initialMemorySummary.records.length > 0) {
@@ -95,9 +105,43 @@ export class ProfileWorkflowRunner {
       warnings.push(`Loaded compacted project memory for profile ${profile.id}.`);
       taskBrief = withCompactedMemoryResources(taskBrief, compactedMemory);
     }
+    const autonomyDecision = this.autonomyGate.evaluate({
+      taskBrief,
+      compactMemory: compactedMemory,
+      proposedAction: request.task ?? taskBrief.goal,
+      dryRun,
+    });
+    if (autonomyDecision.decision === "proceed_with_assumptions") {
+      warnings.push(`Autonomy gate proceeding with assumptions: ${autonomyDecision.reason}`);
+    }
+    const escalation = this.escalationGate.evaluate(autonomyDecision);
+    if (escalation.shouldBlock) {
+      steps.push({
+        workflow: "memory-autonomy-gate",
+        status: "blocked",
+        reason: escalation.reason,
+      });
+      for (const workflow of workflowChain) {
+        steps.push({ workflow, status: "skipped", reason: "Memory-aware autonomy gate blocked continuation." });
+      }
+      const memorySummary = await this.memoryStore.summarize(profile.id, 10);
+      return {
+        profileId: profile.id,
+        profileName: profile.name,
+        workflowChain,
+        taskBrief,
+        dryRun,
+        allowExecution,
+        steps,
+        warnings,
+        finalStatus: "blocked",
+        nextActions: escalation.nextAllowedActions,
+        autonomyDecision,
+        memorySummary,
+        ...(profileSession ? { session: profileSession } : {}),
+      };
+    }
     let blocked = false;
-
-    let profileSession: ProfileSession | undefined = resume?.session;
 
     const scopeConfirmation = resume?.scopeConfirmation
       ?? (request.scopeConfirmationId ? await this.scopeStore.get(request.scopeConfirmationId) : null);
@@ -168,6 +212,7 @@ export class ProfileWorkflowRunner {
       warnings,
       finalStatus: finalProfileStatus(steps, dryRun),
       nextActions: nextActions(profile, steps, memorySummary),
+      autonomyDecision,
       memorySummary,
       ...(profileSession ? { session: profileSession } : {}),
       ...(scopeConfirmation?.confirmationId ? { scopeConfirmationId: scopeConfirmation.confirmationId } : {}),

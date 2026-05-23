@@ -23,6 +23,12 @@ if (args.format === "json") {
   console.log(`allowExecution: ${result.allowExecution}`);
   console.log(`workflowChain: ${result.workflowChain.join(" -> ")}`);
   console.log(`warnings: ${result.warnings.join("; ") || "none"}`);
+  if (result.autonomyDecision) {
+    console.log(`autonomyDecision: ${result.autonomyDecision.decision}`);
+    console.log(`autonomyCanProceed: ${result.autonomyDecision.canProceed}`);
+    console.log(`autonomyReason: ${result.autonomyDecision.reason}`);
+    console.log(`autonomyBlockedReasons: ${result.autonomyDecision.blockedReasons.join(" | ") || "none"}`);
+  }
   if (result.session) {
     console.log(`sessionId: ${result.session.sessionId}`);
     console.log(`sessionStatus: ${result.session.status}`);

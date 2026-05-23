@@ -29,6 +29,7 @@ export type OutputSchemaName =
   | "TaskNegotiationResult"
   | "ScopeConfirmationRecord"
   | "ConfirmedScopeGateResult"
+  | "AutonomyDecision"
   | "ResearchReport"
   | "FeasibilityReport"
   | "Plan"
@@ -334,6 +335,26 @@ export type CompactMemorySummary = {
   }[];
   conflicts: MemoryConflict[];
   warnings: string[];
+};
+
+export type AutonomyDecision = {
+  decision: "proceed" | "proceed_with_assumptions" | "ask_human" | "blocked" | "stop";
+  reason: string;
+  confidence: "low" | "medium" | "high";
+  canProceed: boolean;
+  mustAskHuman: boolean;
+  assumptions: string[];
+  questionsToAsk: {
+    question: string;
+    reason: string;
+    blocking: boolean;
+    relatedMemoryIds?: string[];
+  }[];
+  blockedReasons: string[];
+  safetyFindings: string[];
+  referencedMemoryIds: string[];
+  nextAllowedActions: string[];
+  createdAt: string;
 };
 
 export type ResearchReport = {

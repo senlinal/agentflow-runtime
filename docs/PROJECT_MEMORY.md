@@ -10,9 +10,12 @@ The CLI entrypoints are:
 npm run memory:list
 npm run memory:summary -- --profile rag-optimization
 npm run memory:compact -- --profile rag-optimization
+npm run memory:autonomy -- --profile rag-optimization --task "continue RAG optimization"
 npm run memory:show -- --id <memoryId>
 ```
 
 Do not store secrets, API keys, credentials, production data, or private tokens in memory records.
 
 `memory:compact` creates a stable summary of current facts, active decisions, rejected routes, open questions, resolved questions, next actions, and conflicts. It does not call an LLM and does not execute workflow steps.
+
+`memory:autonomy` evaluates a proposed task against compacted memory and returns an `AutonomyDecision`. It blocks high-severity conflicts, blocking open questions, and repeated rejected routes. It is read-only and does not execute workflow nodes.

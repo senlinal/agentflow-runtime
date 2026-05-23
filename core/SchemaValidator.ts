@@ -1,4 +1,5 @@
 import type {
+  AutonomyDecision,
   CorrectionHint,
   Critique,
   ExecutionResult,
@@ -40,6 +41,8 @@ export class SchemaValidator {
         return validateScopeConfirmationRecord(output);
       case "ConfirmedScopeGateResult":
         return validateConfirmedScopeGateResult(output);
+      case "AutonomyDecision":
+        return validateAutonomyDecision(output);
       case "ResearchReport":
         return validateResearchReport(output);
       case "FeasibilityReport":
@@ -80,6 +83,30 @@ export class SchemaValidator {
         throw new Error(`Unsupported output schema: ${String(schemaName)}`);
     }
   }
+}
+
+function validateAutonomyDecision(output: unknown): AutonomyDecision {
+  const record = requireObject(output, "AutonomyDecision");
+  requireEnum(record, "decision", ["proceed", "proceed_with_assumptions", "ask_human", "blocked", "stop"], "AutonomyDecision");
+  requireString(record, "reason", "AutonomyDecision");
+  requireEnum(record, "confidence", ["low", "medium", "high"], "AutonomyDecision");
+  requireBoolean(record, "canProceed", "AutonomyDecision");
+  requireBoolean(record, "mustAskHuman", "AutonomyDecision");
+  requireArray(record, "assumptions", "AutonomyDecision");
+  requireArray(record, "questionsToAsk", "AutonomyDecision");
+  record.questionsToAsk.forEach((question, index) => {
+    const item = requireObject(question, `AutonomyDecision.questionsToAsk[${index}]`);
+    requireString(item, "question", `AutonomyDecision.questionsToAsk[${index}]`);
+    requireString(item, "reason", `AutonomyDecision.questionsToAsk[${index}]`);
+    requireBoolean(item, "blocking", `AutonomyDecision.questionsToAsk[${index}]`);
+    if ("relatedMemoryIds" in item) requireArray(item, "relatedMemoryIds", `AutonomyDecision.questionsToAsk[${index}]`);
+  });
+  requireArray(record, "blockedReasons", "AutonomyDecision");
+  requireArray(record, "safetyFindings", "AutonomyDecision");
+  requireArray(record, "referencedMemoryIds", "AutonomyDecision");
+  requireArray(record, "nextAllowedActions", "AutonomyDecision");
+  requireString(record, "createdAt", "AutonomyDecision");
+  return record as AutonomyDecision;
 }
 
 function validateScopeConfirmationRecord(output: unknown): ScopeConfirmationRecord {

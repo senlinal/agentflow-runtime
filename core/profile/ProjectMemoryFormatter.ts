@@ -1,4 +1,4 @@
-import type { CompactMemorySummary, ProjectMemoryRecord, ProjectMemorySummary } from "../types.ts";
+import type { AutonomyDecision, CompactMemorySummary, ProjectMemoryRecord, ProjectMemorySummary } from "../types.ts";
 
 export function formatProjectMemories(records: ProjectMemoryRecord[], format: "text" | "json" = "text"): string {
   if (format === "json") return JSON.stringify(records, null, 2);
@@ -51,6 +51,24 @@ export function formatCompactMemorySummary(summary: CompactMemorySummary, format
     `nextActions: ${summary.nextActions.map((item) => item.action).join(" | ") || "none"}`,
     `conflicts: ${summary.conflicts.map((item) => `${item.severity}:${item.summary}`).join(" | ") || "none"}`,
     `warnings: ${summary.warnings.join("; ") || "none"}`,
+  ].join("\n");
+}
+
+export function formatAutonomyDecision(decision: AutonomyDecision, format: "text" | "json" = "text"): string {
+  if (format === "json") return JSON.stringify(decision, null, 2);
+  return [
+    `decision: ${decision.decision}`,
+    `canProceed: ${decision.canProceed}`,
+    `mustAskHuman: ${decision.mustAskHuman}`,
+    `confidence: ${decision.confidence}`,
+    `reason: ${decision.reason}`,
+    `assumptions: ${decision.assumptions.join(" | ") || "none"}`,
+    `questionsToAsk: ${decision.questionsToAsk.map((item) => `${item.blocking ? "blocking" : "non-blocking"}:${item.question}`).join(" | ") || "none"}`,
+    `blockedReasons: ${decision.blockedReasons.join(" | ") || "none"}`,
+    `safetyFindings: ${decision.safetyFindings.join(" | ") || "none"}`,
+    `referencedMemoryIds: ${decision.referencedMemoryIds.join(", ") || "none"}`,
+    `nextAllowedActions: ${decision.nextAllowedActions.join(" | ") || "none"}`,
+    `createdAt: ${decision.createdAt}`,
   ].join("\n");
 }
 

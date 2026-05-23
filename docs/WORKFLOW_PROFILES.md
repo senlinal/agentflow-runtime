@@ -68,12 +68,19 @@ Use:
 npm run memory:list -- --profile rag-optimization
 npm run memory:summary -- --profile rag-optimization
 npm run memory:compact -- --profile rag-optimization
+npm run memory:autonomy -- --profile rag-optimization --task "continue RAG optimization"
 npm run memory:show -- --id <memoryId>
 ```
 
 `workflow:run-profile` loads recent memory summaries for the active profile and includes them in the result. Memory records must not contain secrets, credentials, API keys, or production data.
 
 Compaction converts many local memory records into current facts, active decisions, rejected routes that should not be repeated without new evidence, open/resolved questions, next actions, and conflict warnings. If a compacted summary exists, later profile runs include it in the task resources.
+
+## Memory-Aware Autonomy
+
+Profile runs evaluate the current task against compacted memory before continuing. The gate returns an `AutonomyDecision` and can allow low-risk preflight, continue with explicit assumptions, ask the human, block repeated rejected routes, or stop.
+
+High-severity memory conflicts, blocking open questions, and rejected routes marked do-not-repeat are not treated as harmless warnings. They stop the workflow chain before followup planning or execution-capable workflows can run.
 
 ## Daily Use
 

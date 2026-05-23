@@ -36,6 +36,7 @@
     "memory:show": "node --experimental-strip-types cli/project-memory-show.ts",
     "memory:summary": "node --experimental-strip-types cli/project-memory-summary.ts",
     "memory:compact": "node --experimental-strip-types cli/project-memory-compact.ts",
+    "memory:autonomy": "node --experimental-strip-types cli/project-memory-autonomy.ts",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "typecheck": "node --experimental-strip-types scripts/typecheck.ts",
     "opencode:check": "node --experimental-strip-types scripts/opencode-check.ts",

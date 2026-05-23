@@ -131,6 +131,8 @@ Profile-aware workflow runs may store local memory under `.agentflow/project-mem
 
 Before repeating scope questions or retrying a route, inspect recent memory with `npm run memory:summary -- --profile <profileId>`, compact it with `npm run memory:compact -- --profile <profileId>`, or use the profile runner's memory summary. Do not delete project memory to bypass prior decisions.
 
+Use `npm run memory:autonomy -- --profile <profileId> --task "<task>"` or the profile runner's built-in autonomy decision before continuing from compacted memory. High-severity memory conflicts and blocking open questions require human input. Rejected routes marked do-not-repeat must not be retried without new evidence.
+
 ## Stop Conditions
 
 Stop and ask when:

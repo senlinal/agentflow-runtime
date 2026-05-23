@@ -134,6 +134,41 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.equal(later.warnings.some((warning) => /Loaded compacted project memory/.test(warning)), true);
     assert.equal(later.taskBrief.resources.some((resource) => resource.startsWith("CompactMemory(")), true);
   });
+
+  await t.test("blocks profile run when compacted memory has high severity conflict", async () => {
+    const runner = createRunner();
+    const first = await runner.run({
+      profileId: "rag-optimization",
+      task: "继续 RAG 召回优化，分析上一轮实验结果，给出下一步方案",
+    });
+    await runner.run({
+      profileId: "rag-optimization",
+      sessionId: first.session?.sessionId,
+      answer: "召回口径按 heading/file，不牺牲回答质量，不改生产索引，可以做 query rewrite 和 reranker 实验。",
+    });
+    const second = await runner.run({
+      profileId: "rag-optimization",
+      task: "重新确认另一个冲突范围",
+    });
+    await runner.run({
+      profileId: "rag-optimization",
+      sessionId: second.session?.sessionId,
+      answer: "召回口径按 file，可以调整另一套 rag-v2 模块。",
+    });
+    await runner.compactMemory("rag-optimization");
+
+    const later = await runner.run({
+      profileId: "rag-optimization",
+      task: "继续推进 RAG 优化",
+      dryRun: true,
+    });
+
+    assert.equal(later.finalStatus, "blocked");
+    assert.equal(later.steps[0].workflow, "memory-autonomy-gate");
+    assert.equal(later.autonomyDecision?.decision, "ask_human");
+    assert.equal(later.autonomyDecision?.mustAskHuman, true);
+    assert.equal(later.steps.slice(1).every((step) => step.status === "skipped"), true);
+  });
 });
 
 function createRunner(): ProfileWorkflowRunner {

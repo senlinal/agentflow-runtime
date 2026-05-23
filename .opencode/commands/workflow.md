@@ -12,7 +12,7 @@ Use this command to run the repository's workflow template runner from opencode 
 2. Read `profiles/current.json`, then load the active profile from `profiles/<activeProfile>.json`.
 3. Read the active profile's `policyFiles`.
 4. Read or summarize existing `memoryFiles`; if a memory file is missing, record a warning and continue.
-5. Read recent Project Memory when available using `npm run memory:summary -- --profile <activeProfile>` or `npm run memory:compact -- --profile <activeProfile>`. Use it to avoid repeating confirmed scope questions, failed routes, and rejected approaches.
+5. Read recent Project Memory when available using `npm run memory:summary -- --profile <activeProfile>` or `npm run memory:compact -- --profile <activeProfile>`. Use `npm run memory:autonomy -- --profile <activeProfile> --task "<task>"` or the profile runner's built-in autonomy decision to avoid repeating confirmed scope questions, failed routes, and rejected approaches.
 6. Convert the user's message into a structured TaskBrief:
    - `goal`
    - `currentState`
@@ -67,6 +67,8 @@ When `run_profile_workflow` returns `pending_scope_confirmation`, show the `sess
 The tool will create a `ScopeConfirmationRecord`, run `confirmed-scope-gate`, and continue only within the profile's safe chain.
 
 After scope resume, the runner writes Project Memory records for confirmed scope, human decisions, tried routes, blocked routes, and next actions. Later `/workflow` calls should use those memory records instead of asking the user to repeat confirmed boundaries.
+
+If compacted memory reports a high-severity conflict, blocking open question, or rejected route that would be repeated, stop and ask the user. Do not treat those memory findings as non-blocking warnings.
 
 ## Default Tool Call Shape
 
