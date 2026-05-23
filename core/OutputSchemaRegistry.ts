@@ -12,6 +12,7 @@ export const OUTPUT_SCHEMA_NAMES: OutputSchemaName[] = [
   "ScopedRepairPlan",
   "HumanApprovalRequest",
   "CodeChangePlan",
+  "CodeChangePlanExecutionApprovalRequest",
   "CorrectionHint",
   "CodeExecutionResult",
   "TestExecutionResult",
@@ -169,6 +170,24 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
         executable: "false",
         requiresExplicitExecutionApproval: "boolean",
         createdAt: "string",
+      };
+    case "CodeChangePlanExecutionApprovalRequest":
+      return {
+        approvalId: "string",
+        codeChangePlanId: "string",
+        codeChangePlanHash: "string",
+        status: "pending | approved | rejected | expired | consumed",
+        requestedAction: "approve_code_change_plan_execution",
+        blockedUntilApproved: "boolean",
+        requiresExplicitExecutionApproval: "boolean",
+        summary: "string",
+        riskLevel: "low | medium | high",
+        reason: "string",
+        targetFiles: ["string"],
+        operationsCount: "number",
+        testCommands: ["string"],
+        createdAt: "string",
+        expiresAt: "string optional",
       };
     case "CorrectionHint":
       return {

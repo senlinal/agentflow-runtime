@@ -1,0 +1,39 @@
+{
+  "name": "code-change-plan-execution-approval",
+  "version": "1.0.0",
+  "description": "Create a pending execution approval request for a materialized CodeChangePlan without executing it.",
+  "start": "codeChangePlanExecutionApprovalGate",
+  "maxIterations": 1,
+  "inputSchema": "TaskBrief",
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": ["create pending CodeChangePlan execution approval request"],
+      "requireConfirmation": ["execute CodeChangePlan", "write files", "run commands", "run tests"],
+      "forbiddenWithoutExplicitApproval": ["call CodeExecutor", "apply CodeChangePlan operations", "delete files"]
+    },
+    "costPolicy": {
+      "maxCostLevel": "low",
+      "stopWhen": ["codeChangePlan missing", "codeChangePlan blocked", "execution approval missing"],
+      "preferredDecisionsWhenOverBudget": ["ask_human", "stop"]
+    },
+    "qualityPolicy": {
+      "principles": ["approval request only", "do not execute", "bind approval to CodeChangePlan hash"],
+      "requiredChecks": ["non-executable CodeChangePlan", "requires explicit execution approval", "no blocked operations"],
+      "forbiddenShortcuts": ["auto execute CodeExecutor", "auto run tests", "auto approve execution"]
+    }
+  },
+  "nodes": [
+    {
+      "id": "codeChangePlanExecutionApprovalGate",
+      "type": "executionApproval",
+      "role": "CodeChangePlanExecutionApprovalGate",
+      "description": "Create a pending execution approval request for a CodeChangePlan without writing files, running commands, tests, or CodeExecutor.",
+      "inputKeys": ["taskBrief", "codeChangePlan"],
+      "outputKey": "codeChangePlanExecutionApprovalRequest",
+      "outputSchema": "CodeChangePlanExecutionApprovalRequest"
+    }
+  ],
+  "edges": [
+    { "from": "codeChangePlanExecutionApprovalGate", "to": "end", "condition": { "type": "always" } }
+  ]
+}

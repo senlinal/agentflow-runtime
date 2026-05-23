@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import { describe, it } from "node:test";
 import { createInitialContext } from "../core/context.ts";
 import { NodeRegistry } from "../core/NodeRegistry.ts";
+import { RepairPlanMaterializer } from "../core/repair/RepairPlanMaterializer.ts";
 import { HumanApprovalRequestBuilder, RepairPlanBuilder } from "../core/repair/RepairPlanBuilder.ts";
 import { TraceStore } from "../core/TraceStore.ts";
 import { WorkflowRunner } from "../core/WorkflowRunner.ts";
@@ -137,6 +138,34 @@ describe("code-test-verify workflow", () => {
     assert.match(summary, /Materialized code change plans are not executed automatically/);
     assert.match(summary, /CodeChangePlan was materialized only/);
     assert.match(summary, /Explicit execution approval is required before applying this plan/);
+  });
+
+  it("creates a pending CodeChangePlan execution approval request without execution", async () => {
+    const loaded = await new WorkflowTemplateRegistry().load("code-change-plan-execution-approval");
+    const context = approvedRepairContext();
+    context.codeChangePlan = new RepairPlanMaterializer().materialize(context, new Date("2026-05-23T00:00:00.000Z"));
+
+    const finalContext = await new WorkflowRuntime(
+      new WorkflowGraph(loaded.config),
+      NodeRegistry.withDefaults(),
+    ).run(context);
+    const traceStore = await TraceStore.save(finalContext, {
+      workflowName: loaded.config.workflow.name,
+      templateVersion: loaded.config.workflow.version,
+      baseDir: await mkdtemp(join(tmpdir(), "agentflow-execution-approval-run-")),
+    });
+    const summary = await readFile(traceStore.summaryPath, "utf8");
+
+    assert.deepEqual(finalContext.trace.map((item) => item.nodeId), ["codeChangePlanExecutionApprovalGate"]);
+    assert.equal(finalContext.codeChangePlanExecutionApprovalRequest?.status, "pending");
+    assert.equal(finalContext.codeChangePlanExecutionApprovalRequest?.requestedAction, "approve_code_change_plan_execution");
+    assert.equal(finalContext.codeChangePlanExecutionApprovalRequest?.blockedUntilApproved, true);
+    assert.equal(finalContext.codeChangePlanExecutionApprovalRequest?.requiresExplicitExecutionApproval, true);
+    assert.match(finalContext.codeChangePlanExecutionApprovalRequest?.codeChangePlanHash ?? "", /^sha256:/);
+    assert.equal(finalContext.trace.some((item) => item.nodeId === "codeExecutor"), false);
+    assert.match(summary, /CodeChangePlan Execution Approval/);
+    assert.match(summary, /No CodeChangePlan operations were executed automatically/);
+    assert.match(summary, /Pending execution approval is not an execution authorization/);
   });
 });
 

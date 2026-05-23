@@ -130,6 +130,25 @@ It requires an existing `ScopedRepairPlan` plus a `RepairApprovalRecord` with `s
 
 Materialization does not write files, does not run tests, does not call `CodeExecutor`, and does not retry the failed workflow. It only creates a safe reviewable `CodeChangePlan` for a later explicit execution stage.
 
+## CodeChangePlan Execution Approval Request
+
+`workflows/code-change-plan-execution-approval.json` adds a request-only approval gate:
+
+```text
+codeChangePlanExecutionApprovalGate -> end
+```
+
+The gate requires a materialized `CodeChangePlan` where:
+
+- `executable=false`;
+- `requiresExplicitExecutionApproval=true`;
+- `blockedOperations` is empty;
+- no operation uses `delete_file`.
+
+It produces `CodeChangePlanExecutionApprovalRequest` with `status: "pending"`, `requestedAction: "approve_code_change_plan_execution"`, and a stable `codeChangePlanHash`.
+
+This request is not execution authorization. The stage does not write files, run commands, run tests, call `CodeExecutor`, auto-approve, or consume an approval. It only records that a later execution phase must receive a separate explicit approval bound to the same CodeChangePlan hash.
+
 ## Output
 
 Both `code` and `test` nodes return `ExecutionResult`:

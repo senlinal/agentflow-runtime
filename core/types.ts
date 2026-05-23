@@ -12,6 +12,7 @@ export type AgentRole =
   | "RepairPlanBuilder"
   | "HumanApprovalGate"
   | "RepairPlanMaterializer"
+  | "CodeChangePlanExecutionApprovalGate"
   | "GoalKeeper";
 
 export type RetryPolicy = {
@@ -31,12 +32,22 @@ export type OutputSchemaName =
   | "ScopedRepairPlan"
   | "HumanApprovalRequest"
   | "CodeChangePlan"
+  | "CodeChangePlanExecutionApprovalRequest"
   | "CorrectionHint"
   | "CodeExecutionResult"
   | "TestExecutionResult"
   | "SmokeTestResult";
 
-export type NodeType = "mock" | "llm" | "code" | "test" | "verify" | "repair" | "approval" | "materialize";
+export type NodeType =
+  | "mock"
+  | "llm"
+  | "code"
+  | "test"
+  | "verify"
+  | "repair"
+  | "approval"
+  | "materialize"
+  | "executionApproval";
 
 export type AgentNode = {
   id: string;
@@ -240,6 +251,24 @@ export type CodeChangePlan = {
   createdAt: string;
 };
 
+export type CodeChangePlanExecutionApprovalRequest = {
+  approvalId: string;
+  codeChangePlanId: string;
+  codeChangePlanHash: string;
+  status: "pending" | "approved" | "rejected" | "expired" | "consumed";
+  requestedAction: "approve_code_change_plan_execution";
+  blockedUntilApproved: boolean;
+  requiresExplicitExecutionApproval: boolean;
+  summary: string;
+  riskLevel: "low" | "medium" | "high";
+  reason: string;
+  targetFiles: string[];
+  operationsCount: number;
+  testCommands: string[];
+  createdAt: string;
+  expiresAt?: string;
+};
+
 export type CorrectionHint = {
   driftDetected: boolean;
   originalGoalReminder: string;
@@ -284,6 +313,7 @@ export type WorkflowContext = TaskSpec & {
   humanApprovalRequest: HumanApprovalRequest | null;
   repairApprovalRecord?: RepairApprovalRecord | null;
   codeChangePlan?: CodeChangePlan | null;
+  codeChangePlanExecutionApprovalRequest?: CodeChangePlanExecutionApprovalRequest | null;
   correctionHint: CorrectionHint | null;
   iteration: number;
   history: unknown[];

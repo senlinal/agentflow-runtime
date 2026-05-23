@@ -261,6 +261,48 @@ describe("SchemaValidator", () => {
     );
   });
 
+  it("passes for a valid CodeChangePlanExecutionApprovalRequest", () => {
+    const output = {
+      approvalId: "code_exec_approval_1",
+      codeChangePlanId: "code_change_1",
+      codeChangePlanHash: "sha256:abc123",
+      status: "pending",
+      requestedAction: "approve_code_change_plan_execution",
+      blockedUntilApproved: true,
+      requiresExplicitExecutionApproval: true,
+      summary: "Execution approval required.",
+      riskLevel: "low",
+      reason: "A separate execution approval is required.",
+      targetFiles: ["src/generated.txt"],
+      operationsCount: 1,
+      testCommands: ["npm run test"],
+      createdAt: "2026-05-23T00:00:00.000Z",
+    };
+
+    assert.deepEqual(SchemaValidator.validate("CodeChangePlanExecutionApprovalRequest", output), output);
+  });
+
+  it("fails when CodeChangePlanExecutionApprovalRequest is missing hash", () => {
+    assert.throws(
+      () => SchemaValidator.validate("CodeChangePlanExecutionApprovalRequest", {
+        approvalId: "code_exec_approval_1",
+        codeChangePlanId: "code_change_1",
+        status: "pending",
+        requestedAction: "approve_code_change_plan_execution",
+        blockedUntilApproved: true,
+        requiresExplicitExecutionApproval: true,
+        summary: "Execution approval required.",
+        riskLevel: "low",
+        reason: "A separate execution approval is required.",
+        targetFiles: ["src/generated.txt"],
+        operationsCount: 1,
+        testCommands: ["npm run test"],
+        createdAt: "2026-05-23T00:00:00.000Z",
+      }),
+      /CodeChangePlanExecutionApprovalRequest\.codeChangePlanHash must be a string/,
+    );
+  });
+
   it("fails when SmokeTestResult.ok is not boolean", () => {
     assert.throws(
       () =>

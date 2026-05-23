@@ -40,7 +40,17 @@ export class TraceStore {
 function buildSummary(context: WorkflowContext, runId: string, workflowName: string, templateVersion: string): string {
   const verification = context.verification;
   const feasibility = context.feasibilityReport;
-  const finalStatus = context.stopReason ? "stopped" : verification?.pass ? "passed" : "not-passed";
+  const finalStatus = context.stopReason
+    ? "stopped"
+    : context.codeChangePlanExecutionApprovalRequest?.status === "pending"
+    ? "execution-approval-pending"
+    : context.codeChangePlan
+    ? "code-change-plan-materialized"
+    : context.humanApprovalRequest?.status === "pending"
+    ? "approval-pending"
+    : verification?.pass
+    ? "passed"
+    : "not-passed";
   const executionResult = context.executionResult ?? context.testExecutionResult ?? context.codeExecutionResult;
   const executionStarted = Boolean(executionResult);
   return [
@@ -100,6 +110,7 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
     buildLlmMetadataSummary(context),
     buildExecutionVerificationSummary(context),
     buildRepairSummary(context),
+    buildCodeChangeExecutionApprovalSummary(context),
     "",
     !executionStarted && feasibility
       ? [
@@ -194,6 +205,37 @@ function buildRepairSummary(context: WorkflowContext): string {
     "Materialized code change plans are not executed automatically.",
     "Explicit execution approval is required before applying this plan.",
     "Human approval is required before applying any repair.",
+    "",
+  ].join("\n");
+}
+
+function buildCodeChangeExecutionApprovalSummary(context: WorkflowContext): string {
+  const request = context.codeChangePlanExecutionApprovalRequest;
+  if (!request) return "";
+  return [
+    "## CodeChangePlan Execution Approval",
+    "",
+    `- approvalId: ${request.approvalId}`,
+    `- codeChangePlanId: ${request.codeChangePlanId}`,
+    `- codeChangePlanHash: ${request.codeChangePlanHash}`,
+    `- approvalStatus: ${request.status}`,
+    `- requestedAction: ${request.requestedAction}`,
+    `- blockedUntilApproved: ${request.blockedUntilApproved}`,
+    `- requiresExplicitExecutionApproval: ${request.requiresExplicitExecutionApproval}`,
+    `- riskLevel: ${request.riskLevel}`,
+    `- operationsCount: ${request.operationsCount}`,
+    `- targetFiles: ${request.targetFiles.join("; ") || "none"}`,
+    `- expectedFilesChanged: ${request.targetFiles.join("; ") || "none"}`,
+    `- testCommands: ${request.testCommands.join("; ") || "none"}`,
+    "- safetyFindings: none",
+    "- nextAllowedActions: review request; approve or reject execution approval out of band; do not execute while pending",
+    `- reason: ${request.reason}`,
+    "",
+    "Execution approval request was created only.",
+    "No CodeChangePlan operations were executed automatically.",
+    "CodeChangePlan execution was not performed.",
+    "Explicit human approval is required before executing this plan.",
+    "Pending execution approval is not an execution authorization.",
     "",
   ].join("\n");
 }

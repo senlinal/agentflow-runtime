@@ -30,6 +30,9 @@ Report privately through the repository owner's preferred private channel. Inclu
 - Approval is not execution. An approved repair can only be materialized into a reviewable plan unless a later stage adds a separate explicit execution approval.
 - Approved scoped repair plans can be materialized into `CodeChangePlan`, but materialization is not execution. It does not write files, run commands, run tests, or call `CodeExecutor`.
 - `CodeChangePlan` keeps `requiresExplicitExecutionApproval=true` and rejects pending, rejected, expired, consumed, mismatched, scope-expanding, secret-touching, delete, and high-risk command operations.
+- A materialized `CodeChangePlan` can create a pending execution approval request. The request is bound to a `codeChangePlanHash`, but pending approval is not execution authorization.
+- CodeChangePlan execution approval request generation does not write files, run commands, run tests, or call `CodeExecutor`.
+- The `codeChangePlanHash` prevents approving one plan and executing another. Changing operations, target files, executable flags, or explicit approval requirements changes the hash.
 
 ## High-Risk Areas
 

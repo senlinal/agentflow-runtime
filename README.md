@@ -113,6 +113,18 @@ After a human records an approved repair decision, `approved-repair-materialize`
 npm run demo:approved-repair-materialize
 ```
 
+### Explicit Execution Approval
+
+`code-change-plan-execution-approval` creates a pending execution approval request for a materialized `CodeChangePlan`. The request is bound to a stable `codeChangePlanHash`, keeps `blockedUntilApproved: true`, and records target files, operation count, risk level, and test commands.
+
+This stage still does not execute anything. It does not write files, run commands, run tests, call `CodeExecutor`, or approve itself.
+
+Pending approval is not execution authorization. The hash binding prevents approving one `CodeChangePlan` and later substituting a different plan for execution.
+
+```bash
+npm run demo:code-change-plan-execution-approval
+```
+
 Validate and inspect templates:
 
 ```bash

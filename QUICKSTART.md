@@ -72,6 +72,14 @@ npm run demo:approved-repair-materialize
 
 This converts an already approved `ScopedRepairPlan` into a non-executable `CodeChangePlan`. It does not write files, run tests, or call `CodeExecutor`.
 
+Create a pending execution approval request for a materialized `CodeChangePlan`:
+
+```bash
+npm run demo:code-change-plan-execution-approval
+```
+
+This records a hash-bound request with `status=pending`. It does not apply the plan, run tests, or call `CodeExecutor`.
+
 ## 7. LLM Config Dry-Run
 
 ```bash

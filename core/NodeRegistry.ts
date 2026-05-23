@@ -4,6 +4,7 @@ import { LLMExecutor } from "./LLMExecutor.ts";
 import { MockExecutor } from "./MockExecutor.ts";
 import type { AgentNode, NodeExecutor } from "./types.ts";
 import { HumanApprovalExecutor } from "./repair/HumanApprovalExecutor.ts";
+import { CodeChangePlanExecutionApprovalExecutor } from "./repair/CodeChangePlanExecutionApprovalExecutor.ts";
 import { RepairPlanExecutor } from "./repair/RepairPlanExecutor.ts";
 import { RepairPlanMaterializerExecutor } from "./repair/RepairPlanMaterializerExecutor.ts";
 import { VerificationExecutor } from "./verification/VerificationExecutor.ts";
@@ -20,6 +21,7 @@ export class NodeRegistry {
     registry.register("repair", new RepairPlanExecutor());
     registry.register("approval", new HumanApprovalExecutor());
     registry.register("materialize", new RepairPlanMaterializerExecutor());
+    registry.register("executionApproval", new CodeChangePlanExecutionApprovalExecutor());
     return registry;
   }
 

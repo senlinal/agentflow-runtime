@@ -4,6 +4,7 @@ import type {
   ExecutionResult,
   FeasibilityReport,
   CodeChangePlan,
+  CodeChangePlanExecutionApprovalRequest,
   OutputSchemaName,
   Plan,
   ResearchReport,
@@ -51,6 +52,8 @@ export class SchemaValidator {
         return validateHumanApprovalRequest(output);
       case "CodeChangePlan":
         return validateCodeChangePlan(output);
+      case "CodeChangePlanExecutionApprovalRequest":
+        return validateCodeChangePlanExecutionApprovalRequest(output);
       case "CorrectionHint":
         return validateCorrectionHint(output);
       case "SmokeTestResult":
@@ -242,6 +245,28 @@ function validateCodeChangePlan(output: unknown): CodeChangePlan {
     requireArray(item, "safetyConstraints", `CodeChangePlan.operations[${index}]`);
   });
   return record as CodeChangePlan;
+}
+
+function validateCodeChangePlanExecutionApprovalRequest(output: unknown): CodeChangePlanExecutionApprovalRequest {
+  const record = requireObject(output, "CodeChangePlanExecutionApprovalRequest");
+  requireString(record, "approvalId", "CodeChangePlanExecutionApprovalRequest");
+  requireString(record, "codeChangePlanId", "CodeChangePlanExecutionApprovalRequest");
+  requireString(record, "codeChangePlanHash", "CodeChangePlanExecutionApprovalRequest");
+  requireEnum(record, "status", ["pending", "approved", "rejected", "expired", "consumed"], "CodeChangePlanExecutionApprovalRequest");
+  requireEnum(record, "requestedAction", ["approve_code_change_plan_execution"], "CodeChangePlanExecutionApprovalRequest");
+  requireBoolean(record, "blockedUntilApproved", "CodeChangePlanExecutionApprovalRequest");
+  requireBoolean(record, "requiresExplicitExecutionApproval", "CodeChangePlanExecutionApprovalRequest");
+  requireString(record, "summary", "CodeChangePlanExecutionApprovalRequest");
+  requireEnum(record, "riskLevel", ["low", "medium", "high"], "CodeChangePlanExecutionApprovalRequest");
+  requireString(record, "reason", "CodeChangePlanExecutionApprovalRequest");
+  requireArray(record, "targetFiles", "CodeChangePlanExecutionApprovalRequest");
+  requireNumber(record, "operationsCount", "CodeChangePlanExecutionApprovalRequest");
+  requireArray(record, "testCommands", "CodeChangePlanExecutionApprovalRequest");
+  requireString(record, "createdAt", "CodeChangePlanExecutionApprovalRequest");
+  if ("expiresAt" in record && typeof record.expiresAt !== "string") {
+    throw new Error("CodeChangePlanExecutionApprovalRequest.expiresAt must be a string when provided.");
+  }
+  return record as CodeChangePlanExecutionApprovalRequest;
 }
 
 function validateCorrectionHint(output: unknown): CorrectionHint {

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createInitialContext } from "../core/context.ts";
+import { CodeChangePlanExecutionApprovalExecutor, CodeChangePlanExecutionApprovalGate } from "../core/repair/CodeChangePlanExecutionApprovalExecutor.ts";
+import { hashCodeChangePlan } from "../core/repair/CodeChangePlanHasher.ts";
 import { HumanApprovalExecutor } from "../core/repair/HumanApprovalExecutor.ts";
 import { HumanApprovalRequestBuilder, RepairPlanBuilder } from "../core/repair/RepairPlanBuilder.ts";
 import { RepairPlanMaterializer } from "../core/repair/RepairPlanMaterializer.ts";
@@ -134,6 +136,128 @@ describe("RepairPlanMaterializer", () => {
     const plan = SchemaValidator.validate("CodeChangePlan", output) as typeof context.codeChangePlan;
     assert.equal(plan?.executable, false);
     assert.equal(plan?.requiresExplicitExecutionApproval, true);
+  });
+});
+
+describe("CodeChangePlanExecutionApprovalGate", () => {
+  it("hashes stable CodeChangePlan content while ignoring volatile metadata", () => {
+    const context = approvedContext();
+    const codeChangePlan = new RepairPlanMaterializer().materialize(context, new Date("2026-05-23T00:00:00.000Z"));
+    const hash = hashCodeChangePlan(codeChangePlan);
+
+    assert.equal(hashCodeChangePlan({ ...codeChangePlan, createdAt: "2026-05-23T10:00:00.000Z" }), hash);
+    assert.equal(hashCodeChangePlan({ ...codeChangePlan, approvalId: "approval_changed" }), hash);
+    assert.notEqual(
+      hashCodeChangePlan({
+        ...codeChangePlan,
+        operations: [{ ...codeChangePlan.operations[0], description: "changed" }, ...codeChangePlan.operations.slice(1)],
+      }),
+      hash,
+    );
+    assert.notEqual(hashCodeChangePlan({ ...codeChangePlan, targetFiles: ["src/other.txt"] }), hash);
+    assert.notEqual(hashCodeChangePlan({ ...codeChangePlan, executable: true as false }), hash);
+    assert.notEqual(hashCodeChangePlan({ ...codeChangePlan, requiresExplicitExecutionApproval: false }), hash);
+  });
+
+  it("creates a pending execution approval request bound to the CodeChangePlan hash", () => {
+    const context = approvedContext();
+    const codeChangePlan = new RepairPlanMaterializer().materialize(context, new Date("2026-05-23T00:00:00.000Z"));
+    const request = new CodeChangePlanExecutionApprovalGate().build(codeChangePlan, new Date("2026-05-23T00:02:00.000Z"));
+
+    assert.equal(request.status, "pending");
+    assert.equal(request.requestedAction, "approve_code_change_plan_execution");
+    assert.equal(request.blockedUntilApproved, true);
+    assert.equal(request.requiresExplicitExecutionApproval, true);
+    assert.equal(request.codeChangePlanId, codeChangePlan.planId);
+    assert.equal(request.codeChangePlanHash, hashCodeChangePlan(codeChangePlan));
+    assert.equal(request.operationsCount, codeChangePlan.operations.length);
+    assert.equal(SchemaValidator.validate("CodeChangePlanExecutionApprovalRequest", request), request);
+  });
+
+  it("CodeChangePlanExecutionApprovalExecutor returns pending request without executing CodeExecutor", async () => {
+    const context = approvedContext();
+    context.codeChangePlan = new RepairPlanMaterializer().materialize(context, new Date("2026-05-23T00:00:00.000Z"));
+
+    const request = await new CodeChangePlanExecutionApprovalExecutor().execute({
+      id: "codeChangePlanExecutionApprovalGate",
+      type: "executionApproval",
+      role: "CodeChangePlanExecutionApprovalGate",
+      description: "request execution approval",
+      inputKeys: ["codeChangePlan"],
+      outputKey: "codeChangePlanExecutionApprovalRequest",
+      outputSchema: "CodeChangePlanExecutionApprovalRequest",
+    }, context);
+
+    const approval = SchemaValidator.validate("CodeChangePlanExecutionApprovalRequest", request) as typeof context.codeChangePlanExecutionApprovalRequest;
+    assert.equal(approval?.status, "pending");
+    assert.equal(approval?.blockedUntilApproved, true);
+    assert.equal(context.codeExecutionResult, null);
+  });
+
+  it("refuses missing, executable, non-explicit, blocked, delete, empty, sensitive, unscoped, or risky inputs", async () => {
+    const context = approvedContext();
+    const codeChangePlan = new RepairPlanMaterializer().materialize(context);
+
+    await assert.rejects(
+      () => new CodeChangePlanExecutionApprovalExecutor().execute({
+        id: "codeChangePlanExecutionApprovalGate",
+        type: "executionApproval",
+        role: "CodeChangePlanExecutionApprovalGate",
+        description: "request execution approval",
+        inputKeys: ["codeChangePlan"],
+        outputKey: "codeChangePlanExecutionApprovalRequest",
+        outputSchema: "CodeChangePlanExecutionApprovalRequest",
+      }, context),
+      /requires codeChangePlan/,
+    );
+
+    assert.throws(() => new CodeChangePlanExecutionApprovalGate().build({ ...codeChangePlan, executable: true }), /non-executable/);
+    assert.throws(
+      () => new CodeChangePlanExecutionApprovalGate().build({ ...codeChangePlan, requiresExplicitExecutionApproval: false }),
+      /requiresExplicitExecutionApproval/,
+    );
+    assert.throws(
+      () => new CodeChangePlanExecutionApprovalGate().build({ ...codeChangePlan, blockedOperations: ["blocked"] }),
+      /blocked operations/,
+    );
+    assert.throws(
+      () => new CodeChangePlanExecutionApprovalGate().build({
+        ...codeChangePlan,
+        operations: [{ ...codeChangePlan.operations[0], type: "delete_file" as never }],
+      }),
+      /delete_file/,
+    );
+    assert.throws(() => new CodeChangePlanExecutionApprovalGate().build({ ...codeChangePlan, operations: [] }), /at least one operation/);
+    assert.throws(
+      () => new CodeChangePlanExecutionApprovalGate().build({
+        ...codeChangePlan,
+        targetFiles: [".env"],
+        operations: [{ ...codeChangePlan.operations[0], targetFile: ".env" }],
+      }),
+      /forbidden or sensitive/,
+    );
+    assert.throws(
+      () => new CodeChangePlanExecutionApprovalGate().build({
+        ...codeChangePlan,
+        operations: [{ ...codeChangePlan.operations[0], targetFile: "src/other.txt" }],
+      }),
+      /outside targetFiles/,
+    );
+    assert.throws(
+      () => new CodeChangePlanExecutionApprovalGate().build({
+        ...codeChangePlan,
+        operations: [{ ...codeChangePlan.operations[0], type: "run_test", command: "npm run lint" }],
+      }),
+      /outside testCommands/,
+    );
+    assert.throws(
+      () => new CodeChangePlanExecutionApprovalGate().build({
+        ...codeChangePlan,
+        testCommands: ["rm -rf src"],
+        operations: [{ ...codeChangePlan.operations[0], type: "run_test", command: "rm -rf src" }],
+      }),
+      /high risk/,
+    );
   });
 });
 
