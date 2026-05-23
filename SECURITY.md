@@ -35,6 +35,9 @@ Report privately through the repository owner's preferred private channel. Inclu
 - The `codeChangePlanHash` prevents approving one plan and executing another. Changing operations, target files, executable flags, or explicit approval requirements changes the hash.
 - Approved execution approval can produce a dry-run execution plan, but dry-run is still non-executing. It does not write files, run commands, run tests, call `CodeExecutor`, or consume approval.
 - Dry-run rejects pending, rejected, expired, consumed, mismatched, scope-expanding, secret-touching, delete, non-allowlisted, and high-risk command plans.
+- Explicit controlled execution requires an approved, unexpired, unconsumed execution approval, a matching `codeChangePlanHash`, scoped target files, explicit operation content, and allowlisted test commands.
+- Controlled execution creates a checkpoint before writes, runs scoped tests afterward, runs execution-aware verification, records a rollback guide, and consumes approval only after execution starts and an execution record is generated.
+- Controlled execution still rejects `delete_file`, forbidden or sensitive paths, high-risk shell, scope expansion, automatic approval, infinite retry, and destructive rollback.
 
 ## High-Risk Areas
 

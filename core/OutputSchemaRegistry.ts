@@ -14,6 +14,7 @@ export const OUTPUT_SCHEMA_NAMES: OutputSchemaName[] = [
   "CodeChangePlan",
   "CodeChangePlanExecutionApprovalRequest",
   "CodeChangePlanDryRunExecutionPlan",
+  "CodeChangePlanExecutionRecord",
   "CorrectionHint",
   "CodeExecutionResult",
   "TestExecutionResult",
@@ -124,6 +125,7 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
           description: "string",
           targetFile: "string optional",
           command: "string optional",
+          content: "string optional",
           reason: "string",
           safetyConstraints: ["string"],
         }],
@@ -158,6 +160,7 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
           type: "modify_file | create_file | run_test | inspect | manual_review",
           targetFile: "string optional",
           command: "string optional",
+          content: "string optional",
           description: "string",
           reason: "string",
           safetyConstraints: ["string"],
@@ -206,6 +209,7 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
           type: "modify_file | create_file | run_test | inspect | manual_review",
           targetFile: "string optional",
           command: "string optional",
+          content: "string optional",
           description: "string",
           reason: "string",
           safetyConstraints: ["string"],
@@ -225,6 +229,31 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
         requiresExecuteFlag: "true",
         requiresSeparateExecutionStep: "true",
         createdAt: "string",
+      };
+    case "CodeChangePlanExecutionRecord":
+      return {
+        executionId: "string",
+        codeChangePlanId: "string",
+        approvalId: "string",
+        codeChangePlanHash: "string",
+        hashMatched: "true",
+        status: "executed | failed | blocked",
+        startedAt: "string",
+        finishedAt: "string optional",
+        checkpointId: "string optional",
+        consumedApproval: "boolean",
+        codeExecutionResult: "CodeExecutionResult optional",
+        testExecutionResult: "TestExecutionResult optional",
+        verification: "VerificationReport optional",
+        rollbackGuide: {
+          checkpointId: "string optional",
+          summary: "string",
+          changedFiles: ["string"],
+          manualSteps: ["string"],
+          destructiveRollbackPerformed: "false",
+        },
+        blockedReasons: ["string"],
+        safetyFindings: ["string"],
       };
     case "CorrectionHint":
       return {

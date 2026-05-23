@@ -119,6 +119,7 @@ function materializeOperation(
       safetyConstraints: operation.safetyConstraints,
       ...(operation.targetFile ? { targetFile: operation.targetFile } : {}),
       ...(operation.command ? { command: operation.command } : {}),
+      ...(operation.content ? { content: operation.content } : {}),
     };
   return {
     operation: materializedOperation,

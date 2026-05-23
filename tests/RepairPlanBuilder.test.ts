@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createInitialContext } from "../core/context.ts";
+import { CodeChangePlanExecutionRunner } from "../core/repair/CodeChangePlanExecutionExecutor.ts";
 import { CodeChangePlanDryRunExecutor, CodeChangePlanDryRunRunner } from "../core/repair/CodeChangePlanDryRunExecutor.ts";
 import { CodeChangePlanExecutionApprovalExecutor, CodeChangePlanExecutionApprovalGate } from "../core/repair/CodeChangePlanExecutionApprovalExecutor.ts";
 import { hashCodeChangePlan } from "../core/repair/CodeChangePlanHasher.ts";
@@ -399,6 +400,60 @@ describe("CodeChangePlanDryRunRunner", () => {
   });
 });
 
+describe("CodeChangePlanExecutionRunner safety gates", () => {
+  it("blocks non-approved, consumed, mismatched, missing content, delete, or unsafe execution inputs without consuming approval", async () => {
+    const runner = new CodeChangePlanExecutionRunner();
+    for (const status of ["pending", "rejected", "consumed"] as const) {
+      const context = executableExecutionContext();
+      context.codeChangePlanExecutionApprovalRecord!.status = status;
+      const record = await runner.executeApprovedPlan(context, { now: new Date("2026-05-23T00:03:00.000Z") });
+      assert.equal(record.status, "blocked");
+      assert.equal(record.consumedApproval, false);
+      assert.equal(context.codeChangePlanExecutionApprovalRecord!.status, status);
+    }
+
+    const expired = executableExecutionContext();
+    expired.codeChangePlanExecutionApprovalRecord!.expiresAt = "2020-01-01T00:00:00.000Z";
+    assert.equal((await runner.executeApprovedPlan(expired)).status, "blocked");
+
+    const mismatch = executableExecutionContext();
+    mismatch.codeChangePlanExecutionApprovalRecord!.codeChangePlanHash = "sha256:mismatch";
+    assert.equal((await runner.executeApprovedPlan(mismatch)).status, "blocked");
+
+    const missingContent = executableExecutionContext();
+    delete missingContent.codeChangePlan!.operations[0].content;
+    missingContent.codeChangePlanExecutionApprovalRecord!.codeChangePlanHash = hashCodeChangePlan(missingContent.codeChangePlan!);
+    assert.match((await runner.executeApprovedPlan(missingContent)).blockedReasons.join("; "), /requires explicit content/);
+
+    const deletion = executableExecutionContext();
+    deletion.codeChangePlan!.operations[0].type = "delete_file" as never;
+    deletion.codeChangePlanExecutionApprovalRecord!.codeChangePlanHash = hashCodeChangePlan(deletion.codeChangePlan!);
+    assert.match((await runner.executeApprovedPlan(deletion)).blockedReasons.join("; "), /delete_file/);
+
+    const sensitive = executableExecutionContext();
+    sensitive.codeChangePlan!.operations[0].targetFile = ".env";
+    sensitive.codeChangePlan!.targetFiles = [".env"];
+    sensitive.codeChangePlanExecutionApprovalRecord!.codeChangePlanHash = hashCodeChangePlan(sensitive.codeChangePlan!);
+    assert.match((await runner.executeApprovedPlan(sensitive)).blockedReasons.join("; "), /forbidden or sensitive/);
+
+    const outsideScope = executableExecutionContext();
+    outsideScope.codeChangePlan!.operations[0].targetFile = "src/other.txt";
+    outsideScope.codeChangePlanExecutionApprovalRecord!.codeChangePlanHash = hashCodeChangePlan(outsideScope.codeChangePlan!);
+    assert.match((await runner.executeApprovedPlan(outsideScope)).blockedReasons.join("; "), /outside targetFiles/);
+
+    const highRisk = executableExecutionContext();
+    highRisk.codeChangePlan!.operations[1].command = "rm -rf src";
+    highRisk.codeChangePlan!.testCommands = ["rm -rf src"];
+    highRisk.codeChangePlanExecutionApprovalRecord!.codeChangePlanHash = hashCodeChangePlan(highRisk.codeChangePlan!);
+    assert.match((await runner.executeApprovedPlan(highRisk)).blockedReasons.join("; "), /high risk/);
+
+    const commandOutsideAllowlist = executableExecutionContext();
+    commandOutsideAllowlist.codeChangePlan!.operations[1].command = "npm run lint";
+    commandOutsideAllowlist.codeChangePlanExecutionApprovalRecord!.codeChangePlanHash = hashCodeChangePlan(commandOutsideAllowlist.codeChangePlan!);
+    assert.match((await runner.executeApprovedPlan(commandOutsideAllowlist)).blockedReasons.join("; "), /outside testCommands/);
+  });
+});
+
 describe("HumanApprovalRequestBuilder", () => {
   it("creates a pending approval request without executing repair", () => {
     const plan = new RepairPlanBuilder().build(failedContext());
@@ -530,5 +585,68 @@ function approvedExecutionContext(): WorkflowContext {
 function contextWithoutExecutionApprovalRecord(): WorkflowContext {
   const context = approvedContext();
   context.codeChangePlan = new RepairPlanMaterializer().materialize(context, new Date("2026-05-23T00:00:00.000Z"));
+  return context;
+}
+
+function executableExecutionContext(): WorkflowContext {
+  const context = createInitialContext({
+    taskId: "execution_safety",
+    userGoal: "execute approved code change",
+    successCriteria: ["Configured test command passes."],
+  });
+  context.taskBrief = {
+    taskId: "execution_safety",
+    goal: "execute approved code change",
+    currentState: "approved CodeChangePlan exists",
+    constraints: ["no delete"],
+    resources: [],
+    budget: "low",
+    successCriteria: ["Configured test command passes."],
+    nonGoals: [],
+  };
+  context.codingTaskContext = { allowedFiles: ["src/generated.txt"], maxFilesChanged: 1, maxPatchSize: 20000, allowFileDelete: false };
+  context.codeChangePlan = {
+    planId: "code_change_execution_safety",
+    repairPlanId: "repair_execution_safety",
+    approvalId: "repair_approval_execution_safety",
+    status: "materialized",
+    summary: "safe plan",
+    operations: [
+      {
+        id: "op_write",
+        type: "create_file",
+        targetFile: "src/generated.txt",
+        content: "ok\n",
+        description: "write file",
+        reason: "test",
+        safetyConstraints: ["scoped"],
+      },
+      {
+        id: "op_test",
+        type: "run_test",
+        command: "npm run test",
+        description: "run tests",
+        reason: "verify",
+        safetyConstraints: ["scoped"],
+      },
+    ],
+    targetFiles: ["src/generated.txt"],
+    forbiddenFiles: [".env"],
+    testCommands: ["npm run test"],
+    riskLevel: "low",
+    safetyChecks: ["scoped"],
+    blockedOperations: [],
+    executable: false,
+    requiresExplicitExecutionApproval: true,
+    createdAt: "2026-05-23T00:00:00.000Z",
+  };
+  context.codeChangePlanExecutionApprovalRecord = {
+    approvalId: "approval_execution_safety",
+    codeChangePlanId: context.codeChangePlan.planId,
+    codeChangePlanHash: hashCodeChangePlan(context.codeChangePlan),
+    status: "approved",
+    requestedAction: "approve_code_change_plan_execution",
+    approvedAt: "2026-05-23T00:01:00.000Z",
+  };
   return context;
 }

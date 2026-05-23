@@ -1,0 +1,39 @@
+{
+  "name": "code-change-plan-execution",
+  "version": "1.0.0",
+  "description": "Explicitly execute an approved CodeChangePlan under controlled CodeExecutor, TestRunner, and execution-aware verification.",
+  "start": "codeChangePlanExecutionRunner",
+  "maxIterations": 1,
+  "inputSchema": "TaskBrief",
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": ["execute only when explicitly selected"],
+      "requireConfirmation": ["write files", "run tests", "consume execution approval"],
+      "forbiddenWithoutExplicitApproval": ["pending approval execution", "delete files", "high-risk shell", "destructive rollback"]
+    },
+    "costPolicy": {
+      "maxCostLevel": "medium",
+      "stopWhen": ["approval not approved", "hash mismatch", "scope expands", "unsafe operation found"],
+      "preferredDecisionsWhenOverBudget": ["ask_human", "stop"]
+    },
+    "qualityPolicy": {
+      "principles": ["explicit execution only", "single-use approval", "checkpoint before execution", "test after execution", "verify after tests"],
+      "requiredChecks": ["approved execution approval record", "CodeChangePlan hash match", "targetFiles boundary", "testCommands boundary", "ExecutionVerifier result"],
+      "forbiddenShortcuts": ["auto approve", "auto rollback", "support delete_file", "skip tests", "skip verification"]
+    }
+  },
+  "nodes": [
+    {
+      "id": "codeChangePlanExecutionRunner",
+      "type": "execution",
+      "role": "CodeChangePlanExecutionRunner",
+      "description": "Explicitly execute an approved CodeChangePlan, run tests, verify results, then consume approval.",
+      "inputKeys": ["taskBrief", "codeChangePlan", "codeChangePlanExecutionApprovalRecord"],
+      "outputKey": "codeChangePlanExecutionRecord",
+      "outputSchema": "CodeChangePlanExecutionRecord"
+    }
+  ],
+  "edges": [
+    { "from": "codeChangePlanExecutionRunner", "to": "end", "condition": { "type": "always" } }
+  ]
+}

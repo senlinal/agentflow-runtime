@@ -42,6 +42,8 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
   const feasibility = context.feasibilityReport;
   const finalStatus = context.stopReason
     ? "stopped"
+    : context.codeChangePlanExecutionRecord
+    ? `code-change-plan-${context.codeChangePlanExecutionRecord.status}`
     : context.codeChangePlanDryRunExecutionPlan?.status === "planned"
     ? "execution-dry-run-planned"
     : context.codeChangePlanExecutionApprovalRequest?.status === "pending"
@@ -114,6 +116,7 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
     buildRepairSummary(context),
     buildCodeChangeExecutionApprovalSummary(context),
     buildCodeChangeDryRunSummary(context),
+    buildCodeChangeExecutionSummary(context),
     "",
     !executionStarted && feasibility
       ? [
@@ -279,6 +282,43 @@ function buildCodeChangeDryRunSummary(context: WorkflowContext): string {
     "CodeExecutor was not called.",
     "Approval was not consumed.",
     "Use an explicit execution step to apply this plan.",
+    "",
+  ].join("\n");
+}
+
+function buildCodeChangeExecutionSummary(context: WorkflowContext): string {
+  const record = context.codeChangePlanExecutionRecord;
+  if (!record) return "";
+  const blocked = record.status === "blocked";
+  return [
+    "## CodeChangePlan Execution",
+    "",
+    `- executionId: ${record.executionId}`,
+    `- codeChangePlanId: ${record.codeChangePlanId}`,
+    `- approvalId: ${record.approvalId}`,
+    `- codeChangePlanHash: ${record.codeChangePlanHash}`,
+    `- hashMatched: ${record.hashMatched}`,
+    `- status: ${record.status}`,
+    `- checkpointId: ${record.checkpointId ?? "none"}`,
+    `- consumedApproval: ${record.consumedApproval}`,
+    `- codeExecutionStatus: ${record.codeExecutionResult?.status ?? "n/a"}`,
+    `- testExecutionStatus: ${record.testExecutionResult?.status ?? "n/a"}`,
+    `- verificationPass: ${record.verification?.pass ?? "n/a"}`,
+    `- blockedReasons: ${record.blockedReasons.join("; ") || "none"}`,
+    `- safetyFindings: ${record.safetyFindings.join("; ") || "none"}`,
+    `- rollbackGuide.summary: ${record.rollbackGuide?.summary ?? "none"}`,
+    `- rollbackGuide.changedFiles: ${record.rollbackGuide?.changedFiles.join("; ") || "none"}`,
+    `- rollbackGuide.destructiveRollbackPerformed: ${record.rollbackGuide?.destructiveRollbackPerformed ?? "n/a"}`,
+    "",
+    blocked
+      ? "Execution was blocked. No files were modified."
+      : "CodeChangePlan was executed under explicit approval.",
+    blocked ? "" : "Execution approval was consumed.",
+    blocked ? "" : "A checkpoint was created before file writes.",
+    blocked ? "" : "Configured tests were run after file writes.",
+    blocked ? "" : "Execution-aware verification was run after tests.",
+    "Rollback guide is non-destructive.",
+    "No automatic destructive rollback was performed.",
     "",
   ].join("\n");
 }

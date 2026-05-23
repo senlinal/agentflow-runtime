@@ -375,6 +375,73 @@ describe("SchemaValidator", () => {
     );
   });
 
+  it("passes for a valid CodeChangePlanExecutionRecord", () => {
+    const output = {
+      executionId: "code_exec_1",
+      codeChangePlanId: "code_change_1",
+      approvalId: "approval_1",
+      codeChangePlanHash: "sha256:abc123",
+      hashMatched: true,
+      status: "executed",
+      startedAt: "2026-05-23T00:00:00.000Z",
+      finishedAt: "2026-05-23T00:01:00.000Z",
+      checkpointId: "checkpoint_1",
+      consumedApproval: true,
+      codeExecutionResult: {
+        status: "success",
+        completedSteps: ["Created checkpoint checkpoint_1"],
+        artifacts: ["src/generated.txt"],
+        summary: "ok",
+        errors: [],
+        rawOutput: "{}",
+      },
+      testExecutionResult: {
+        status: "passed",
+        completedSteps: ["Ran npm run test"],
+        artifacts: [],
+        summary: "ok",
+        errors: [],
+        rawOutput: "{}",
+      },
+      verification: validVerificationReport(),
+      rollbackGuide: {
+        checkpointId: "checkpoint_1",
+        summary: "manual rollback only",
+        changedFiles: ["src/generated.txt"],
+        manualSteps: ["Inspect diff."],
+        destructiveRollbackPerformed: false,
+      },
+      blockedReasons: [],
+      safetyFindings: [],
+    };
+
+    assert.deepEqual(SchemaValidator.validate("CodeChangePlanExecutionRecord", output), output);
+  });
+
+  it("fails when CodeChangePlanExecutionRecord rollback guide performs destructive rollback", () => {
+    assert.throws(
+      () => SchemaValidator.validate("CodeChangePlanExecutionRecord", {
+        executionId: "code_exec_1",
+        codeChangePlanId: "code_change_1",
+        approvalId: "approval_1",
+        codeChangePlanHash: "sha256:abc123",
+        hashMatched: true,
+        status: "failed",
+        startedAt: "2026-05-23T00:00:00.000Z",
+        consumedApproval: true,
+        rollbackGuide: {
+          summary: "bad",
+          changedFiles: [],
+          manualSteps: [],
+          destructiveRollbackPerformed: true,
+        },
+        blockedReasons: [],
+        safetyFindings: [],
+      }),
+      /RollbackGuide\.destructiveRollbackPerformed must be false/,
+    );
+  });
+
   it("fails when SmokeTestResult.ok is not boolean", () => {
     assert.throws(
       () =>
@@ -417,5 +484,16 @@ function validFeasibilityReport() {
     recommendedScope: "scope",
     alternativePlans: [],
     reason: "reason",
+  };
+}
+
+function validVerificationReport() {
+  return {
+    pass: true,
+    score: 0.97,
+    failedCriteria: [],
+    reason: "ok",
+    nextAction: "end",
+    feedbackToPlanner: "done",
   };
 }

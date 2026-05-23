@@ -14,6 +14,7 @@ export type AgentRole =
   | "RepairPlanMaterializer"
   | "CodeChangePlanExecutionApprovalGate"
   | "CodeChangePlanDryRunRunner"
+  | "CodeChangePlanExecutionRunner"
   | "GoalKeeper";
 
 export type RetryPolicy = {
@@ -35,6 +36,7 @@ export type OutputSchemaName =
   | "CodeChangePlan"
   | "CodeChangePlanExecutionApprovalRequest"
   | "CodeChangePlanDryRunExecutionPlan"
+  | "CodeChangePlanExecutionRecord"
   | "CorrectionHint"
   | "CodeExecutionResult"
   | "TestExecutionResult"
@@ -50,7 +52,8 @@ export type NodeType =
   | "approval"
   | "materialize"
   | "executionApproval"
-  | "executionDryRun";
+  | "executionDryRun"
+  | "execution";
 
 export type AgentNode = {
   id: string;
@@ -183,6 +186,7 @@ export type ProposedRepairOperation = {
   description: string;
   targetFile?: string;
   command?: string;
+  content?: string;
   reason: string;
   safetyConstraints: string[];
 };
@@ -231,6 +235,7 @@ export type CodeChangeOperation = {
   type: "modify_file" | "create_file" | "run_test" | "inspect" | "manual_review";
   targetFile?: string;
   command?: string;
+  content?: string;
   description: string;
   reason: string;
   safetyConstraints: string[];
@@ -281,6 +286,7 @@ export type CodeChangePlanExecutionApprovalRecord = {
   approvedAt?: string;
   rejectedAt?: string;
   consumedAt?: string;
+  consumedByExecutionId?: string;
   expiresAt?: string;
   approvedBy?: string;
   note?: string;
@@ -312,6 +318,33 @@ export type CodeChangePlanDryRunExecutionPlan = {
   requiresExecuteFlag: true;
   requiresSeparateExecutionStep: true;
   createdAt: string;
+};
+
+export type RollbackGuide = {
+  checkpointId?: string;
+  summary: string;
+  changedFiles: string[];
+  manualSteps: string[];
+  destructiveRollbackPerformed: false;
+};
+
+export type CodeChangePlanExecutionRecord = {
+  executionId: string;
+  codeChangePlanId: string;
+  approvalId: string;
+  codeChangePlanHash: string;
+  hashMatched: true;
+  status: "executed" | "failed" | "blocked";
+  startedAt: string;
+  finishedAt?: string;
+  checkpointId?: string;
+  consumedApproval: boolean;
+  codeExecutionResult?: CodeExecutionResult;
+  testExecutionResult?: TestExecutionResult;
+  verification?: VerificationReport;
+  rollbackGuide?: RollbackGuide;
+  blockedReasons: string[];
+  safetyFindings: string[];
 };
 
 export type CorrectionHint = {
@@ -361,6 +394,7 @@ export type WorkflowContext = TaskSpec & {
   codeChangePlanExecutionApprovalRequest?: CodeChangePlanExecutionApprovalRequest | null;
   codeChangePlanExecutionApprovalRecord?: CodeChangePlanExecutionApprovalRecord | null;
   codeChangePlanDryRunExecutionPlan?: CodeChangePlanDryRunExecutionPlan | null;
+  codeChangePlanExecutionRecord?: CodeChangePlanExecutionRecord | null;
   correctionHint: CorrectionHint | null;
   iteration: number;
   history: unknown[];

@@ -5,6 +5,7 @@ import { MockExecutor } from "./MockExecutor.ts";
 import type { AgentNode, NodeExecutor } from "./types.ts";
 import { HumanApprovalExecutor } from "./repair/HumanApprovalExecutor.ts";
 import { CodeChangePlanDryRunExecutor } from "./repair/CodeChangePlanDryRunExecutor.ts";
+import { CodeChangePlanExecutionExecutor } from "./repair/CodeChangePlanExecutionExecutor.ts";
 import { CodeChangePlanExecutionApprovalExecutor } from "./repair/CodeChangePlanExecutionApprovalExecutor.ts";
 import { RepairPlanExecutor } from "./repair/RepairPlanExecutor.ts";
 import { RepairPlanMaterializerExecutor } from "./repair/RepairPlanMaterializerExecutor.ts";
@@ -24,6 +25,7 @@ export class NodeRegistry {
     registry.register("materialize", new RepairPlanMaterializerExecutor());
     registry.register("executionApproval", new CodeChangePlanExecutionApprovalExecutor());
     registry.register("executionDryRun", new CodeChangePlanDryRunExecutor());
+    registry.register("execution", new CodeChangePlanExecutionExecutor());
     return registry;
   }
 

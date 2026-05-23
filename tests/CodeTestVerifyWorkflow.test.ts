@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -8,6 +8,7 @@ import { describe, it } from "node:test";
 import { createInitialContext } from "../core/context.ts";
 import { NodeRegistry } from "../core/NodeRegistry.ts";
 import { CodeChangePlanExecutionApprovalGate } from "../core/repair/CodeChangePlanExecutionApprovalExecutor.ts";
+import { hashCodeChangePlan } from "../core/repair/CodeChangePlanHasher.ts";
 import { RepairPlanMaterializer } from "../core/repair/RepairPlanMaterializer.ts";
 import { HumanApprovalRequestBuilder, RepairPlanBuilder } from "../core/repair/RepairPlanBuilder.ts";
 import { TraceStore } from "../core/TraceStore.ts";
@@ -217,6 +218,51 @@ describe("code-test-verify workflow", () => {
     assert.match(summary, /CodeExecutor was not called/);
     assert.match(summary, /Approval was not consumed/);
   });
+
+  it("explicitly executes an approved CodeChangePlan once, runs tests, verifies, and consumes approval", async () => {
+    const workspace = await mkdtemp(join(tmpdir(), "agentflow-code-change-execution-"));
+    await mkdir(join(workspace, "src"), { recursive: true });
+    await writeFile(join(workspace, "package.json"), JSON.stringify({
+      scripts: {
+        test: "node -e \"const fs=require('fs'); const text=fs.readFileSync('src/generated.txt','utf8'); if(!text.includes('approved execution')) process.exit(1);\"",
+      },
+    }, null, 2), "utf8");
+    const loaded = await new WorkflowTemplateRegistry().load("code-change-plan-execution");
+    loaded.config.nodes = loaded.config.nodes.map((node) => node.id === "codeChangePlanExecutionRunner"
+      ? { ...node, executorConfig: { projectRoot: workspace, cwd: workspace, timeoutMs: 120000 } }
+      : node);
+    const context = executableWorkflowContext();
+    const finalContext = await new WorkflowRuntime(
+      new WorkflowGraph(loaded.config),
+      NodeRegistry.withDefaults(),
+    ).run(context);
+    const traceStore = await TraceStore.save(finalContext, {
+      workflowName: loaded.config.workflow.name,
+      templateVersion: loaded.config.workflow.version,
+      baseDir: await mkdtemp(join(tmpdir(), "agentflow-code-change-execution-run-")),
+    });
+    const summary = await readFile(traceStore.summaryPath, "utf8");
+    const written = await readFile(join(workspace, "src/generated.txt"), "utf8");
+
+    assert.deepEqual(finalContext.trace.map((item) => item.nodeId), ["codeChangePlanExecutionRunner"]);
+    assert.equal(finalContext.codeChangePlanExecutionRecord?.status, "executed");
+    assert.equal(finalContext.codeChangePlanExecutionRecord?.consumedApproval, true);
+    assert.equal(finalContext.codeChangePlanExecutionApprovalRecord?.status, "consumed");
+    assert.equal(finalContext.codeChangePlanExecutionApprovalRecord?.consumedByExecutionId, finalContext.codeChangePlanExecutionRecord?.executionId);
+    assert.equal(finalContext.codeExecutionResult?.status, "success");
+    assert.equal(finalContext.testExecutionResult?.status, "passed");
+    assert.equal(finalContext.verification?.pass, true);
+    assert.ok(finalContext.codeChangePlanExecutionRecord?.checkpointId);
+    assert.equal(finalContext.codeChangePlanExecutionRecord?.rollbackGuide?.destructiveRollbackPerformed, false);
+    assert.match(written, /approved execution/);
+    assert.equal(finalContext.codeChangePlanExecutionRecord?.hashMatched, true);
+    assert.match(summary, /CodeChangePlan Execution/);
+    assert.match(summary, /hashMatched: true/);
+    assert.match(summary, /CodeChangePlan was executed under explicit approval/);
+    assert.match(summary, /Execution approval was consumed/);
+    assert.match(summary, /Rollback guide is non-destructive/);
+    assert.match(summary, /No automatic destructive rollback was performed/);
+  });
 });
 
 function withFixtureExecutorConfig(
@@ -333,6 +379,72 @@ function approvedRepairContext(): WorkflowContext {
     approvedAt: "2026-05-23T00:01:00.000Z",
     approvedBy: "user",
     note: "Approved for materialization only.",
+  };
+  return context;
+}
+
+function executableWorkflowContext(): WorkflowContext {
+  const context = createInitialContext({
+    taskId: "code_change_execution_fixture",
+    userGoal: "Explicitly execute an approved CodeChangePlan.",
+    successCriteria: ["Configured test command passes."],
+  });
+  context.taskBrief = {
+    ...taskBrief(),
+    taskId: "code_change_execution_fixture",
+    goal: "Explicitly execute an approved CodeChangePlan.",
+    successCriteria: ["Configured test command passes."],
+  };
+  context.codingTaskContext = {
+    allowedFiles: ["src/generated.txt"],
+    maxFilesChanged: 2,
+    maxPatchSize: 20000,
+    allowFileDelete: false,
+    successCriteria: ["Configured test command passes."],
+  };
+  context.codeChangePlan = {
+    planId: "code_change_execution_fixture_plan",
+    repairPlanId: "repair_execution_fixture",
+    approvalId: "repair_approval_execution_fixture",
+    status: "materialized",
+    summary: "Create generated file and run scoped test.",
+    operations: [
+      {
+        id: "op_create_generated",
+        type: "create_file",
+        targetFile: "src/generated.txt",
+        content: "approved execution\n",
+        description: "Create generated file.",
+        reason: "Satisfy scoped test.",
+        safetyConstraints: ["Scoped target file only."],
+      },
+      {
+        id: "op_test_generated",
+        type: "run_test",
+        command: "npm run test",
+        description: "Run scoped test.",
+        reason: "Verify generated file.",
+        safetyConstraints: ["Only configured test command."],
+      },
+    ],
+    targetFiles: ["src/generated.txt"],
+    forbiddenFiles: [".env", ".env.local"],
+    testCommands: ["npm run test"],
+    riskLevel: "low",
+    safetyChecks: ["scoped"],
+    blockedOperations: [],
+    executable: false,
+    requiresExplicitExecutionApproval: true,
+    createdAt: "2026-05-23T00:00:00.000Z",
+  };
+  context.codeChangePlanExecutionApprovalRecord = {
+    approvalId: "exec_approval_execution_fixture",
+    codeChangePlanId: context.codeChangePlan.planId,
+    codeChangePlanHash: hashCodeChangePlan(context.codeChangePlan),
+    status: "approved",
+    requestedAction: "approve_code_change_plan_execution",
+    approvedAt: "2026-05-23T00:01:00.000Z",
+    approvedBy: "test",
   };
   return context;
 }

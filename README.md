@@ -135,6 +135,18 @@ The dry-run still does not execute. It does not write files, run commands, run t
 npm run demo:code-change-plan-execution-dry-run
 ```
 
+### Approved CodeChangePlan Execution
+
+`code-change-plan-execution` is the first explicit execution workflow for an approved `CodeChangePlan`. It rechecks approval status, `codeChangePlanHash`, scoped target files, forbidden files, operation content, and test commands before doing anything.
+
+When checks pass, it creates a checkpoint, applies only declared `create_file` / `modify_file` operations through `CodeExecutor`, runs the plan's `testCommands` through `TestRunner`, verifies the result with the execution-aware verifier, records a rollback guide, and consumes the approval exactly once with `consumedByExecutionId`.
+
+It still does not support `delete_file`, high-risk shell, automatic approval, infinite retry loops, or destructive rollback.
+
+```bash
+npm run demo:code-change-plan-execution
+```
+
 Validate and inspect templates:
 
 ```bash

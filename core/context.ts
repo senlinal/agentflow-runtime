@@ -29,6 +29,7 @@ export function createInitialContext(input: {
     codeChangePlanExecutionApprovalRequest: null,
     codeChangePlanExecutionApprovalRecord: null,
     codeChangePlanDryRunExecutionPlan: null,
+    codeChangePlanExecutionRecord: null,
     correctionHint: null,
     iteration: 0,
     history: [],

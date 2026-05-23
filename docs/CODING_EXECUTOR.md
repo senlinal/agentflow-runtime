@@ -169,6 +169,28 @@ It produces `CodeChangePlanDryRunExecutionPlan` with `mode: "dry_run"` and `stat
 
 Dry-run is still not execution. It does not write files, run commands, run tests, call `CodeExecutor`, consume approval, or change approval status. A later stage must add an explicit execution runner if real application is desired.
 
+## Approved CodeChangePlan Execution
+
+`workflows/code-change-plan-execution.json` adds the explicit execution step:
+
+```text
+codeChangePlanExecutionRunner -> end
+```
+
+The runner requires an approved `CodeChangePlanExecutionApprovalRecord`, recomputes and checks the `codeChangePlanHash`, rejects pending / rejected / expired / consumed approvals, rejects `delete_file`, forbidden or sensitive paths, scope expansion, missing operation content, non-allowlisted commands, and high-risk shell.
+
+When allowed, it:
+
+- creates a checkpoint through `CodeExecutor`;
+- applies only declared `create_file` / `modify_file` operations that include explicit `content`;
+- runs the plan's `testCommands` through `TestRunner`;
+- runs the execution-aware verifier;
+- writes `CodeChangePlanExecutionRecord`;
+- marks the approval as `consumed` with `consumedAt` and `consumedByExecutionId`;
+- creates a manual rollback guide.
+
+This stage does not auto-approve, does not retry, does not support `delete_file`, and does not perform destructive rollback. If tests or verification fail after files were written, the execution record is `failed`, approval is consumed, and the rollback guide explains manual review steps.
+
 ## Output
 
 Both `code` and `test` nodes return `ExecutionResult`:

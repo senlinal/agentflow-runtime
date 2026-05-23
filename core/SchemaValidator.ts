@@ -5,6 +5,7 @@ import type {
   FeasibilityReport,
   CodeChangePlan,
   CodeChangePlanDryRunExecutionPlan,
+  CodeChangePlanExecutionRecord,
   CodeChangePlanExecutionApprovalRequest,
   OutputSchemaName,
   Plan,
@@ -57,6 +58,8 @@ export class SchemaValidator {
         return validateCodeChangePlanExecutionApprovalRequest(output);
       case "CodeChangePlanDryRunExecutionPlan":
         return validateCodeChangePlanDryRunExecutionPlan(output);
+      case "CodeChangePlanExecutionRecord":
+        return validateCodeChangePlanExecutionRecord(output);
       case "CorrectionHint":
         return validateCorrectionHint(output);
       case "SmokeTestResult":
@@ -199,6 +202,7 @@ function validateScopedRepairPlan(output: unknown): ScopedRepairPlan {
     requireString(item, "description", `ScopedRepairPlan.proposedOperations[${index}]`);
     if ("targetFile" in item && typeof item.targetFile !== "string") throw new Error(`ScopedRepairPlan.proposedOperations[${index}].targetFile must be a string when provided.`);
     if ("command" in item && typeof item.command !== "string") throw new Error(`ScopedRepairPlan.proposedOperations[${index}].command must be a string when provided.`);
+    if ("content" in item && typeof item.content !== "string") throw new Error(`ScopedRepairPlan.proposedOperations[${index}].content must be a string when provided.`);
     requireString(item, "reason", `ScopedRepairPlan.proposedOperations[${index}]`);
     requireArray(item, "safetyConstraints", `ScopedRepairPlan.proposedOperations[${index}]`);
   });
@@ -243,6 +247,7 @@ function validateCodeChangePlan(output: unknown): CodeChangePlan {
     requireEnum(item, "type", ["modify_file", "create_file", "run_test", "inspect", "manual_review"], `CodeChangePlan.operations[${index}]`);
     if ("targetFile" in item && typeof item.targetFile !== "string") throw new Error(`CodeChangePlan.operations[${index}].targetFile must be a string when provided.`);
     if ("command" in item && typeof item.command !== "string") throw new Error(`CodeChangePlan.operations[${index}].command must be a string when provided.`);
+    if ("content" in item && typeof item.content !== "string") throw new Error(`CodeChangePlan.operations[${index}].content must be a string when provided.`);
     requireString(item, "description", `CodeChangePlan.operations[${index}]`);
     requireString(item, "reason", `CodeChangePlan.operations[${index}]`);
     requireArray(item, "safetyConstraints", `CodeChangePlan.operations[${index}]`);
@@ -307,11 +312,42 @@ function validateCodeChangePlanDryRunExecutionPlan(output: unknown): CodeChangeP
     requireEnum(item, "type", ["modify_file", "create_file", "run_test", "inspect", "manual_review"], `CodeChangePlanDryRunExecutionPlan.operations[${index}]`);
     if ("targetFile" in item && typeof item.targetFile !== "string") throw new Error(`CodeChangePlanDryRunExecutionPlan.operations[${index}].targetFile must be a string when provided.`);
     if ("command" in item && typeof item.command !== "string") throw new Error(`CodeChangePlanDryRunExecutionPlan.operations[${index}].command must be a string when provided.`);
+    if ("content" in item && typeof item.content !== "string") throw new Error(`CodeChangePlanDryRunExecutionPlan.operations[${index}].content must be a string when provided.`);
     requireString(item, "description", `CodeChangePlanDryRunExecutionPlan.operations[${index}]`);
     requireString(item, "reason", `CodeChangePlanDryRunExecutionPlan.operations[${index}]`);
     requireArray(item, "safetyConstraints", `CodeChangePlanDryRunExecutionPlan.operations[${index}]`);
   });
   return record as CodeChangePlanDryRunExecutionPlan;
+}
+
+function validateCodeChangePlanExecutionRecord(output: unknown): CodeChangePlanExecutionRecord {
+  const record = requireObject(output, "CodeChangePlanExecutionRecord");
+  requireString(record, "executionId", "CodeChangePlanExecutionRecord");
+  requireString(record, "codeChangePlanId", "CodeChangePlanExecutionRecord");
+  requireString(record, "approvalId", "CodeChangePlanExecutionRecord");
+  requireString(record, "codeChangePlanHash", "CodeChangePlanExecutionRecord");
+  if (record.hashMatched !== true) throw new Error("CodeChangePlanExecutionRecord.hashMatched must be true.");
+  requireEnum(record, "status", ["executed", "failed", "blocked"], "CodeChangePlanExecutionRecord");
+  requireString(record, "startedAt", "CodeChangePlanExecutionRecord");
+  if ("finishedAt" in record && typeof record.finishedAt !== "string") throw new Error("CodeChangePlanExecutionRecord.finishedAt must be a string when provided.");
+  if ("checkpointId" in record && typeof record.checkpointId !== "string") throw new Error("CodeChangePlanExecutionRecord.checkpointId must be a string when provided.");
+  requireBoolean(record, "consumedApproval", "CodeChangePlanExecutionRecord");
+  if ("codeExecutionResult" in record) validateExecutionResult(record.codeExecutionResult);
+  if ("testExecutionResult" in record) validateExecutionResult(record.testExecutionResult);
+  if ("verification" in record) validateVerificationReport(record.verification);
+  if ("rollbackGuide" in record) validateRollbackGuide(record.rollbackGuide);
+  requireArray(record, "blockedReasons", "CodeChangePlanExecutionRecord");
+  requireArray(record, "safetyFindings", "CodeChangePlanExecutionRecord");
+  return record as CodeChangePlanExecutionRecord;
+}
+
+function validateRollbackGuide(output: unknown): void {
+  const record = requireObject(output, "RollbackGuide");
+  if ("checkpointId" in record && typeof record.checkpointId !== "string") throw new Error("RollbackGuide.checkpointId must be a string when provided.");
+  requireString(record, "summary", "RollbackGuide");
+  requireArray(record, "changedFiles", "RollbackGuide");
+  requireArray(record, "manualSteps", "RollbackGuide");
+  if (record.destructiveRollbackPerformed !== false) throw new Error("RollbackGuide.destructiveRollbackPerformed must be false.");
 }
 
 function validateCorrectionHint(output: unknown): CorrectionHint {

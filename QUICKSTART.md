@@ -88,6 +88,14 @@ npm run demo:code-change-plan-execution-dry-run
 
 This requires an approved execution approval record, verifies the `CodeChangePlan` hash, and creates a dry-run plan only. It still does not write files, run commands, run tests, call `CodeExecutor`, or consume approval.
 
+Run the explicit controlled execution demo:
+
+```bash
+npm run demo:code-change-plan-execution
+```
+
+This uses a temporary workspace, requires an approved execution approval record, rechecks the `CodeChangePlan` hash, creates a checkpoint, applies only declared file operations, runs scoped tests, verifies the result, creates a rollback guide, and consumes the approval once. It does not support delete operations, high-risk shell, automatic approval, or destructive rollback.
+
 ## 7. LLM Config Dry-Run
 
 ```bash
