@@ -241,9 +241,10 @@ Patch export queries:
 npm run patch:list
 npm run patch:show -- --id <patchExportId>
 npm run patch:apply-guide -- --id <patchExportId>
+npm run patch:verify -- --id <patchExportId>
 ```
 
-Patch exports include `changes.patch`, `metadata.json`, a `sha256` patch hash, and `APPLY_GUIDE.md`. The apply guide is manual guidance only. AgentFlow does not execute `git apply`, does not copy files back to the source project, and does not perform destructive rollback.
+Patch exports include `changes.patch`, `metadata.json`, a `sha256` patch hash, and `APPLY_GUIDE.md`. `patch:verify` checks hash integrity, metadata consistency, file scope, deleted files, sensitive paths, binary patch markers, and obvious dangerous command content. The apply guide and verify command are manual review aids only. AgentFlow does not execute `git apply`, does not copy files back to the source project, does not run tests from patch verification, and does not perform destructive rollback.
 
 ## Output
 

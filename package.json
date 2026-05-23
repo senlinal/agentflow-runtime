@@ -40,6 +40,7 @@
     "patch:list": "node --experimental-strip-types cli/patch-list.ts",
     "patch:show": "node --experimental-strip-types cli/patch-show.ts",
     "patch:apply-guide": "node --experimental-strip-types cli/patch-apply-guide.ts",
+    "patch:verify": "node --experimental-strip-types cli/patch-verify.ts",
     "llm:config": "node --experimental-strip-types cli/llm-config.ts",
     "llm:smoke": "node --experimental-strip-types cli/llm-smoke.ts",
     "release:check": "node --experimental-strip-types scripts/release-check.ts",

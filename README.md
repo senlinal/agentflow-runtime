@@ -188,9 +188,10 @@ Patch exports include a patch hash, metadata, and manual apply guide:
 npm run patch:list
 npm run patch:show -- --id <patchExportId>
 npm run patch:apply-guide -- --id <patchExportId>
+npm run patch:verify -- --id <patchExportId>
 ```
 
-The source project is not modified, changes are not written back automatically, and AgentFlow does not run `git apply`. See `docs/EXTERNAL_PROJECT_IMPORT.md`.
+`patch:verify` checks the exported patch hash, file scope, deleted files, sensitive paths, binary patches, and obvious dangerous command content. It is read-only: the source project is not modified, changes are not written back automatically, and AgentFlow does not run `git apply`. See `docs/EXTERNAL_PROJECT_IMPORT.md`.
 
 Validate and inspect templates:
 

@@ -53,6 +53,7 @@ Every successful external project run writes a patch export under `.agentflow/pa
 npm run patch:list
 npm run patch:show -- --id <patchExportId>
 npm run patch:apply-guide -- --id <patchExportId>
+npm run patch:verify -- --id <patchExportId>
 ```
 
 The patch export contains:
@@ -61,7 +62,9 @@ The patch export contains:
 - `metadata.json` with `patchHash`, changed files, insertions, deletions, test status, and verification status;
 - `APPLY_GUIDE.md` with manual review steps.
 
-The apply guide is intentionally read-only. AgentFlow does not run `git apply`, does not write changes back to the source project, and does not perform rollback commands. The user must manually review and apply the patch with their own git workflow.
+`patch:verify` checks that the patch file and metadata exist, the `sha256` hash matches, the patch only touches `metadata.changedFiles`, no files are deleted, no sensitive paths are touched, the patch is not binary, and no obvious dangerous command content was added.
+
+The apply guide and verify command are intentionally read-only. AgentFlow does not run `git apply`, does not write changes back to the source project, does not run tests, and does not perform rollback commands. The user must manually review and apply the patch with their own git workflow.
 
 ## Safety Properties
 

@@ -378,6 +378,17 @@ export type PatchExportRecord = {
   warnings: string[];
 };
 
+export type PatchVerificationResult = {
+  patchExportId: string;
+  status: "passed" | "failed" | "warning";
+  patchHashMatched: boolean;
+  checkedFiles: string[];
+  blockedReasons: string[];
+  warnings: string[];
+  suggestedManualCommands: string[];
+  manualReviewRequired: true;
+};
+
 export type CorrectionHint = {
   driftDetected: boolean;
   originalGoalReminder: string;

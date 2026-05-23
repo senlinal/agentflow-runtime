@@ -132,9 +132,10 @@ Review exported patches:
 npm run patch:list
 npm run patch:show -- --id <patchExportId>
 npm run patch:apply-guide -- --id <patchExportId>
+npm run patch:verify -- --id <patchExportId>
 ```
 
-Patch commands are read-only. They do not run `git apply` and do not write changes back to the source project.
+Patch commands are read-only. They do not run `git apply`, do not run tests, and do not write changes back to the source project. `patch:verify` checks hash integrity, file scope, sensitive paths, deleted files, binary patches, and obvious dangerous command content before manual review.
 
 ## 7. LLM Config Dry-Run
 
