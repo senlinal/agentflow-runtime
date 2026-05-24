@@ -12,6 +12,8 @@ export type WorkflowProfile = {
   name: string;
   description: string;
   defaultWorkflow: string;
+  requiresLLM?: boolean;
+  allowExecution?: boolean;
   scopeWorkflow?: string;
   followupWorkflows?: string[];
   defaultInput?: string;
@@ -223,6 +225,8 @@ export function formatProfile(profile: WorkflowProfile & { sourcePath?: string }
     `description: ${profile.description}`,
     profile.sourcePath ? `sourcePath: ${profile.sourcePath}` : undefined,
     `defaultWorkflow: ${profile.defaultWorkflow}`,
+    `requiresLLM: ${profile.requiresLLM === true}`,
+    `allowExecution: ${profile.allowExecution === true}`,
     `scopeWorkflow: ${profile.scopeWorkflow ?? "none"}`,
     `followupWorkflows: ${(profile.followupWorkflows ?? []).join(", ") || "none"}`,
     `defaultInput: ${profile.defaultInput ?? "none"}`,

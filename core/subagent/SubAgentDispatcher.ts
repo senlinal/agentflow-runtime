@@ -102,12 +102,16 @@ function llmMetadata(
   if (!llmCall) return { isLLMBacked: false, ...(fallbackStatus ? { callStatus: fallbackStatus } : {}) };
   const provider = typeof llmCall.provider === "string" ? llmCall.provider : undefined;
   const model = typeof llmCall.model === "string" ? llmCall.model : undefined;
-  if (!provider || provider === "mock" || model === "mock-structured") {
+  const callStatus = llmCall.callStatus === "completed" || llmCall.callStatus === "failed" || llmCall.callStatus === "not_applicable"
+    ? llmCall.callStatus
+    : "not_applicable";
+  const completed = llmCall.callStatus === "completed" && llmCall.success !== false;
+  if (!completed || !provider || provider === "mock" || model === "mock-structured") {
     return {
       isLLMBacked: false,
       ...(provider ? { modelProvider: provider } : {}),
       ...(model ? { modelName: model } : {}),
-      callStatus: llmCall.success === false ? "failed" : "not_applicable",
+      callStatus: completed ? "not_applicable" : callStatus,
     };
   }
   return {

@@ -19,6 +19,7 @@ test("SubAgentDispatcher", async (t) => {
         provider: "deepseek",
         model: "deepseek-v4-flash",
         success: true,
+        callStatus: "completed",
       }],
     };
 
@@ -59,6 +60,7 @@ test("SubAgentDispatcher", async (t) => {
         provider: "mock",
         model: "mock-structured",
         success: true,
+        callStatus: "completed",
       }],
     };
 
@@ -70,6 +72,55 @@ test("SubAgentDispatcher", async (t) => {
     assert.equal(metadata.isLLMBacked, false);
     assert.equal(metadata.modelProvider, "mock");
     assert.equal(metadata.modelName, "mock-structured");
+    assert.equal(metadata.callStatus, "not_applicable");
+  });
+
+  await t.test("does not mark failed LLM call records as LLM-backed", async () => {
+    const runDir = join(tmpdir(), `agentflow-subagent-failed-call-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    const dispatcher = new SubAgentDispatcher(new SubAgentArtifactStore(runDir));
+    const context = createInitialContext({ taskId: "test", userGoal: "解释一下咖啡的做法" });
+    context.runtimeMetadata = {
+      llmCalls: [{
+        nodeId: "planner",
+        provider: "deepseek",
+        model: "deepseek-v4-flash",
+        success: false,
+        callStatus: "failed",
+      }],
+    };
+
+    const handle = await dispatcher.start(llmPlannerNode(), context, 0);
+    const record = await dispatcher.complete(handle, { planId: "plan", summary: "coffee plan" }, context);
+    const metadata = JSON.parse(await readFile(record.metadataPath, "utf8")) as SubAgentDispatchMetadata;
+
+    assert.equal(metadata.executorType, "llm");
+    assert.equal(metadata.isLLMBacked, false);
+    assert.equal(metadata.modelProvider, "deepseek");
+    assert.equal(metadata.modelName, "deepseek-v4-flash");
+    assert.equal(metadata.callStatus, "failed");
+  });
+
+  await t.test("does not mark call records without completed callStatus as LLM-backed", async () => {
+    const runDir = join(tmpdir(), `agentflow-subagent-missing-status-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    const dispatcher = new SubAgentDispatcher(new SubAgentArtifactStore(runDir));
+    const context = createInitialContext({ taskId: "test", userGoal: "解释一下咖啡的做法" });
+    context.runtimeMetadata = {
+      llmCalls: [{
+        nodeId: "planner",
+        provider: "deepseek",
+        model: "deepseek-v4-flash",
+        success: true,
+      }],
+    };
+
+    const handle = await dispatcher.start(llmPlannerNode(), context, 0);
+    const record = await dispatcher.complete(handle, { planId: "plan", summary: "coffee plan" }, context);
+    const metadata = JSON.parse(await readFile(record.metadataPath, "utf8")) as SubAgentDispatchMetadata;
+
+    assert.equal(metadata.executorType, "llm");
+    assert.equal(metadata.isLLMBacked, false);
+    assert.equal(metadata.modelProvider, "deepseek");
+    assert.equal(metadata.modelName, "deepseek-v4-flash");
     assert.equal(metadata.callStatus, "not_applicable");
   });
 });

@@ -74,6 +74,18 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.match(result.formattedText, /source: subagent_dispatch_trace/);
   });
 
+  await t.test("requires allowLLM for requiresLLM profiles before runtime starts", async () => {
+    const result = await createRunner().run({
+      profileId: "agent-workforce-llm",
+      task: "解释一下咖啡的做法",
+    });
+
+    assert.equal(result.finalStatus, "blocked");
+    assert.equal(result.runtimeProof.runtimeStarted, false);
+    assert.equal(result.runtimeProof.verifiedRoleCount, 0);
+    assert.match(result.steps[0].reason, /allowLLM=false/);
+  });
+
   await t.test("auto-switches website tasks from rag profile to frontend-site-build", async () => {
     const result = await createRunner().run({
       task: "做一个仿 Claude.ai 风格的个人网站",

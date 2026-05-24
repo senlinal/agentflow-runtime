@@ -58,7 +58,7 @@ The MCP tool must still obey: No trace, no agent.
 
 ## Agent Workforce LLM Profile
 
-`agent-workforce-llm` points to `abcde-basic-llm`. In the current pilot, Planner, Debater, PlannerRevision, and GoalKeeper are configured as `type: "llm"` thinking roles. Executor and Verifier remain `type: "mock"` so the pilot can answer a small task without invoking CodeExecutor, external project execution, or destructive actions.
+`agent-workforce-llm` points to `abcde-basic-llm`. In the current pilot, Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper are configured as `type: "llm"` roles. Executor remains `type: "mock"` as a safe answer-only deliverable generator, so the pilot can answer a small task without invoking CodeExecutor, external project execution, file writes, or destructive actions.
 
 Inspect it without calling a real model:
 
@@ -78,7 +78,7 @@ npm run workflow:run-profile -- \
   --allow-llm
 ```
 
-The runner blocks this profile unless `--allow-llm` is present. It also requires `provider=deepseek`; the default `mock` provider is not allowed for this pilot. If DeepSeek credentials are not configured, it blocks before the runtime starts. Use `npm run llm:config` to confirm `provider`, `model`, `hasApiKey`, and `warnings`.
+The runner blocks this profile unless `--allow-llm` is present. The default `mock` provider is not allowed for this pilot. DeepSeek is the default acceptance provider, and `openai-compatible` is also allowed when `baseUrl`, model, and API key are configured. If the selected real provider has no credential, the runner blocks before the runtime starts. Use `npm run llm:config` to confirm `provider`, `baseUrl`, `model`, `hasApiKey`, reasoning config, and `warnings`.
 
 An LLM-backed role requires a real LLM call record. A row or metadata file must include:
 
@@ -91,7 +91,7 @@ modelName: deepseek-v4-flash
 callStatus: completed
 ```
 
-If `modelProvider` or `callStatus` is missing, or if the call record says `modelProvider=mock` / `modelName=mock-structured`, the role must not be described as LLM-backed. Mock rows remain labeled `mock subagent simulation, not LLM-backed`.
+If `modelProvider` is missing, `callStatus` is missing or not `completed`, or if the call record says `modelProvider=mock` / `modelName=mock-structured`, the role must not be described as LLM-backed. Mock rows remain labeled `mock subagent simulation, not LLM-backed`.
 
 If you need real node intelligence rather than a visible simulation, do not use `mock` nodes. Use `type: "llm"` with explicit provider configuration or add a subagent-backed executor/adapter that writes structured output through `SchemaValidator`. Mock output may be used to test routing and formatting, but it must not be presented as a real LLM or subagent result.
 

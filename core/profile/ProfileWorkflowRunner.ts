@@ -174,7 +174,7 @@ export class ProfileWorkflowRunner {
     let taskBrief = resume?.taskBrief ?? await this.resolveTaskBrief(request, profile);
     const workflowChain = this.profileLoader.resolveProfileWorkflowChain(profile);
     const dryRun = request.dryRun === true;
-    const allowExecution = request.allowExecution === true;
+    const allowExecution = request.allowExecution === true && profile.allowExecution !== false;
     const allowLLM = request.allowLLM === true;
     const steps: ProfileWorkflowStep[] = [];
     const roleTimeline: ProfileRoleTimelineEvent[] = [];
@@ -272,7 +272,8 @@ export class ProfileWorkflowRunner {
       }
 
       const llmWorkflow = isLLMWorkflow(config);
-      if (llmWorkflow && !allowLLM) {
+      const requiresLLM = profile.requiresLLM === true || llmWorkflow;
+      if (requiresLLM && !allowLLM) {
         steps.push({
           workflow,
           status: "blocked",
@@ -283,11 +284,11 @@ export class ProfileWorkflowRunner {
         continue;
       }
 
-      if (llmWorkflow) {
+      if (requiresLLM) {
         try {
           const llmConfig = LLMConfigLoader.fromEnv(process.env, { validateCredentials: true });
-          if (profile.id === "agent-workforce-llm" && llmConfig.provider !== "deepseek") {
-            throw new Error(`agent-workforce-llm requires provider=deepseek, got provider=${llmConfig.provider}.`);
+          if (llmConfig.provider === "mock") {
+            throw new Error(`${profile.id} requires a real LLM provider, got provider=mock.`);
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
@@ -296,7 +297,7 @@ export class ProfileWorkflowRunner {
             status: "blocked",
             reason: `LLM workflow blocked because provider configuration is incomplete: ${message}`,
           });
-          warnings.push("Configure DeepSeek with AGENTFLOW_LLM_PROVIDER=deepseek and AGENTFLOW_DEEPSEEK_API_KEY or DEEPSEEK_API_KEY before using --allow-llm.");
+          warnings.push("Configure a real LLM provider before using --allow-llm. DeepSeek: AGENTFLOW_LLM_PROVIDER=deepseek with AGENTFLOW_DEEPSEEK_API_KEY or DEEPSEEK_API_KEY. OpenAI-compatible: AGENTFLOW_LLM_PROVIDER=openai-compatible with AGENTFLOW_LLM_API_KEY, AGENTFLOW_LLM_BASE_URL, and AGENTFLOW_LLM_MODEL.");
           blocked = true;
           continue;
         }

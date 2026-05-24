@@ -120,7 +120,7 @@ Built-in profiles:
 - `frontend-site-build`: handles single-page websites, landing pages, personal sites, HTML/CSS/JS, and lightweight React or Next.js page work. It starts with negotiation and does not deploy, delete files, call real LLMs, or execute code changes by default.
 - `task-solving`: handles explanations, definitions, how-to answers, and conceptual help. It preserves `userRequest`, sets `expectedDeliverable`, and verifies the actual deliverable rather than workflow metadata.
 - `agent-workforce-basic`: runs `abcde-basic` to visibly demonstrate Planner, Debater, PlannerRevision, Executor, Verifier, and GoalKeeper as runtime-traced roles.
-- `agent-workforce-llm`: opt-in profile for the same visible workforce using `abcde-basic-llm`. Planner, Debater, PlannerRevision, and GoalKeeper can be DeepSeek-backed; Executor and Verifier remain mock simulation in the pilot. Do not run it without explicit `--allow-llm` and real LLM configuration.
+- `agent-workforce-llm`: opt-in profile for the same visible workforce using `abcde-basic-llm`. Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper are LLM-backed when a real provider is configured; Executor remains a safe answer-only mock simulation and never calls CodeExecutor. Do not run it without explicit `--allow-llm` and real LLM configuration.
 
 The opencode `/workflow` command and `workflow:run-profile` use a rule-based profile router before choosing a default workflow. If `profiles/current.json` points to `rag-optimization` but the user asks for a Claude.ai-style personal website, the runner records `detectedTaskType=frontend_site_build`, recommends `frontend-site-build`, and can safely auto-switch when the user did not explicitly choose a profile. See `docs/WORKFLOW_PROFILES.md`.
 
@@ -156,7 +156,7 @@ Inspect the opt-in LLM workforce profile without calling a model:
 npm run workflow:profile:inspect -- --profile agent-workforce-llm
 ```
 
-Run the controlled DeepSeek-backed pilot only with explicit approval:
+Run the controlled LLM-backed pilot only with explicit approval:
 
 ```bash
 npm run workflow:run-profile -- \
@@ -165,7 +165,7 @@ npm run workflow:run-profile -- \
   --allow-llm
 ```
 
-Without `--allow-llm`, the profile runner blocks. If the active provider is still `mock`, or if a DeepSeek credential is missing, it also blocks before the runtime starts. A role is LLM-backed only when its timeline row and subagent `metadata.json` include non-mock `modelProvider`, `modelName`, `callStatus`, and `isLLMBacked=true`.
+Without `--allow-llm`, the profile runner blocks. If the active provider is still `mock`, or if the configured real provider has no API key, it also blocks before the runtime starts. DeepSeek is the default pilot provider; `openai-compatible` is also accepted when fully configured. A role is LLM-backed only when its timeline row and subagent `metadata.json` include non-mock `modelProvider`, `modelName`, `callStatus=completed`, and `isLLMBacked=true`.
 
 Profile runs create resumable sessions when scope confirmation is needed:
 
@@ -388,6 +388,7 @@ LLM details:
 - DeepSeek default model is `deepseek-v4-flash`.
 - API keys are read from environment variables and must not be committed.
 - `agent-workforce-basic` is a mock subagent simulation; `agent-workforce-llm` is the opt-in LLM-backed pilot.
+- In `agent-workforce-llm`, Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper are LLM nodes; Executor is answer-only mock simulation and does not execute code.
 - Missing `modelProvider` or `callStatus`, or `modelProvider=mock` / `modelName=mock-structured`, means a role must not be described as LLM-backed.
 - See `docs/LLM_ADAPTER.md` for full details.
 

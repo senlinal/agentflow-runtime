@@ -15,7 +15,9 @@ describe("LLMConfigReporter", () => {
     assert.equal(summary.provider, "deepseek");
     assert.equal(summary.model, "deepseek-v4-flash");
     assert.equal(summary.baseURL, "https://api.deepseek.com");
+    assert.equal(summary.baseUrl, "https://api.deepseek.com");
     assert.equal(summary.hasApiKey, true);
+    assert.deepEqual(summary.reasoning, { enabled: false, effort: null });
     assert.equal(JSON.stringify(summary).includes("sk-secret-value"), false);
   });
 
@@ -49,5 +51,6 @@ describe("LLMConfigReporter", () => {
 
     assert.equal(text.includes("sk-secret-value"), false);
     assert.match(text, /hasApiKey: true/);
+    assert.match(text, /reasoning: enabled=false effort=n\/a/);
   });
 });

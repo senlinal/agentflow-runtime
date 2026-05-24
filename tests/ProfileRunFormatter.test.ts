@@ -95,6 +95,50 @@ test("ProfileRunFormatter", async (t) => {
     assert.match(text, /AgentFlow Runtime trace not found. No verified agents can be displayed./);
     assert.doesNotMatch(text, /1\\. Planner/);
   });
+
+  await t.test("formats llm-backed role execution evidence", () => {
+    const text = new ProfileRunFormatter().format(sampleResult({
+      roleTimeline: [{
+        workflow: "abcde-basic-llm",
+        nodeId: "planner",
+        role: "Planner",
+        nodeType: "llm",
+        executorType: "llm",
+        type: "llm",
+        status: "completed",
+        summary: "Plan coffee answer.",
+        outputKey: "plan",
+        outputSchema: "Plan",
+        source: "subagent_dispatch_trace",
+        subAgentDispatched: true,
+        subAgentId: "planner-0-test",
+        workerSessionId: "worker-planner-test",
+        inputArtifactPath: ".workflow-runs/run/subagents/planner-0-test/input.json",
+        outputArtifactPath: ".workflow-runs/run/subagents/planner-0-test/output.json",
+        subAgentMetadataPath: ".workflow-runs/run/subagents/planner-0-test/metadata.json",
+        nextNode: "debater",
+        isMock: false,
+        isLLMBacked: true,
+        modelProvider: "deepseek",
+        modelName: "deepseek-v4-flash",
+        callStatus: "completed",
+      }],
+      runtimeProof: {
+        runtimeStarted: true,
+        tracePath: ".workflow-runs/run/trace.json",
+        contextPath: ".workflow-runs/run/context.json",
+        verifiedRoleCount: 1,
+        roleSource: "subagent_dispatch_trace",
+      },
+    }));
+
+    assert.match(text, /executorType: llm/);
+    assert.match(text, /isLLMBacked: true/);
+    assert.match(text, /modelProvider: deepseek/);
+    assert.match(text, /modelName: deepseek-v4-flash/);
+    assert.match(text, /callStatus: completed/);
+    assert.match(text, /note: llm-backed subagent execution/);
+  });
 });
 
 function sampleResult(overrides: Partial<ProfileWorkflowRunResult> = {}): ProfileWorkflowRunResult {

@@ -80,7 +80,7 @@ Do not commit `.env`. API keys, tokens, and provider error bodies are sanitized 
 
 ## Running an LLM Workflow
 
-`workflows/abcde-basic.llm.json` is an opt-in template named `abcde-basic-llm`. It is not used by default demos. In the `agent-workforce-llm` pilot, only Planner, Debater, PlannerRevision, and GoalKeeper are LLM nodes. Executor and Verifier remain mock simulation nodes and do not call CodeExecutor.
+`workflows/abcde-basic.llm.json` is an opt-in template named `abcde-basic-llm`. It is not used by default demos. In the `agent-workforce-llm` pilot, Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper are LLM nodes. Executor remains an answer-only mock simulation node and does not call CodeExecutor.
 
 ```bash
 AGENTFLOW_LLM_PROVIDER=openai-compatible \
@@ -142,9 +142,9 @@ npm run workflow:run-profile -- \
   --allow-llm
 ```
 
-`--allow-llm` is required for profile runs that contain `type: "llm"` nodes. The `agent-workforce-llm` pilot additionally requires `AGENTFLOW_LLM_PROVIDER=deepseek`; the default `mock` provider is blocked before runtime execution. If the active provider has no credential, the profile runner also blocks before calling the runtime.
+`--allow-llm` is required for profile runs that contain `type: "llm"` nodes. The `agent-workforce-llm` pilot requires a real provider; the default `mock` provider is blocked before runtime execution. DeepSeek is the default acceptance provider, and `openai-compatible` is allowed when `AGENTFLOW_LLM_API_KEY`, `AGENTFLOW_LLM_BASE_URL`, and `AGENTFLOW_LLM_MODEL` are configured. If the active provider has no credential, the profile runner also blocks before calling the runtime.
 
-LLM-backed proof requires both runtime trace data and a node-level non-mock LLM call record. Role Timeline and subagent metadata should show `executorType=llm`, `isMock=false`, `isLLMBacked=true`, `modelProvider=deepseek`, `modelName=deepseek-v4-flash` or the configured model, and `callStatus=completed`. A node without `modelProvider` and `callStatus`, or with `modelProvider=mock` / `modelName=mock-structured`, must not be called LLM-backed.
+LLM-backed proof requires both runtime trace data and a node-level non-mock LLM call record. Role Timeline and subagent metadata should show `executorType=llm`, `isMock=false`, `isLLMBacked=true`, `modelProvider=deepseek` or another configured real provider, `modelName=deepseek-v4-flash` or the configured model, and `callStatus=completed`. A node without `modelProvider`, without `callStatus=completed`, or with `modelProvider=mock` / `modelName=mock-structured`, must not be called LLM-backed.
 
 ## Structured Output Stability
 

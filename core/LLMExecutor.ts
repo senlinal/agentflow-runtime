@@ -44,6 +44,7 @@ export class LLMExecutor implements NodeExecutor {
         attempts: response.attempts,
         outputSchemaName: node.outputSchema,
         success: true,
+        callStatus: "completed",
         warnings: context.runtimeMetadata?.llmConfigSummary?.warnings ?? [],
       });
       return SchemaValidator.validate(node.outputSchema, response.output);
@@ -52,6 +53,7 @@ export class LLMExecutor implements NodeExecutor {
         nodeId: node.id,
         outputSchemaName: node.outputSchema,
         success: false,
+        callStatus: "failed",
         error: redactSecrets(error instanceof Error ? error.message : String(error)),
         warnings: context.runtimeMetadata?.llmConfigSummary?.warnings ?? [],
       });

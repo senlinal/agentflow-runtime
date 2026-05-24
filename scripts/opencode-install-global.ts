@@ -112,6 +112,6 @@ function workflowTemplate(agentFlowRootPath: string): string {
     "",
     `!\`AGENTFLOW_PROJECT_ROOT="\${AGENTFLOW_PROJECT_ROOT:-${agentFlowRootPath}}" node --experimental-strip-types "\${AGENTFLOW_PROJECT_ROOT:-${agentFlowRootPath}}/cli/opencode-workflow-command.ts" --compact $ARGUMENTS\``,
     "",
-    "Display the AgentFlow runtime result above, then dispatch OpenCode Task subagents only for timeline roles whose `source` is `runtime_trace`; `isMock: true` remains simulation, not real model-backed execution.",
+    "Display the AgentFlow runtime result above, then dispatch OpenCode Task subagents only for timeline roles whose `source` is `runtime_trace` or `subagent_dispatch_trace`; `isMock: true` remains simulation, not real model-backed execution.",
   ].join("\n");
 }

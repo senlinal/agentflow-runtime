@@ -60,7 +60,7 @@ test("LLM-backed agent workforce pilot", async (t) => {
 
       assert.equal(result.finalStatus, "blocked");
       assert.equal(result.runtimeProof.runtimeStarted, false);
-      assert.match(result.steps[0].reason, /requires provider=deepseek/);
+      assert.match(result.steps[0].reason, /requires a real LLM provider/);
     } finally {
       restore();
     }
@@ -83,10 +83,30 @@ test("LLM-backed agent workforce pilot", async (t) => {
     }
   });
 
-  await t.test("uses LLMExecutor only for thinking roles and keeps Executor/Verifier mock", async () => {
+  await t.test("allows openai-compatible as a real provider when allowLLM=true", async () => {
+    const restore = withOpenAICompatibleEnv();
+    try {
+      const result = await createRunner(new RealProviderMockClient("openai-compatible", "gpt-test")).run({
+        profileId: "agent-workforce-llm",
+        task: "解释一下咖啡的做法",
+        allowLLM: true,
+      });
+
+      assert.equal(result.finalStatus, "completed");
+      const planner = mustFindRole(result, "Planner");
+      assert.equal(planner.isLLMBacked, true);
+      assert.equal(planner.modelProvider, "openai-compatible");
+      assert.equal(planner.modelName, "gpt-test");
+      assert.equal(planner.callStatus, "completed");
+    } finally {
+      restore();
+    }
+  });
+
+  await t.test("uses LLMExecutor for Planner/Debater/PlannerRevision/Verifier and keeps Executor mock", async () => {
     const restore = withDeepSeekEnv({ apiKey: "test-key" });
     try {
-      const result = await createRunner(new DeepSeekMockClient()).run({
+      const result = await createRunner(new RealProviderMockClient("deepseek", "deepseek-v4-flash")).run({
         profileId: "agent-workforce-llm",
         task: "解释一下咖啡的做法",
         allowLLM: true,
@@ -102,7 +122,7 @@ test("LLM-backed agent workforce pilot", async (t) => {
       const executor = mustFindRole(result, "Executor");
       const verifier = mustFindRole(result, "Verifier");
 
-      for (const event of [planner, debater, revision]) {
+      for (const event of [planner, debater, revision, verifier]) {
         assert.equal(event.executorType, "llm");
         assert.equal(event.isMock, false);
         assert.equal(event.isLLMBacked, true);
@@ -114,9 +134,6 @@ test("LLM-backed agent workforce pilot", async (t) => {
       assert.equal(executor.executorType, "mock");
       assert.equal(executor.isMock, true);
       assert.equal(executor.isLLMBacked, false);
-      assert.equal(verifier.executorType, "mock");
-      assert.equal(verifier.isMock, true);
-      assert.equal(verifier.isLLMBacked, false);
       assert.equal(result.roleTimeline.some((event) => event.role === "CodeExecutor"), false);
 
       const context = JSON.parse(await readFile(result.contextPath!, "utf8")) as WorkflowContext;
@@ -136,20 +153,27 @@ test("LLM-backed agent workforce pilot", async (t) => {
   });
 });
 
-class DeepSeekMockClient implements LLMClient {
+class RealProviderMockClient implements LLMClient {
   private readonly delegate = new MockLLMClient();
+  private readonly provider: string;
+  private readonly model: string;
+
+  constructor(provider: string, model: string) {
+    this.provider = provider;
+    this.model = model;
+  }
 
   async generateStructured<T>(request: LLMStructuredRequest): Promise<LLMStructuredResponse<T>> {
     const response = await this.delegate.generateStructured<T>(request);
     return {
       ...response,
-      provider: "deepseek",
-      model: "deepseek-v4-flash",
+      provider: this.provider,
+      model: this.model,
     };
   }
 }
 
-function createRunner(llmClient: LLMClient | undefined = new DeepSeekMockClient(), registerLlm = true): ProfileWorkflowRunner {
+function createRunner(llmClient: LLMClient | undefined = new RealProviderMockClient("deepseek", "deepseek-v4-flash"), registerLlm = true): ProfileWorkflowRunner {
   const root = join(tmpdir(), `agentflow-llm-workforce-${Date.now()}-${Math.random().toString(16).slice(2)}`);
   const registry = NodeRegistry.withDefaults();
   if (registerLlm && llmClient) registry.register("llm", new LLMExecutor(llmClient));
@@ -161,6 +185,25 @@ function createRunner(llmClient: LLMClient | undefined = new DeepSeekMockClient(
     new ScopeConfirmationStore(join(root, "scopes")),
     new ProjectMemoryStore(join(root, "memory")),
   );
+}
+
+function withOpenAICompatibleEnv(): () => void {
+  const previous = {
+    provider: process.env.AGENTFLOW_LLM_PROVIDER,
+    key: process.env.AGENTFLOW_LLM_API_KEY,
+    baseUrl: process.env.AGENTFLOW_LLM_BASE_URL,
+    model: process.env.AGENTFLOW_LLM_MODEL,
+  };
+  process.env.AGENTFLOW_LLM_PROVIDER = "openai-compatible";
+  process.env.AGENTFLOW_LLM_API_KEY = "test-key";
+  process.env.AGENTFLOW_LLM_BASE_URL = "https://example.test/v1";
+  process.env.AGENTFLOW_LLM_MODEL = "gpt-test";
+  return () => {
+    restoreEnv("AGENTFLOW_LLM_PROVIDER", previous.provider);
+    restoreEnv("AGENTFLOW_LLM_API_KEY", previous.key);
+    restoreEnv("AGENTFLOW_LLM_BASE_URL", previous.baseUrl);
+    restoreEnv("AGENTFLOW_LLM_MODEL", previous.model);
+  };
 }
 
 function withProviderEnv(input: { provider: string }): () => void {

@@ -1,8 +1,10 @@
 {
   "id": "agent-workforce-llm",
   "name": "Agent Workforce LLM",
-  "description": "Opt-in LLM-backed multi-agent workforce profile using Planner, Debater, PlannerRevision, and GoalKeeper as LLM thinking nodes while Executor and Verifier remain safe mock simulation nodes.",
+  "description": "Opt-in LLM-backed role pilot using Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper as real LLM nodes while Executor remains a safe answer-only deliverable generator.",
   "defaultWorkflow": "abcde-basic-llm",
+  "requiresLLM": true,
+  "allowExecution": false,
   "policyFiles": [
     "docs/AGENT_POLICY.md",
     "docs/WORKER_POLICY.md",

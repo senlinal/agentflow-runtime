@@ -28,7 +28,7 @@ Mock dispatches are valid runtime simulations, but they must stay labeled `isMoc
 
 `agent-workforce-basic` is a mock subagent simulation profile. It demonstrates Planner, Debater, PlannerRevision, Executor, Verifier, and GoalKeeper as runtime-traced roles without claiming real LLM-backed intelligence.
 
-`agent-workforce-llm` is the opt-in LLM-backed pilot profile. It uses DeepSeek only for thinking roles: Planner, Debater, PlannerRevision, and GoalKeeper. Executor and Verifier stay mock in the pilot so a small answer task can be tested without CodeExecutor or external project execution.
+`agent-workforce-llm` is the opt-in LLM-backed pilot profile. It uses a real provider for Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper. Executor stays answer-only mock simulation in the pilot so a small answer task can be tested without CodeExecutor, file writes, or external project execution. DeepSeek is the default acceptance provider; `openai-compatible` is accepted when fully configured.
 
 Run the pilot only with explicit approval:
 
@@ -39,4 +39,4 @@ npm run workflow:run-profile -- \
   --allow-llm
 ```
 
-Without `--allow-llm`, the profile runner blocks before runtime execution. If the active provider is still `mock`, or if a DeepSeek credential is missing, it also blocks before runtime execution.
+Without `--allow-llm`, the profile runner blocks before runtime execution. If the active provider is still `mock`, or if the selected real provider is missing an API key, it also blocks before runtime execution.

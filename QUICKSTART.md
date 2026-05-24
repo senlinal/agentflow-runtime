@@ -108,7 +108,7 @@ Inspect the opt-in LLM-backed workforce profile without calling a provider:
 npm run workflow:profile:inspect -- --profile agent-workforce-llm
 ```
 
-Run the controlled DeepSeek pilot only when you intend a real provider call:
+Run the controlled LLM-backed pilot only when you intend a real provider call:
 
 ```bash
 npm run workflow:run-profile -- \
@@ -117,7 +117,7 @@ npm run workflow:run-profile -- \
   --allow-llm
 ```
 
-`agent-workforce-basic` is a mock subagent simulation. `agent-workforce-llm` uses DeepSeek for Planner, Debater, PlannerRevision, and GoalKeeper; Executor and Verifier remain mock simulation in the pilot.
+`agent-workforce-basic` is a mock subagent simulation. `agent-workforce-llm` uses a real provider for Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper; Executor remains answer-only mock simulation and does not call CodeExecutor. DeepSeek is the default pilot provider, and `openai-compatible` is accepted when fully configured.
 
 If the run asks for scope confirmation, inspect and resume the profile session:
 
@@ -254,7 +254,7 @@ npm run llm:smoke
 
 `llm:smoke` is dry-run by default and does not call external providers. Do not run `--execute` unless you intentionally want a real provider call.
 
-If `npm run llm:config` reports `provider: mock` or `hasApiKey: false`, do not run the LLM-backed profile. Configure DeepSeek in the environment first. Role metadata without `modelProvider` and `callStatus`, or with `mock-structured`, is not LLM-backed proof.
+If `npm run llm:config` reports `provider: mock` or `hasApiKey: false`, do not run the LLM-backed profile. Configure DeepSeek or an OpenAI-compatible provider in the environment first. Role metadata without `modelProvider` and `callStatus=completed`, or with `mock-structured`, is not LLM-backed proof.
 
 ## 9. Full Local Verification
 
