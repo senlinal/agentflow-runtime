@@ -138,9 +138,12 @@ Role timelines are runtime-verified: no trace, no agent. A role appears only whe
 
 ```bash
 npm run workflow:run-profile -- --profile agent-workforce-basic --task "演示 Planner、Debater、Executor、Verifier 多角色协作"
+npm run mcp:agentflow:smoke
 ```
 
 See `docs/RUNTIME_VERIFIED_AGENTS.md`.
+
+OpenCode should call AgentFlow through the MCP tool `agentflow_run_profile_workflow`, which returns the same runtime proof and role timeline.
 
 Inspect the opt-in LLM workforce profile without calling a model:
 

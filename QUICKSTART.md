@@ -84,10 +84,13 @@ To see a runtime-verified multi-agent workforce, run:
 
 ```bash
 npm run workflow:run-profile -- --profile agent-workforce-basic --task "演示 Planner、Debater、Executor、Verifier 多角色协作"
+npm run mcp:agentflow:smoke
 ```
 
 The Role Timeline is built from `trace.json`. No trace means no displayed AgentFlow role.
 Timeline rows include `executorType`. `executorType: mock` is labeled as `mock simulation, not LLM-backed`; `executorType: llm` is labeled as `llm-backed role execution`.
+
+For OpenCode, restart the app after config changes and confirm the `agentflow` MCP tools are visible. `/workflow` should prefer `agentflow_run_profile_workflow` and display only its `formattedText`.
 
 Inspect the opt-in LLM-backed workforce profile without calling a provider:
 

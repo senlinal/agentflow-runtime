@@ -2,10 +2,10 @@
 
 ## Current Diagnosis
 
-AgentFlow exposes `run_profile_workflow` for opencode through the local MCP server configured in `opencode.json`:
+AgentFlow exposes `agentflow_run_profile_workflow` for opencode through the local MCP server configured in `opencode.json`:
 
 ```text
-mcp/agentflow-server.ts
+mcp/agentflow-mcp-server.ts
 ```
 
 The previous `.opencode/tools/run_profile_workflow.ts` custom tool registration could appear as an available tool in some OpenCode sessions, but it failed before reaching AgentFlow with runtime schema errors such as:
@@ -20,16 +20,22 @@ This means:
 
 - `.opencode/tools/run-profile-workflow.ts` exists as a compatibility wrapper and can be used for direct JSON-stdin checks.
 - `.opencode/tools/run_profile_workflow.ts` is also a compatibility wrapper and should not register a duplicate custom tool.
-- `mcp/agentflow-server.ts` is the actual runtime tool provider.
+- `mcp/agentflow-mcp-server.ts` is the actual runtime tool provider.
+- `mcp/agentflow-server.ts` is a compatibility wrapper.
 - `npm run opencode:check` verifies file shape, MCP config, and quiet command text, but a live opencode session must still be restarted to pick up MCP config changes.
 
 ## Expected Tool
 
-Expected opencode tool name:
+Expected opencode tool names:
 
 ```text
-run_profile_workflow
+agentflow_run_profile_workflow
+agentflow_list_profiles
+agentflow_inspect_profile
+agentflow_show_last_run
 ```
+
+`run_profile_workflow` remains as a compatibility alias.
 
 Expected behavior:
 
@@ -38,7 +44,7 @@ Expected behavior:
 
 ## Fallback
 
-If the live opencode session does not show `run_profile_workflow` under the `agentflow` MCP server after restart, use the CLI fallback from a project terminal:
+If the live opencode session does not show `agentflow_run_profile_workflow` under the `agentflow` MCP server after restart, use the CLI fallback from a project terminal:
 
 ```bash
 npm run workflow:run-profile -- --task "<task>"

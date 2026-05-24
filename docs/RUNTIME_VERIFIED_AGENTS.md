@@ -46,6 +46,14 @@ The profile runs `abcde-basic`, whose runtime nodes include Planner, Debater, Pl
 
 These nodes use `executorType: mock`, so the timeline explicitly says `mock simulation, not LLM-backed`. This proves the orchestration is real while making clear the role intelligence is simulated.
 
+The OpenCode MCP smoke path returns the same runtime-proofed timeline:
+
+```bash
+npm run mcp:agentflow:smoke
+```
+
+The MCP tool must still obey: No trace, no agent.
+
 ## Agent Workforce LLM Profile
 
 `agent-workforce-llm` points to `abcde-basic-llm`, where the same role sequence is configured as `type: "llm"` nodes. It is opt-in and should not be run unless real LLM configuration is explicitly provided.

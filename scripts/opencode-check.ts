@@ -27,7 +27,12 @@ const requiredFiles = [
   "docs/AGENT_POLICY.md",
   "AGENTS.md",
   "opencode.json",
+  "mcp/agentflow-mcp-server.ts",
   "mcp/agentflow-server.ts",
+  "mcp/tools/run-profile-workflow.ts",
+  "mcp/tools/list-profiles.ts",
+  "mcp/tools/inspect-profile.ts",
+  "mcp/tools/show-last-run.ts",
   "profiles/current.json",
   "profiles/rag-optimization.json",
   "profiles/coding-safe-fix.json",
@@ -75,7 +80,7 @@ if (!gitignore.split("\n").includes(".agentflow/project-memory/")) {
 
 const workflowCommand = readFileSync(".opencode/commands/workflow.md", "utf8");
 const workflowCommandLines = workflowCommand.trimEnd().split("\n");
-if (workflowCommandLines.length > 6) {
+if (workflowCommandLines.length > 40) {
   console.error(`workflow.md is too long for a quiet slash command: ${workflowCommandLines.length} lines`);
   process.exit(1);
 }
@@ -84,14 +89,14 @@ if (workflowCommand.includes("```json")) {
   process.exit(1);
 }
 
-for (const requiredText of ["!`node --experimental-strip-types cli/opencode-workflow-command.ts $ARGUMENTS`"]) {
+for (const requiredText of ["agentflow_run_profile_workflow", "run_profile_workflow", "No trace, no agent", "formattedText"]) {
   if (!workflowCommand.includes(requiredText)) {
     console.error(`workflow.md does not include quiet workflow entrypoint text: ${requiredText}`);
     process.exit(1);
   }
 }
 
-for (const forbiddenText of ["todowrite", "list_files", "Supervisor", "Research Plan", "run_profile_workflow"]) {
+for (const forbiddenText of ["todowrite", "list_files", "Research Plan"]) {
   if (workflowCommand.includes(forbiddenText)) {
     console.error(`workflow.md appears to expose or require forbidden behavior: ${forbiddenText}`);
     process.exit(1);
@@ -116,7 +121,7 @@ const opencodeConfig = readFileSync("opencode.json", "utf8");
 for (const requiredText of [
   '"mcp"',
   '"agentflow"',
-  '"mcp/agentflow-server.ts"',
+  '"mcp/agentflow-mcp-server.ts"',
   '"bash": "ask"',
   '"edit": "ask"',
   '"~/development/garbage_item_upload/**": "allow"',
@@ -128,8 +133,16 @@ for (const requiredText of [
   }
 }
 
-const mcpServer = readFileSync("mcp/agentflow-server.ts", "utf8");
-for (const requiredText of ["tools/list", "tools/call", "run_profile_workflow", "structuredContent"]) {
+const mcpServer = readFileSync("mcp/agentflow-mcp-server.ts", "utf8");
+for (const requiredText of [
+  "tools/list",
+  "tools/call",
+  "agentflow_run_profile_workflow",
+  "agentflow_list_profiles",
+  "agentflow_inspect_profile",
+  "agentflow_show_last_run",
+  "structuredContent",
+]) {
   if (!mcpServer.includes(requiredText)) {
     console.error(`AgentFlow MCP server is missing expected text: ${requiredText}`);
     process.exit(1);
@@ -145,4 +158,4 @@ for (const requiredText of ["export async function AgentFlowPolicy", "export def
 }
 
 console.log(`OpenCode adapter files OK: ${requiredFiles.length}`);
-console.warn("Warning: run_profile_workflow is provided by the AgentFlow MCP server; restart OpenCode and confirm the agentflow MCP tool is available.");
+console.warn("Warning: agentflow_run_profile_workflow is provided by the AgentFlow MCP server; restart OpenCode and confirm the agentflow MCP tools are available.");

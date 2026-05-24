@@ -3,7 +3,7 @@
   "mcp": {
     "agentflow": {
       "type": "local",
-      "command": ["node", "--experimental-strip-types", "mcp/agentflow-server.ts"],
+      "command": ["node", "--experimental-strip-types", "mcp/agentflow-mcp-server.ts"],
       "enabled": true
     }
   },

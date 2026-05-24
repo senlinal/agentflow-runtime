@@ -6,12 +6,14 @@ describe("opencode workflow command", () => {
   it("is quiet, tool-first, and has a non-shell-only fallback", async () => {
     const command = await readFile(".opencode/commands/workflow.md", "utf8");
 
-    assert.ok(command.trimEnd().split("\n").length <= 6);
-    assert.match(command, /opencode-workflow-command\.ts \$ARGUMENTS/);
+    assert.ok(command.trimEnd().split("\n").length <= 40);
+    assert.match(command, /agentflow_run_profile_workflow/);
+    assert.match(command, /run_profile_workflow/);
+    assert.match(command, /formattedText/);
+    assert.match(command, /No trace, no agent/);
     assert.doesNotMatch(command, /```json/);
     assert.doesNotMatch(command, /todowrite/);
     assert.doesNotMatch(command, /list_files/);
-    assert.doesNotMatch(command, /Supervisor/);
     assert.doesNotMatch(command, /Research Plan/);
   });
 
@@ -26,13 +28,14 @@ describe("opencode workflow command", () => {
 
   it("keeps run_profile_workflow as an MCP-backed compatibility wrapper", async () => {
     const toolFile = await readFile(".opencode/tools/run_profile_workflow.ts", "utf8");
-    const mcpServer = await readFile("mcp/agentflow-server.ts", "utf8");
+    const mcpServer = await readFile("mcp/agentflow-mcp-server.ts", "utf8");
 
     assert.match(toolFile, /runProfileWorkflow/);
     assert.match(toolFile, /Compatibility wrapper/);
     assert.doesNotMatch(toolFile, /@opencode-ai\/plugin/);
     assert.doesNotMatch(toolFile, /export default tool\(\{/);
     assert.doesNotMatch(toolFile, /tool\.schema/);
+    assert.match(mcpServer, /agentflow_run_profile_workflow/);
     assert.match(mcpServer, /run_profile_workflow/);
     assert.match(mcpServer, /structuredContent/);
   });
@@ -41,7 +44,7 @@ describe("opencode workflow command", () => {
     const config = await readFile("opencode.json", "utf8");
 
     assert.match(config, /"agentflow"/);
-    assert.match(config, /"mcp\/agentflow-server\.ts"/);
+    assert.match(config, /"mcp\/agentflow-mcp-server\.ts"/);
     assert.match(config, /"bash": "ask"/);
     assert.match(config, /"edit": "ask"/);
     assert.match(config, /"~\/development\/garbage_item_upload\/\*\*": "allow"/);

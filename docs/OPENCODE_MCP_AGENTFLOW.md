@@ -1,77 +1,66 @@
-# AgentFlow MCP Workflow Entry
+# AgentFlow MCP for OpenCode
 
-Use this local MCP server as the primary OpenCode runtime entry for AgentFlow.
+AgentFlow's stable OpenCode entrypoint is the local MCP server:
 
-## Problem
-
-OpenCode slash commands are prompt templates. They can still show command text or trigger the model's own supervisor behavior if no real runtime tool is available.
-
-The stable runtime entry is:
-
-```text
-mcp/agentflow-server.ts
+```bash
+npm run mcp:agentflow
 ```
 
-It exposes one tool:
-
-```text
-run_profile_workflow
-```
-
-The older `.opencode/tools/run_profile_workflow.ts` file is a compatibility wrapper only. It intentionally does not call `tool(...)`, because duplicate custom tool registration caused OpenCode runtime schema errors before AgentFlow could run.
-
-If a live OpenCode session still reports:
-
-```text
-undefined is not an object (evaluating 'p.split')
-```
-
-restart OpenCode so it reloads `opencode.json` and uses the `agentflow` MCP tool instead of a stale custom tool instance.
-
-## Configuration
-
-`opencode.json` contains:
+`opencode.json` starts the same server for OpenCode:
 
 ```json
 {
   "mcp": {
     "agentflow": {
       "type": "local",
-      "command": ["node", "--experimental-strip-types", "mcp/agentflow-server.ts"],
+      "command": ["node", "--experimental-strip-types", "mcp/agentflow-mcp-server.ts"],
       "enabled": true
     }
   }
 }
 ```
 
-## Immediate Fallback
+Restart OpenCode after changing this file. The available tools should include:
 
-If the MCP tool is not available in the OpenCode session, run AgentFlow from the project terminal:
+- `agentflow_run_profile_workflow`
+- `agentflow_list_profiles`
+- `agentflow_inspect_profile`
+- `agentflow_show_last_run`
+
+`run_profile_workflow` remains as a compatibility alias, but `/workflow` should prefer `agentflow_run_profile_workflow`.
+
+## Smoke Test
+
+```bash
+npm run mcp:agentflow:smoke
+```
+
+The smoke test runs `agent-workforce-basic` through `ProfileWorkflowRunner` and verifies `runtimeProof.runtimeStarted=true`, `roleTimeline.length > 1`, and `roleSource=runtime_trace`.
+
+It does not call a real LLM and does not call `CodeExecutor`.
+
+## Tools
+
+`agentflow_run_profile_workflow` accepts `task`, optional `profile`, optional resume fields, and safety booleans `allowExecution=false` and `allowLLM=false`.
+
+It returns `formattedText`, `runtimeProof`, `roleTimeline`, `profileId`, `routingDecision`, `executedWorkflows`, `summaryPath`, `tracePath`, `contextPath`, `warnings`, and `nextActions`.
+
+Profiles with LLM-backed workflow nodes are blocked unless `allowLLM=true`.
+
+`agentflow_list_profiles` returns all workflow profiles.
+
+`agentflow_inspect_profile` returns a profile, validation result, and workflow chain.
+
+`agentflow_show_last_run` returns the latest `.workflow-runs` summary, trace, and context paths.
+
+## /workflow Behavior
+
+The slash command should call `agentflow_run_profile_workflow`, display only `formattedText`, and apply the rule: No trace, no agent.
+
+If MCP is not loaded, use the explicit CLI fallback:
 
 ```bash
 npm run workflow:run-profile -- --task "<task>"
 ```
 
-The MCP tool returns:
-
-- `formattedText`
-- `roleTimeline`
-- `routingDecision`
-- `autonomyDecision`
-- `executedWorkflows`
-- `summaryPath`
-- `tracePath`
-- `contextPath`
-- `warnings`
-- `nextActions`
-- `sessionId`
-- `pendingQuestions`
-
-The `/workflow` command should display only `formattedText`.
-
-## Safety Boundaries
-
-- Do not run real LLM smoke tests.
-- Do not process `ai-daily/`.
-- Do not expose command protocol text to the user.
-- Do not generate a generic supervisor plan when AgentFlow cannot be started.
+Do not let OpenCode generate a generic Supervisor plan and present it as an AgentFlow run.
