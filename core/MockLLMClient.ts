@@ -8,6 +8,7 @@ import type {
   ResearchReport,
   RevisedPlan,
   SmokeTestResult,
+  TaskBrief,
   TaskNegotiationResult,
   VerificationReport,
 } from "./types.ts";
@@ -43,7 +44,7 @@ export class MockLLMClient implements LLMClient {
         output = this.generateFeasibilityReport(request);
         break;
       case "Debater":
-        output = this.generateCritique();
+        output = this.generateCritique(request);
         break;
       case "PlannerRevision":
         output = this.generateRevisedPlan(request);
@@ -156,7 +157,38 @@ export class MockLLMClient implements LLMClient {
 
   private generatePlan(request: LLMStructuredRequest): Plan {
     const context = requiredContext(request);
-    const goal = context.taskBrief?.goal ?? context.userGoal;
+    const brief = context.taskBrief;
+    const goal = brief?.userRequest ?? brief?.goal ?? context.userGoal;
+    if (isDeliverableCenteredBrief(brief)) {
+      return {
+        planId: `plan_${context.taskId}_initial`,
+        summary: `Plan to produce the requested deliverable for: ${goal}`,
+        taskUnderstanding: `The user needs ${brief.expectedDeliverable.description}`,
+        proposedApproach: "Answer the user request directly, cover the stated requirements, and avoid workflow-only meta narration.",
+        deliverablePlan: `Produce a ${brief.expectedDeliverable.type} with concrete content for: ${goal}`,
+        steps: [
+          {
+            id: "understand_request",
+            action: `Identify the real user question: ${goal}`,
+            expectedOutput: "A task understanding grounded in the original user request.",
+          },
+          {
+            id: "cover_requirements",
+            action: `Cover required answer elements: ${(brief.answerRequirements ?? ["direct answer"]).join(", ")}.`,
+            expectedOutput: "All answer requirements are represented in the final deliverable.",
+          },
+          {
+            id: "produce_deliverable",
+            action: "Write the actual deliverable content, not a description of having done it.",
+            expectedOutput: `${brief.expectedDeliverable.type} content that the user can use immediately.`,
+          },
+        ],
+        risks: ["The response could become a process summary instead of answering the user's real request."],
+        successCriteria: context.successCriteria,
+        successCriteriaMapping: Object.fromEntries(context.successCriteria.map((criterion) => [criterion, "Covered by producing and checking the final deliverable content."])),
+        assumptions: ["The task can be answered without external API calls in the mock workflow."],
+      };
+    }
     return {
       planId: `plan_${context.taskId}_initial`,
       summary: `Initial structured plan for: ${goal}`,
@@ -183,7 +215,23 @@ export class MockLLMClient implements LLMClient {
     };
   }
 
-  private generateCritique(): Critique {
+  private generateCritique(request: LLMStructuredRequest): Critique {
+    const context = requiredContext(request);
+    const brief = context.taskBrief;
+    if (isDeliverableCenteredBrief(brief)) {
+      return {
+        issues: [
+          "The final answer must contain the requested content itself, not just say the workflow completed.",
+          "The plan should explicitly check the original user request and expected deliverable.",
+        ],
+        risks: ["A generic role output could look multi-agent but fail to answer the user."],
+        missingRequirements: (brief.answerRequirements ?? []).filter((requirement) =>
+          !JSON.stringify(context.plan ?? {}).includes(requirement)
+        ),
+        suggestions: ["Make Executor produce deliverable.content and make Verifier reject meta-only content."],
+        severity: "medium",
+      };
+    }
     return {
       issues: ["The initial plan must explicitly prove schema validation and trace persistence."],
       risks: ["A runtime without output validation can corrupt context state."],
@@ -195,7 +243,31 @@ export class MockLLMClient implements LLMClient {
 
   private generateRevisedPlan(request: LLMStructuredRequest): RevisedPlan {
     const context = requiredContext(request);
-    const goal = context.taskBrief?.goal ?? context.userGoal;
+    const brief = context.taskBrief;
+    const goal = brief?.userRequest ?? brief?.goal ?? context.userGoal;
+    if (isDeliverableCenteredBrief(brief)) {
+      return {
+        planId: `plan_${context.taskId}_revised_${context.iteration}`,
+        summary: `Revised plan focused on the user deliverable for: ${goal}`,
+        taskUnderstanding: context.plan?.taskUnderstanding ?? `The user needs ${brief.expectedDeliverable.description}`,
+        proposedApproach: "Produce concrete deliverable content first, then verify it against the original request and success criteria.",
+        deliverablePlan: `Executor must return deliverable.type=${brief.expectedDeliverable.type} with substantive content.`,
+        steps: [
+          ...(context.plan?.steps ?? []),
+          {
+            id: "verify_deliverable_fidelity",
+            action: "Check that deliverable.content directly satisfies the user request and is not meta-only.",
+            expectedOutput: "Verifier can mark answersUserRequest=true and isNotMetaOnly=true.",
+          },
+        ],
+        risks: ["If the executor omits the answer body, the workflow must fail verification."],
+        successCriteria: context.successCriteria,
+        successCriteriaMapping: Object.fromEntries(context.successCriteria.map((criterion) => [criterion, "Mapped to deliverable content or verifier checks."])),
+        assumptions: ["No real model provider is called in this mock path."],
+        basedOnCritique: context.critique?.suggestions ?? [],
+        revisionNotes: ["Re-centered the plan on the expected deliverable and original user request."],
+      };
+    }
     return {
       planId: `plan_${context.taskId}_revised_${context.iteration}`,
       summary: `Revised structured plan for: ${goal}`,
@@ -219,6 +291,31 @@ export class MockLLMClient implements LLMClient {
 
   private generateExecutionResult(request: LLMStructuredRequest): ExecutionResult {
     const context = requiredContext(request);
+    const brief = context.taskBrief;
+    if (isDeliverableCenteredBrief(brief)) {
+      const deliverableContent = buildDeliverableContent(brief);
+      return {
+        status: "success",
+        deliverable: {
+          type: brief.expectedDeliverable.type,
+          content: deliverableContent,
+        },
+        evidenceOfCompletion: [
+          "deliverable.content is present and non-empty.",
+          `Original userRequest preserved: ${brief.userRequest}`,
+          `Expected deliverable type: ${brief.expectedDeliverable.type}`,
+        ],
+        limitations: ["Mock output is deterministic and does not use external references."],
+        completedSteps: context.revisedPlan?.steps.map((step) => step.id) ?? ["produce_deliverable"],
+        artifacts: [`${brief.expectedDeliverable.type} deliverable`],
+        summary: `Produced a concrete ${brief.expectedDeliverable.type} for: ${brief.userRequest}`,
+        errors: [],
+        rawOutput: JSON.stringify({
+          deliverableType: brief.expectedDeliverable.type,
+          contentLength: deliverableContent.length,
+        }),
+      };
+    }
     return {
       completedSteps: context.revisedPlan?.steps.map((step) => step.id) ?? [],
       artifacts: ["typed schemas", "schema validator", "mock llm client", "configuration-driven runtime trace"],
@@ -237,6 +334,9 @@ export class MockLLMClient implements LLMClient {
     const context = requiredContext(request);
     if (context.codeExecutionResult || context.testExecutionResult) {
       return new ExecutionVerifier().verify(context).report;
+    }
+    if (isDeliverableCenteredBrief(context.taskBrief) || context.executionResult?.deliverable) {
+      return verifyDeliverable(context.taskBrief, context.executionResult, context.successCriteria);
     }
 
     this.verifierCalls += 1;
@@ -296,6 +396,112 @@ function isLargeReplacementGoal(goal: string): boolean {
     goal.includes("多人协作") ||
     goal.includes("部署平台")
   );
+}
+
+function isDeliverableCenteredBrief(brief: TaskBrief | null | undefined): brief is TaskBrief {
+  return Boolean(brief?.userRequest && brief.expectedDeliverable?.type === "answer" || brief?.taskType === "general_answer");
+}
+
+function buildDeliverableContent(brief: TaskBrief): string {
+  if (/咖啡|coffee/i.test(brief.userRequest)) {
+    return [
+      "做咖啡可以按手冲的基础方法来理解：",
+      "",
+      "材料和工具：咖啡豆或咖啡粉、热水、滤杯和滤纸、手冲壶、分享壶或杯子、电子秤。常用比例是 1 克咖啡粉配 15-16 克水，例如 15 克粉配 225-240 克水。",
+      "",
+      "步骤：先把水烧到约 90-96 摄氏度；研磨咖啡豆到中细研磨；用热水冲洗滤纸并预热杯具；倒入咖啡粉后轻轻铺平。先注入约咖啡粉两倍重量的水闷蒸 30 秒，再分 2-3 次缓慢绕圈注水，总萃取时间通常控制在 2 分 30 秒到 3 分 30 秒。咖啡流完后轻轻摇匀即可饮用。",
+      "",
+      "提示：水温太高容易苦，太低容易酸薄；粉太细会萃取过度，粉太粗会味道淡。刚开始可以固定比例和水温，只调整研磨粗细。没有手冲器具时，也可以用法压壶、摩卡壶或咖啡机，但核心仍是控制粉水比、研磨、水温和时间。",
+      "",
+      "简要总结：准备咖啡粉和热水，按合适粉水比萃取，控制水温、研磨和时间，就能稳定做出一杯咖啡。",
+    ].join("\n");
+  }
+  return [
+    `针对“${brief.userRequest}”，核心答案如下：`,
+    "",
+    "先明确问题中的关键概念或目标，再按背景、主要内容、实际意义和注意事项展开。回答应直接服务于用户的问题，而不是描述工作流过程。",
+    "",
+    `本次期望交付物是：${brief.expectedDeliverable.description}`,
+    "",
+    "简要总结：围绕用户原始问题给出可直接使用的解释，并补充必要的条件、步骤或限制。",
+  ].join("\n");
+}
+
+function verifyDeliverable(
+  brief: TaskBrief | null | undefined,
+  executionResult: ExecutionResult | null | undefined,
+  successCriteria: string[],
+): VerificationReport {
+  const content = executionResult?.deliverable?.content ?? "";
+  const deliverableExists = Boolean(executionResult?.deliverable && content.trim().length > 0);
+  const isNotMetaOnly = deliverableExists && !isMetaOnly(content);
+  const userRequest = brief?.userRequest ?? brief?.goal ?? "";
+  const answersUserRequest = deliverableExists && isNotMetaOnly && roughlyAnswers(userRequest, content);
+  const missingRequirements = missingAnswerRequirements(brief, content);
+  const meetsSuccessCriteria = answersUserRequest && missingRequirements.length === 0 && successCriteria.every((criterion) =>
+    !/meta|workflow|empty/i.test(criterion) || isNotMetaOnly
+  );
+  const pass = deliverableExists && answersUserRequest && meetsSuccessCriteria && isNotMetaOnly;
+  const failedCriteria = [
+    ...(deliverableExists ? [] : ["deliverable.content must exist."]),
+    ...(answersUserRequest ? [] : ["Deliverable must directly answer the user's original request."]),
+    ...(isNotMetaOnly ? [] : ["Deliverable must not be workflow-only or meta-only."]),
+    ...(meetsSuccessCriteria ? [] : ["Deliverable must meet task-specific success criteria."]),
+    ...missingRequirements.map((item) => `Missing answer requirement: ${item}`),
+  ];
+  return {
+    pass,
+    deliverableExists,
+    answersUserRequest,
+    meetsSuccessCriteria,
+    isNotMetaOnly,
+    missingRequirements,
+    score: pass ? 0.97 : 0.35,
+    failedCriteria,
+    reason: pass
+      ? "Deliverable content exists, answers the original user request, and is not meta-only."
+      : "Deliverable fidelity check failed.",
+    nextAction: pass ? "end" : "replan",
+    feedbackToPlanner: pass
+      ? "No further replanning required."
+      : "Revise the plan so Executor returns substantive deliverable.content for the user request.",
+  };
+}
+
+function isMetaOnly(content: string): boolean {
+  const normalized = content.trim().toLowerCase();
+  if (normalized.length < 24) return true;
+  return [
+    /我(已经|已)执行了/,
+    /成功执行计划/,
+    /提供了.*解释/,
+    /workflow completed/,
+    /executed .*plan/,
+    /structured output/,
+    /已生成结构化/,
+  ].some((pattern) => pattern.test(normalized));
+}
+
+function roughlyAnswers(userRequest: string, content: string): boolean {
+  if (!userRequest) return content.trim().length > 0;
+  if (/咖啡|coffee/i.test(userRequest)) return /咖啡|coffee|咖啡豆|粉水比|水温|萃取/.test(content);
+  const significant = userRequest
+    .replace(/解释|说明|怎么做|什么是|帮我理解|讲一下|如何|一下|the|a|an|what|is|how|to|explain/gi, " ")
+    .split(/\s+|，|。|、/)
+    .map((item) => item.trim())
+    .filter((item) => item.length >= 2);
+  return significant.length === 0 || significant.some((token) => content.includes(token));
+}
+
+function missingAnswerRequirements(brief: TaskBrief | null | undefined, content: string): string[] {
+  const requirements = brief?.answerRequirements ?? [];
+  return requirements.filter((requirement) => {
+    if (requirement === "materials/tools") return !/材料|工具|咖啡豆|咖啡粉|滤杯|滤纸|壶|杯/.test(content);
+    if (requirement === "step-by-step process") return !/步骤|先|再|然后|注入|闷蒸|萃取/.test(content);
+    if (requirement === "tips or cautions") return !/提示|注意|容易|控制|太高|太低/.test(content);
+    if (requirement === "concise summary") return !/总结|简要/.test(content);
+    return false;
+  });
 }
 
 function requiredContext(request: LLMStructuredRequest) {

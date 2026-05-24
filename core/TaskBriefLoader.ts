@@ -18,6 +18,20 @@ export class TaskBriefLoader {
     if (!record.taskId) {
       record.taskId = generateTaskId(source, record.goal);
     }
+    if (!record.userRequest) {
+      record.userRequest = typeof record.rawUserInput === "string"
+        ? record.rawUserInput
+        : typeof record.goal === "string"
+          ? record.goal
+          : "";
+    }
+    if (!record.taskType) record.taskType = "unknown";
+    if (!record.expectedDeliverable) {
+      record.expectedDeliverable = {
+        type: "workflow_demo",
+        description: typeof record.goal === "string" ? record.goal : "Structured workflow output.",
+      };
+    }
     return SchemaValidator.validate("TaskBrief", record) as TaskBrief;
   }
 }

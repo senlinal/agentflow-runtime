@@ -36,6 +36,14 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
       return {
         taskId: "string",
         goal: "string",
+        userRequest: "string",
+        taskType: "general_answer | rag_optimization | project_analysis | coding_fix | frontend_site_build | external_project_fix | unknown",
+        expectedDeliverable: {
+          type: "answer | analysis_report | code_change_plan | patch | experiment_plan | workflow_demo",
+          description: "string",
+        },
+        answerRequirements: ["string optional"],
+        contentQualityCriteria: ["string optional"],
         currentState: "string",
         constraints: ["string"],
         resources: ["string"],
@@ -167,9 +175,13 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
       return {
         planId: "string",
         summary: "string",
+        taskUnderstanding: "string optional",
+        proposedApproach: "string optional",
+        deliverablePlan: "string optional",
         steps: [{ id: "string", action: "string", expectedOutput: "string" }],
         risks: ["string"],
         successCriteria: ["string"],
+        successCriteriaMapping: "object optional",
         assumptions: ["string"],
       };
     case "Critique":
@@ -190,6 +202,13 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
     case "CodeExecutionResult":
     case "TestExecutionResult":
       return {
+        status: "success | failed | passed optional",
+        deliverable: {
+          type: "answer | analysis_report | code_change_plan | patch | experiment_plan | workflow_demo",
+          content: "string",
+        },
+        evidenceOfCompletion: ["string optional"],
+        limitations: ["string optional"],
         completedSteps: ["string"],
         artifacts: ["string"],
         summary: "string",
@@ -199,6 +218,11 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
     case "VerificationReport":
       return {
         pass: "boolean",
+        deliverableExists: "boolean optional",
+        answersUserRequest: "boolean optional",
+        meetsSuccessCriteria: "boolean optional",
+        isNotMetaOnly: "boolean optional",
+        missingRequirements: ["string optional"],
         score: "number",
         failedCriteria: ["string"],
         reason: "string",

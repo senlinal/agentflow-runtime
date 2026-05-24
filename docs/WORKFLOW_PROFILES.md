@@ -30,10 +30,15 @@ Uses the external project import and patch export flow. It copies external proje
 
 Uses `task-negotiation` first for single-page sites, landing pages, personal homepages, static HTML/CSS/JS, and lightweight React or Next.js page work. It defaults to local generation guidance, no deploys, no real LLM calls, no file deletion, and no automatic code execution. If a future step needs to modify an existing external project, it should use the external project import flow or an explicitly scoped workspace.
 
+### task-solving
+
+Uses `agent-workforce-task-solving` for explanations, definitions, how-to answers, and conceptual help. It preserves `TaskBrief.userRequest`, sets a concrete `expectedDeliverable`, and requires Executor to produce `deliverable.content`. Verifier checks that the deliverable answers the user request and is not only workflow metadata.
+
 ## Auto Profile Router
 
 `/workflow` and `workflow:run-profile` run a rule-based profile router before executing the safe profile chain. The router detects common task categories:
 
+- Explanation, definition, how-to, or "help me understand" requests -> `task-solving`.
 - RAG, retrieval, knowledge base, recall, reranker, embedding, chunk, or query rewrite -> `rag-optimization`.
 - Bug fixes, failing tests, scoped code changes, or refactors -> `coding-safe-fix`.
 - External project paths, real project patch export, or manual patch review -> `external-project-fix`.
@@ -48,7 +53,9 @@ npm run workflow:profiles
 npm run workflow:profile
 npm run workflow:profile:use -- --profile rag-optimization
 npm run workflow:profile:inspect -- --profile rag-optimization
+npm run workflow:profile:inspect -- --profile task-solving
 npm run workflow:route-profile -- --task "做一个仿 Claude.ai 风格的个人网站"
+npm run demo:task-solving-coffee
 npm run workflow:run-profile -- --task "继续 RAG 召回优化，分析上一轮实验结果，给出下一步方案"
 ```
 
@@ -65,6 +72,8 @@ npm run workflow:profile:inspect -- --profile agent-workforce-llm
 ```
 
 The basic profile uses `executorType: mock` and explicitly labels those rows as mock simulation. The LLM profile points to `abcde-basic-llm` and is opt-in; inspect it freely, but do not run it unless real LLM configuration is intentionally enabled. See `docs/RUNTIME_VERIFIED_AGENTS.md`.
+
+Task-solving timelines add `deliverable`, `contentPreview`, `answersUserRequest`, `isNotMetaOnly`, and `pass` fields so the user can see whether the multi-role run produced the requested answer instead of only describing role activity. See `docs/TASK_FIDELITY.md`.
 
 ## Profile Sessions
 

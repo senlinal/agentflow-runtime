@@ -60,7 +60,7 @@ npm run workflow:profile:inspect -- --profile frontend-site-build
 npm run workflow:profile:use -- --profile rag-optimization
 ```
 
-The default `rag-optimization` profile starts with task negotiation, then uses confirmed scope as a gate before feasibility. `coding-safe-fix` is for scoped code fixes, `external-project-fix` is for temp-workspace external project runs and patch export, and `frontend-site-build` is for personal sites, landing pages, static HTML/CSS/JS, and lightweight React/Next.js page work.
+The default `rag-optimization` profile starts with task negotiation, then uses confirmed scope as a gate before feasibility. `task-solving` is for explanations, definitions, how-to answers, and conceptual help. `coding-safe-fix` is for scoped code fixes, `external-project-fix` is for temp-workspace external project runs and patch export, and `frontend-site-build` is for personal sites, landing pages, static HTML/CSS/JS, and lightweight React/Next.js page work.
 
 Check how a task will route before running it:
 
@@ -77,6 +77,15 @@ npm run workflow:run-profile -- --task "继续 RAG 召回优化，分析上一�
 ```
 
 This runs safe profile-aware preflight steps. It does not call `CodeExecutor`, run test commands, or call real LLM providers by default.
+
+Run the deliverable-centered task-solving demo:
+
+```bash
+npm run demo:task-solving-coffee
+npm run workflow:run-profile -- --profile task-solving --task "解释一下咖啡的做法"
+```
+
+This preserves `TaskBrief.userRequest`, sets `expectedDeliverable.type=answer`, makes Executor return `deliverable.content`, and makes Verifier reject meta-only output.
 
 The default text output includes `AgentFlow Profile Run`, `Routing Decision`, `AgentFlow Role Timeline`, summary paths, trace paths, context paths, warnings, and next actions. In opencode, `/workflow` should call `run_profile_workflow` first and show that formatted runtime result instead of displaying internal command instructions.
 

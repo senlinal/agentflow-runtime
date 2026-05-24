@@ -1,4 +1,5 @@
 export type DetectedProfileTaskType =
+  | "general_answer"
   | "rag_optimization"
   | "coding_fix"
   | "external_project_fix"
@@ -32,6 +33,26 @@ type RoutingRule = {
 };
 
 const rules: RoutingRule[] = [
+  {
+    taskType: "general_answer",
+    profile: "task-solving",
+    confidence: "high",
+    reason: "The task asks for an explanation, how-to answer, definition, or conceptual understanding.",
+    patterns: [
+      /解释/,
+      /说明/,
+      /怎么做/,
+      /什么是/,
+      /帮我理解/,
+      /讲一下/,
+      /如何/,
+      /explain/i,
+      /what\s+is/i,
+      /how\s+to/i,
+      /help\s+me\s+understand/i,
+    ],
+    safeToAutoSwitch: true,
+  },
   {
     taskType: "frontend_site_build",
     profile: "frontend-site-build",

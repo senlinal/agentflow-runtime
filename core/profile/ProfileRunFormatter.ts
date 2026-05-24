@@ -7,6 +7,9 @@ export class ProfileRunFormatter {
       "",
       `Profile: ${result.profileId} (${result.profileName})`,
       `Task: ${result.taskBrief.rawUserInput ?? result.taskBrief.goal}`,
+      `userRequest: ${result.taskBrief.userRequest ?? result.taskBrief.rawUserInput ?? result.taskBrief.goal}`,
+      `expectedDeliverable.type: ${result.taskBrief.expectedDeliverable?.type ?? "n/a"}`,
+      `expectedDeliverable.description: ${result.taskBrief.expectedDeliverable?.description ?? "n/a"}`,
       `Final status: ${result.finalStatus}`,
       `Dry run: ${result.dryRun}`,
       `Allow execution: ${result.allowExecution}`,
@@ -115,14 +118,16 @@ function formatDispatchProof(result: ProfileWorkflowRunResult): string[] {
   const llmCount = events.filter((event) => event.isLLMBacked === true).length;
   const mockCount = events.filter((event) => event.isMock === true).length;
   const runtimeNodeCount = events.length;
+  const subAgents = [...new Set(events.map((event) => openCodeSubAgentName(event)).filter(Boolean))];
   return [
-    "- dispatchModel: WorkflowRuntime node execution",
+    "- dispatchModel: WorkflowRuntime trace -> OpenCode Task subagents",
     "- roleSource: runtime_trace",
     `- runtimeNodeCount: ${runtimeNodeCount}`,
     `- llmBackedNodeCount: ${llmCount}`,
     `- mockNodeCount: ${mockCount}`,
-    "- openCodeSubAgentDispatch: false",
-    "- note: This proves AgentFlow Runtime role-node execution. Mock nodes are not real LLM sub-agents.",
+    "- openCodeSubAgentDispatch: required_by_workflow_command",
+    `- dispatchTargets: ${subAgents.length > 0 ? subAgents.map((agent) => `@${agent}`).join(", ") : "none"}`,
+    "- note: Runtime trace proves which roles must be dispatched. Mock nodes remain simulations unless the workflow uses llm or subagent-backed execution.",
   ];
 }
 
@@ -137,6 +142,7 @@ function formatTimeline(result: ProfileWorkflowRunResult): string[] {
       `${index + 1}. ${event.role}`,
       `   workflow: ${event.workflow ?? "n/a"}`,
       `   nodeId: ${event.nodeId}`,
+      `   subagent: ${openCodeSubAgentName(event) ? `@${openCodeSubAgentName(event)}` : "n/a"}`,
       `   nodeType: ${event.nodeType ?? event.type ?? "unknown"}`,
       `   executorType: ${event.executorType ?? event.type ?? "unknown"}`,
       `   type: ${event.type ?? event.executorType ?? "unknown"}`,
@@ -150,6 +156,11 @@ function formatTimeline(result: ProfileWorkflowRunResult): string[] {
       `   next: ${event.nextNode ?? "n/a"}`,
       `   output: ${event.summary ?? "n/a"}`,
     ];
+    if (event.deliverableType) parts.push(`   deliverable: ${event.deliverableType}`);
+    if (event.deliverablePreview) parts.push(`   contentPreview: "${event.deliverablePreview}"`);
+    if (typeof event.answersUserRequest === "boolean") parts.push(`   answersUserRequest: ${event.answersUserRequest}`);
+    if (typeof event.isNotMetaOnly === "boolean") parts.push(`   isNotMetaOnly: ${event.isNotMetaOnly}`);
+    if (typeof event.pass === "boolean") parts.push(`   pass: ${event.pass}`);
     if (event.summaryPath) parts.push(`   summary: ${event.summaryPath}`);
     if (event.tracePath) parts.push(`   trace: ${event.tracePath}`);
     if (event.contextPath) parts.push(`   context: ${event.contextPath}`);
@@ -161,6 +172,12 @@ function roleExecutionNote(event: ProfileRoleTimelineEvent): string {
   if (event.isLLMBacked) return "llm-backed role execution";
   if (event.isMock) return "mock simulation, not LLM-backed";
   return `runtime executor type: ${event.executorType ?? event.type ?? "unknown"}`;
+}
+
+function openCodeSubAgentName(event: ProfileRoleTimelineEvent): string | undefined {
+  if (event.openCodeSubAgentName) return event.openCodeSubAgentName;
+  if (!event.role) return undefined;
+  return `agentflow-${event.role.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()}`;
 }
 
 function formatArtifacts(result: ProfileWorkflowRunResult): string[] {

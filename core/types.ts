@@ -100,6 +100,21 @@ export type TaskSpec = {
 export type TaskBrief = {
   taskId: string;
   goal: string;
+  userRequest: string;
+  taskType:
+    | "general_answer"
+    | "rag_optimization"
+    | "project_analysis"
+    | "coding_fix"
+    | "frontend_site_build"
+    | "external_project_fix"
+    | "unknown";
+  expectedDeliverable: {
+    type: "answer" | "analysis_report" | "code_change_plan" | "patch" | "experiment_plan" | "workflow_demo";
+    description: string;
+  };
+  answerRequirements?: string[];
+  contentQualityCriteria?: string[];
   currentState: string;
   constraints: string[];
   resources: string[];
@@ -392,9 +407,13 @@ export type PlanStep = {
 export type Plan = {
   planId: string;
   summary: string;
+  taskUnderstanding?: string;
+  proposedApproach?: string;
+  deliverablePlan?: string;
   steps: PlanStep[];
   risks: string[];
   successCriteria: string[];
+  successCriteriaMapping?: Record<string, string>;
   assumptions: string[];
 };
 
@@ -413,6 +432,12 @@ export type RevisedPlan = Plan & {
 
 export type ExecutionResult = {
   status?: "success" | "failed" | "passed";
+  deliverable?: {
+    type: TaskBrief["expectedDeliverable"]["type"];
+    content: string;
+  };
+  evidenceOfCompletion?: string[];
+  limitations?: string[];
   completedSteps: string[];
   artifacts: string[];
   summary: string;
@@ -426,6 +451,11 @@ export type TestExecutionResult = ExecutionResult;
 
 export type VerificationReport = {
   pass: boolean;
+  deliverableExists?: boolean;
+  answersUserRequest?: boolean;
+  meetsSuccessCriteria?: boolean;
+  isNotMetaOnly?: boolean;
+  missingRequirements?: string[];
   score: number;
   failedCriteria: string[];
   reason: string;
@@ -669,6 +699,11 @@ export type WorkflowTrace = {
   outputKey: keyof WorkflowContext;
   outputSchema?: OutputSchemaName;
   outputSummary: string;
+  deliverableType?: TaskBrief["expectedDeliverable"]["type"];
+  deliverablePreview?: string;
+  answersUserRequest?: boolean;
+  isNotMetaOnly?: boolean;
+  pass?: boolean;
   conditionResults: ConditionEvaluationResult[];
   nextNode: string;
   timestamp: string;

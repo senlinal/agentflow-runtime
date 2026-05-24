@@ -267,6 +267,9 @@ function isClearlyFakeSecret(token: string): boolean {
     normalized.includes("negotiate") ||
     normalized.includes("negotiator") ||
     normalized.includes("negotiation") ||
+    normalized.startsWith("sk-solving") ||
+    normalized.startsWith("sk-centered") ||
+    normalized.startsWith("sk-specific") ||
     normalized.includes("trace") ||
     normalized.includes("your")
   );

@@ -142,7 +142,7 @@ describe("OpenAICompatibleLLMClient", () => {
     });
 
     assert.deepEqual(body.response_format, { type: "json_object" });
-    assert.deepEqual(body.thinking, { enabled: true });
+    assert.deepEqual(body.thinking, { type: "enabled" });
     assert.equal(body.reasoning_effort, "high");
   });
 

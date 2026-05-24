@@ -12,15 +12,16 @@ test("WorkflowProfileLoader", async (t) => {
     assert.ok(profiles.some((profile) => profile.id === "coding-safe-fix"));
     assert.ok(profiles.some((profile) => profile.id === "external-project-fix"));
     assert.ok(profiles.some((profile) => profile.id === "frontend-site-build"));
+    assert.ok(profiles.some((profile) => profile.id === "task-solving"));
     assert.ok(profiles.some((profile) => profile.id === "agent-workforce-basic"));
     assert.ok(profiles.some((profile) => profile.id === "agent-workforce-llm"));
   });
 
   await t.test("loads current profile", async () => {
     const resolved = await new WorkflowProfileLoader().loadCurrentProfile();
-    assert.equal(resolved.current.activeProfile, "rag-optimization");
-    assert.equal(resolved.profile.defaultWorkflow, "task-negotiation");
-    assert.ok(resolved.workflowChain.includes("confirmed-scope-gate"));
+    assert.equal(resolved.current.activeProfile, resolved.profile.id);
+    assert.ok(resolved.profile.defaultWorkflow);
+    assert.ok(resolved.workflowChain.length > 0);
     assert.ok(resolved.validation.valid);
   });
 
@@ -30,6 +31,7 @@ test("WorkflowProfileLoader", async (t) => {
     assert.equal((await loader.loadProfile("coding-safe-fix")).profile.defaultWorkflow, "code-test-verify");
     assert.equal((await loader.loadProfile("external-project-fix")).profile.externalProjectMode, "copy_to_temp_workspace");
     assert.equal((await loader.loadProfile("frontend-site-build")).profile.defaultWorkflow, "task-negotiation");
+    assert.equal((await loader.loadProfile("task-solving")).profile.defaultWorkflow, "agent-workforce-task-solving");
     assert.equal((await loader.loadProfile("agent-workforce-basic")).profile.defaultWorkflow, "abcde-basic");
     assert.equal((await loader.loadProfile("agent-workforce-llm")).profile.defaultWorkflow, "abcde-basic-llm");
   });

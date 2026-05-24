@@ -5,6 +5,17 @@ import { ProfileRouter } from "../core/profile/ProfileRouter.ts";
 test("ProfileRouter", async (t) => {
   const router = new ProfileRouter();
 
+  await t.test("routes explanation tasks to task-solving", () => {
+    const decision = router.route({
+      currentProfile: "agent-workforce-basic",
+      task: "解释一下咖啡的做法",
+    });
+    assert.equal(decision.detectedTaskType, "general_answer");
+    assert.equal(decision.recommendedProfile, "task-solving");
+    assert.equal(decision.shouldSwitch, true);
+    assert.equal(decision.safeToAutoSwitch, true);
+  });
+
   await t.test("routes RAG tasks to rag-optimization", () => {
     const decision = router.route({
       currentProfile: "frontend-site-build",

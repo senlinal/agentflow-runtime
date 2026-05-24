@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createInitialContext } from "../core/context.ts";
 import { MockLLMClient } from "../core/MockLLMClient.ts";
+import type { TaskBrief } from "../core/types.ts";
 
 describe("MockLLMClient", () => {
   it("Planner returns a Plan", async () => {
@@ -139,12 +140,76 @@ describe("MockLLMClient", () => {
     assert.equal(response.output.provider, "mock");
     assert.equal(response.output.model, "mock-structured");
   });
+
+  it("Executor produces answer deliverable content for coffee task", async () => {
+    const client = new MockLLMClient();
+    const brief = coffeeBrief();
+    const response = await client.generateStructured<any>({
+      role: "Executor",
+      systemPrompt: "execute",
+      input: {},
+      outputSchemaName: "ExecutionResult",
+      context: {
+        ...createInitialContext({
+          taskId: brief.taskId,
+          userGoal: brief.goal,
+          successCriteria: brief.successCriteria,
+        }),
+        taskBrief: brief,
+      },
+    });
+
+    assert.equal(response.output.deliverable.type, "answer");
+    assert.match(response.output.deliverable.content, /咖啡豆|咖啡粉/);
+    assert.match(response.output.deliverable.content, /步骤|闷蒸|萃取/);
+    assert.notEqual(response.output.deliverable.content.trim(), "");
+  });
+
+  it("Verifier fails meta-only answer deliverables", async () => {
+    const client = new MockLLMClient();
+    const brief = coffeeBrief();
+    const response = await client.generateStructured<any>({
+      role: "Verifier",
+      systemPrompt: "verify",
+      input: {},
+      outputSchemaName: "VerificationReport",
+      context: {
+        ...createInitialContext({
+          taskId: brief.taskId,
+          userGoal: brief.goal,
+          successCriteria: brief.successCriteria,
+        }),
+        taskBrief: brief,
+        executionResult: {
+          status: "success",
+          deliverable: {
+            type: "answer",
+            content: "我已经成功执行计划，提供了关于咖啡做法的解释。",
+          },
+          evidenceOfCompletion: [],
+          limitations: [],
+          completedSteps: ["produce_deliverable"],
+          artifacts: [],
+          summary: "done",
+          errors: [],
+          rawOutput: "{}",
+        },
+      },
+    });
+
+    assert.equal(response.output.pass, false);
+    assert.equal(response.output.isNotMetaOnly, false);
+    assert.equal(response.output.answersUserRequest, false);
+  });
 });
 
 function feasibleBrief() {
   return {
     taskId: "task_feasible",
     goal: "基于当前已完成的配置驱动 Runtime，增加可复用 workflow template 和 feasibility gate。",
+    userRequest: "基于当前已完成的配置驱动 Runtime，增加可复用 workflow template 和 feasibility gate。",
+    taskType: "unknown",
+    expectedDeliverable: { type: "workflow_demo", description: "Structured runtime work." },
     currentState: "Runtime exists.",
     constraints: [],
     resources: [],
@@ -158,11 +223,45 @@ function infeasibleBrief() {
   return {
     taskId: "task_infeasible",
     goal: "三天内完成一个完整 Dify 替代品，包括复杂 UI、多人协作、插件市场、权限系统、真实 LLM 接入和部署平台。",
+    userRequest: "三天内完成一个完整 Dify 替代品，包括复杂 UI、多人协作、插件市场、权限系统、真实 LLM 接入和部署平台。",
+    taskType: "unknown",
+    expectedDeliverable: { type: "workflow_demo", description: "Structured runtime work." },
     currentState: "Only CLI runtime exists.",
     constraints: [],
     resources: [],
     budget: "low",
     successCriteria: [],
+    nonGoals: [],
+  };
+}
+
+function coffeeBrief(): TaskBrief {
+  return {
+    taskId: "task_coffee",
+    goal: "解释一下咖啡的做法",
+    userRequest: "解释一下咖啡的做法",
+    taskType: "general_answer",
+    expectedDeliverable: {
+      type: "answer",
+      description: "A clear explanation of how to make coffee.",
+    },
+    answerRequirements: [
+      "materials/tools",
+      "step-by-step process",
+      "tips or cautions",
+      "concise summary",
+    ],
+    contentQualityCriteria: ["specific", "non-meta"],
+    currentState: "test",
+    constraints: [],
+    resources: [],
+    budget: "local mock",
+    successCriteria: [
+      "Directly answer the user's request.",
+      "Include concrete useful content.",
+      "Do not only describe the workflow process.",
+      "Avoid empty meta statements.",
+    ],
     nonGoals: [],
   };
 }

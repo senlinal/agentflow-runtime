@@ -1,0 +1,28 @@
+{
+  "id": "task-solving",
+  "name": "Task Solving",
+  "description": "General task-solving profile focused on userRequest fidelity and deliverable-centered worker output.",
+  "defaultWorkflow": "agent-workforce-task-solving",
+  "policyFiles": [
+    "docs/AGENT_POLICY.md",
+    "docs/TASK_FIDELITY.md"
+  ],
+  "defaultConstraints": [
+    "preserve_user_request",
+    "produce_expected_deliverable",
+    "do_not_call_code_executor",
+    "do_not_call_real_llm_by_default"
+  ],
+  "defaultBlockedActions": [
+    "external LLM calls without explicit allowLLM",
+    "code execution",
+    "production data changes"
+  ],
+  "defaultOutput": [
+    "role_timeline",
+    "deliverable",
+    "verification",
+    "trace",
+    "context"
+  ]
+}

@@ -114,8 +114,10 @@ function createTrace(input: {
     inputKeys: input.node.inputKeys,
     outputKey: input.node.outputKey,
     outputSchema: input.node.outputSchema,
-    outputSummary: summarize(input.context[input.node.outputKey]),
-    conditionResults: input.conditionResults,
+        outputSummary: summarize(input.context[input.node.outputKey]),
+        ...summarizeDeliverable(input.context[input.node.outputKey]),
+        ...summarizeVerification(input.context[input.node.outputKey]),
+        conditionResults: input.conditionResults,
     nextNode: input.nextNode,
     timestamp: input.timestamp,
     ...(input.error ? { error: input.error } : {}),
@@ -130,6 +132,28 @@ function summarize(value: unknown): string {
   if (typeof record.reason === "string") return record.reason;
   if (Array.isArray(record.correctionInstructions)) return record.correctionInstructions.join(" ");
   return JSON.stringify(record).slice(0, 160);
+}
+
+function summarizeDeliverable(value: unknown): { deliverableType?: string; deliverablePreview?: string } {
+  if (!value || typeof value !== "object") return {};
+  const deliverable = (value as Record<string, unknown>).deliverable;
+  if (!deliverable || typeof deliverable !== "object") return {};
+  const record = deliverable as Record<string, unknown>;
+  if (typeof record.type !== "string" || typeof record.content !== "string") return {};
+  return {
+    deliverableType: record.type,
+    deliverablePreview: record.content.replace(/\s+/g, " ").slice(0, 120),
+  };
+}
+
+function summarizeVerification(value: unknown): { answersUserRequest?: boolean; isNotMetaOnly?: boolean; pass?: boolean } {
+  if (!value || typeof value !== "object") return {};
+  const record = value as Record<string, unknown>;
+  return {
+    ...(typeof record.answersUserRequest === "boolean" ? { answersUserRequest: record.answersUserRequest } : {}),
+    ...(typeof record.isNotMetaOnly === "boolean" ? { isNotMetaOnly: record.isNotMetaOnly } : {}),
+    ...(typeof record.pass === "boolean" ? { pass: record.pass } : {}),
+  };
 }
 
 function printStep(trace: WorkflowTrace): void {

@@ -8,6 +8,7 @@ import { EscalationGate } from "./EscalationGate.ts";
 import { MemoryAutonomyGate } from "./MemoryAutonomyGate.ts";
 import { formatProfileRun } from "./ProfileRunFormatter.ts";
 import { ProfileRouter, type ProfileRoutingDecision } from "./ProfileRouter.ts";
+import { ProfileTaskInputBuilder } from "./ProfileTaskInputBuilder.ts";
 import { RuntimeTraceRoleExtractor, type RuntimeProof } from "./RuntimeTraceRoleExtractor.ts";
 import { WorkflowProfileLoader, type WorkflowProfile } from "./WorkflowProfileLoader.ts";
 import { ProfileSessionStore } from "./ProfileSessionStore.ts";
@@ -30,6 +31,7 @@ export type ProfileRoleTimelineEvent = {
   workflow?: string;
   nodeId: string;
   role: string;
+  openCodeSubAgentName?: string;
   nodeType?: string;
   executorType?: string;
   type?: string;
@@ -46,6 +48,11 @@ export type ProfileRoleTimelineEvent = {
   contextPath?: string;
   isMock?: boolean;
   isLLMBacked?: boolean;
+  deliverableType?: string;
+  deliverablePreview?: string;
+  answersUserRequest?: boolean;
+  isNotMetaOnly?: boolean;
+  pass?: boolean;
 };
 
 export type ProfileWorkflowStep = {
@@ -101,6 +108,7 @@ export class ProfileWorkflowRunner {
   private readonly autonomyGate: MemoryAutonomyGate;
   private readonly escalationGate: EscalationGate;
   private readonly profileRouter: ProfileRouter;
+  private readonly taskInputBuilder: ProfileTaskInputBuilder;
   private readonly runtimeTraceRoleExtractor: RuntimeTraceRoleExtractor;
 
   constructor(
@@ -113,6 +121,7 @@ export class ProfileWorkflowRunner {
     autonomyGate = new MemoryAutonomyGate(),
     escalationGate = new EscalationGate(),
     profileRouter = new ProfileRouter(),
+    taskInputBuilder = new ProfileTaskInputBuilder(),
     runtimeTraceRoleExtractor = new RuntimeTraceRoleExtractor(),
   ) {
     this.profileLoader = profileLoader;
@@ -124,6 +133,7 @@ export class ProfileWorkflowRunner {
     this.autonomyGate = autonomyGate;
     this.escalationGate = escalationGate;
     this.profileRouter = profileRouter;
+    this.taskInputBuilder = taskInputBuilder;
     this.runtimeTraceRoleExtractor = runtimeTraceRoleExtractor;
   }
 
@@ -343,6 +353,7 @@ export class ProfileWorkflowRunner {
       workflow,
       nodeId: event.nodeId,
       role: event.role,
+      openCodeSubAgentName: toOpenCodeSubAgentName(event.role),
       nodeType: event.nodeType,
       executorType: event.executorType,
       type: event.type,
@@ -359,6 +370,11 @@ export class ProfileWorkflowRunner {
       contextPath: result.contextPath,
       isMock: event.isMock,
       isLLMBacked: event.isLLMBacked,
+      deliverableType: event.deliverableType,
+      deliverablePreview: event.deliverablePreview,
+      answersUserRequest: event.answersUserRequest,
+      isNotMetaOnly: event.isNotMetaOnly,
+      pass: event.pass,
     }));
   }
 
@@ -530,20 +546,15 @@ export class ProfileWorkflowRunner {
   private async resolveTaskBrief(request: ProfileWorkflowRunRequest, profile: WorkflowProfile): Promise<TaskBrief> {
     if (request.inputPath) return TaskBriefLoader.loadJson(request.inputPath);
     if (request.task) {
-      return TaskBriefLoader.fromObject({
-        goal: request.task,
-        currentState: "Provided through profile-aware workflow runner.",
-        constraints: profile.defaultConstraints ?? [],
-        resources: [],
-        budget: "not specified",
-        successCriteria: ["Produce structured profile-aware workflow output."],
-        nonGoals: profile.defaultBlockedActions ?? [],
-        rawUserInput: request.task,
-      }, `profile-${profile.id}`);
+      return this.taskInputBuilder.build({ profile, task: request.task });
     }
     if (profile.defaultInput) return TaskBriefLoader.loadJson(profile.defaultInput);
     throw new Error("Profile workflow run requires --task, --input, or profile.defaultInput.");
   }
+}
+
+function toOpenCodeSubAgentName(role: string): string {
+  return `agentflow-${role.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()}`;
 }
 
 function isExecutionWorkflow(config: WorkflowGraphConfig): boolean {
@@ -638,7 +649,7 @@ function withCompactedMemoryResources(taskBrief: TaskBrief, summary: CompactMemo
 
 function nextActions(profile: WorkflowProfile, steps: ProfileWorkflowStep[], memorySummary?: ProjectMemorySummary): string[] {
   const blocked = steps.find((step) => step.status === "blocked");
-  if (blocked?.workflow === profile.scopeWorkflow) {
+  if (blocked && profile.scopeWorkflow && blocked.workflow === profile.scopeWorkflow) {
     return [
       "Answer clarification questions from task-negotiation.",
       "Create or select a ScopeConfirmationRecord.",

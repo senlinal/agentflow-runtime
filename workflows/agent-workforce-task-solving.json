@@ -1,0 +1,40 @@
+{
+  "name": "agent-workforce-task-solving",
+  "version": "1.0.0",
+  "description": "Deliverable-centered Planner/Debater/PlannerRevision/Executor/Verifier workflow for general task solving.",
+  "start": "planner",
+  "maxIterations": 4,
+  "inputSchema": "TaskBrief",
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": ["answer user questions", "run local demos", "run local tests"],
+      "requireConfirmation": ["real LLM calls", "editing project files for non-code-answer tasks"],
+      "forbiddenWithoutExplicitApproval": ["CodeExecutor", "deploy", "production data changes"]
+    },
+    "costPolicy": {
+      "maxCostLevel": "low",
+      "stopWhen": ["real LLM required but not explicitly allowed"],
+      "preferredDecisionsWhenOverBudget": ["ask_human", "stop"]
+    },
+    "qualityPolicy": {
+      "principles": ["preserve userRequest", "produce actual deliverable content", "reject meta-only output"],
+      "requiredChecks": ["Verifier.answersUserRequest", "Verifier.isNotMetaOnly"],
+      "forbiddenShortcuts": ["workflow-only summaries", "empty deliverable.content", "CodeExecutor"]
+    }
+  },
+  "nodes": [
+    { "rolePreset": "planner" },
+    { "rolePreset": "debater" },
+    { "rolePreset": "planner-revision" },
+    { "rolePreset": "executor" },
+    { "rolePreset": "verifier" }
+  ],
+  "edges": [
+    { "from": "planner", "to": "debater", "condition": { "type": "always" } },
+    { "from": "debater", "to": "plannerRevision", "condition": { "type": "always" } },
+    { "from": "plannerRevision", "to": "executor", "condition": { "type": "always" } },
+    { "from": "executor", "to": "verifier", "condition": { "type": "always" } },
+    { "from": "verifier", "to": "end", "condition": { "type": "equals", "path": "verification.pass", "value": true } },
+    { "from": "verifier", "to": "plannerRevision", "condition": { "type": "equals", "path": "verification.pass", "value": false } }
+  ]
+}

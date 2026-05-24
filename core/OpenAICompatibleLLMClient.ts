@@ -17,7 +17,7 @@ export type OpenAICompatibleLLMClientOptions = {
 
 export type OpenAICompatibleProviderOptions = {
   responseFormat?: { type: "json_object" };
-  thinking?: { enabled: boolean };
+  thinking?: { type: "enabled" | "disabled" } | { enabled: boolean };
   reasoningEffort?: string;
 };
 
@@ -170,9 +170,14 @@ function extractAssistantText(body: Record<string, unknown>): string {
 
 function optionalBody(options: OpenAICompatibleProviderOptions): Record<string, unknown> {
   const body: Record<string, unknown> = {};
-  if (options.thinking) body.thinking = options.thinking;
+  if (options.thinking) body.thinking = normalizeThinking(options.thinking);
   if (options.reasoningEffort) body.reasoning_effort = options.reasoningEffort;
   return body;
+}
+
+function normalizeThinking(thinking: NonNullable<OpenAICompatibleProviderOptions["thinking"]>): { type: "enabled" | "disabled" } {
+  if ("type" in thinking) return thinking;
+  return { type: thinking.enabled ? "enabled" : "disabled" };
 }
 
 function extractUsage(value: unknown): LLMUsage | undefined {

@@ -216,6 +216,13 @@ function validateTaskBrief(output: unknown): TaskBrief {
   const record = requireObject(output, "TaskBrief");
   requireString(record, "taskId", "TaskBrief");
   requireString(record, "goal", "TaskBrief");
+  requireString(record, "userRequest", "TaskBrief");
+  requireEnum(record, "taskType", ["general_answer", "rag_optimization", "project_analysis", "coding_fix", "frontend_site_build", "external_project_fix", "unknown"], "TaskBrief");
+  const expectedDeliverable = requireObject(record.expectedDeliverable, "TaskBrief.expectedDeliverable");
+  requireEnum(expectedDeliverable, "type", ["answer", "analysis_report", "code_change_plan", "patch", "experiment_plan", "workflow_demo"], "TaskBrief.expectedDeliverable");
+  requireString(expectedDeliverable, "description", "TaskBrief.expectedDeliverable");
+  requireOptionalStringArray(record, "answerRequirements", "TaskBrief");
+  requireOptionalStringArray(record, "contentQualityCriteria", "TaskBrief");
   requireString(record, "currentState", "TaskBrief");
   requireArray(record, "constraints", "TaskBrief");
   requireArray(record, "resources", "TaskBrief");
@@ -267,9 +274,13 @@ function validatePlan(output: unknown, schemaName: string): Plan {
   const record = requireObject(output, schemaName);
   requireString(record, "planId", schemaName);
   requireString(record, "summary", schemaName);
+  if ("taskUnderstanding" in record && typeof record.taskUnderstanding !== "string") throw new Error(`${schemaName}.taskUnderstanding must be a string when provided.`);
+  if ("proposedApproach" in record && typeof record.proposedApproach !== "string") throw new Error(`${schemaName}.proposedApproach must be a string when provided.`);
+  if ("deliverablePlan" in record && typeof record.deliverablePlan !== "string") throw new Error(`${schemaName}.deliverablePlan must be a string when provided.`);
   requireArray(record, "steps", schemaName);
   requireArray(record, "risks", schemaName);
   requireArray(record, "successCriteria", schemaName);
+  if ("successCriteriaMapping" in record) requireObject(record.successCriteriaMapping, `${schemaName}.successCriteriaMapping`);
   requireArray(record, "assumptions", schemaName);
 
   record.steps.forEach((step, index) => {
@@ -300,6 +311,14 @@ function validateRevisedPlan(output: unknown): RevisedPlan {
 
 function validateExecutionResult(output: unknown): ExecutionResult {
   const record = requireObject(output, "ExecutionResult");
+  if ("status" in record) requireEnum(record, "status", ["success", "failed", "passed"], "ExecutionResult");
+  if ("deliverable" in record) {
+    const deliverable = requireObject(record.deliverable, "ExecutionResult.deliverable");
+    requireEnum(deliverable, "type", ["answer", "analysis_report", "code_change_plan", "patch", "experiment_plan", "workflow_demo"], "ExecutionResult.deliverable");
+    requireString(deliverable, "content", "ExecutionResult.deliverable");
+  }
+  requireOptionalStringArray(record, "evidenceOfCompletion", "ExecutionResult");
+  requireOptionalStringArray(record, "limitations", "ExecutionResult");
   requireArray(record, "completedSteps", "ExecutionResult");
   requireArray(record, "artifacts", "ExecutionResult");
   requireString(record, "summary", "ExecutionResult");
@@ -311,6 +330,11 @@ function validateExecutionResult(output: unknown): ExecutionResult {
 function validateVerificationReport(output: unknown): VerificationReport {
   const record = requireObject(output, "VerificationReport");
   requireBoolean(record, "pass", "VerificationReport");
+  if ("deliverableExists" in record) requireBoolean(record, "deliverableExists", "VerificationReport");
+  if ("answersUserRequest" in record) requireBoolean(record, "answersUserRequest", "VerificationReport");
+  if ("meetsSuccessCriteria" in record) requireBoolean(record, "meetsSuccessCriteria", "VerificationReport");
+  if ("isNotMetaOnly" in record) requireBoolean(record, "isNotMetaOnly", "VerificationReport");
+  requireOptionalStringArray(record, "missingRequirements", "VerificationReport");
   requireNumber(record, "score", "VerificationReport");
   requireArray(record, "failedCriteria", "VerificationReport");
   requireString(record, "reason", "VerificationReport");

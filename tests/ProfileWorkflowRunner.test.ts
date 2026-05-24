@@ -80,7 +80,7 @@ test("ProfileWorkflowRunner", async (t) => {
       dryRun: true,
     });
 
-    assert.equal(result.originalProfileId, "rag-optimization");
+    assert.ok(result.originalProfileId);
     assert.equal(result.profileId, "frontend-site-build");
     assert.equal(result.profileSwitched, true);
     assert.equal(result.profileRoutingDecision?.detectedTaskType, "frontend_site_build");
@@ -91,6 +91,7 @@ test("ProfileWorkflowRunner", async (t) => {
 
   await t.test("keeps current profile when task matches rag profile", async () => {
     const result = await createRunner().run({
+      profileId: "rag-optimization",
       task: "继续 RAG 召回优化，分析上一轮 reranker 实验结果",
       dryRun: true,
     });

@@ -82,6 +82,7 @@ Important examples:
 - `task-negotiation`: TaskNegotiator -> end; clarifies goal, target module, constraints, and human confirmation needs before feasibility or planning.
 - `abcde-basic`: Planner -> Debater -> PlannerRevision -> Executor -> Verifier -> GoalKeeper loop.
 - `abcde-basic-llm`: opt-in LLM node version. It is not used by default.
+- `agent-workforce-task-solving`: Planner -> Debater -> PlannerRevision -> Executor -> Verifier for deliverable-centered general answers.
 - `code-test-verify`: controlled CodeExecutor -> TestRunner -> deterministic Verifier.
 
 Run a template:
@@ -117,6 +118,7 @@ Built-in profiles:
 - `coding-safe-fix`: defaults to the controlled code/test/verify and approval chain for small scoped fixes.
 - `external-project-fix`: copies external projects into temporary workspaces and exports patches for manual review.
 - `frontend-site-build`: handles single-page websites, landing pages, personal sites, HTML/CSS/JS, and lightweight React or Next.js page work. It starts with negotiation and does not deploy, delete files, call real LLMs, or execute code changes by default.
+- `task-solving`: handles explanations, definitions, how-to answers, and conceptual help. It preserves `userRequest`, sets `expectedDeliverable`, and verifies the actual deliverable rather than workflow metadata.
 - `agent-workforce-basic`: runs `abcde-basic` to visibly demonstrate Planner, Debater, PlannerRevision, Executor, Verifier, and GoalKeeper as runtime-traced roles.
 - `agent-workforce-llm`: opt-in profile for the same visible workforce using `abcde-basic-llm` LLM nodes. Do not run it without explicit real LLM configuration.
 
@@ -127,6 +129,7 @@ Run the active profile directly from CLI:
 ```bash
 npm run workflow:route-profile -- --task "做一个仿 Claude.ai 风格的个人网站"
 npm run workflow:run-profile -- --task "继续 RAG 召回优化，分析上一轮实验结果，给出下一步方案"
+npm run demo:task-solving-coffee
 npm run workflow:run-profile -- --profile rag-optimization --task "..."
 ```
 
@@ -142,6 +145,8 @@ npm run mcp:agentflow:smoke
 ```
 
 See `docs/RUNTIME_VERIFIED_AGENTS.md`.
+
+For task-solving runs, the Role Timeline also shows Executor deliverable summaries and Verifier fidelity flags such as `answersUserRequest` and `isNotMetaOnly`. See `docs/TASK_FIDELITY.md`.
 
 OpenCode should call AgentFlow through the MCP tool `agentflow_run_profile_workflow`, which returns the same runtime proof and role timeline.
 

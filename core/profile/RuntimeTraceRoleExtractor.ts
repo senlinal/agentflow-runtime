@@ -18,6 +18,11 @@ export type RuntimeVerifiedRoleEvent = {
   source: "runtime_trace";
   isMock: boolean;
   isLLMBacked: boolean;
+  deliverableType?: string;
+  deliverablePreview?: string;
+  answersUserRequest?: boolean;
+  isNotMetaOnly?: boolean;
+  pass?: boolean;
 };
 
 export type RuntimeProof = {
@@ -67,6 +72,11 @@ export class RuntimeTraceRoleExtractor {
           source: "runtime_trace" as const,
           isMock: executorType === "mock",
           isLLMBacked: executorType === "llm",
+          deliverableType: item.deliverableType,
+          deliverablePreview: item.deliverablePreview,
+          answersUserRequest: item.answersUserRequest,
+          isNotMetaOnly: item.isNotMetaOnly,
+          pass: item.pass,
         };
       });
   }

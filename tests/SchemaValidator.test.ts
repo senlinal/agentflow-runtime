@@ -47,6 +47,11 @@ describe("SchemaValidator", () => {
   it("passes for a valid VerificationReport", () => {
     const output = {
       pass: true,
+      deliverableExists: true,
+      answersUserRequest: true,
+      meetsSuccessCriteria: true,
+      isNotMetaOnly: true,
+      missingRequirements: [],
       score: 0.95,
       failedCriteria: [],
       reason: "ok",
@@ -63,6 +68,24 @@ describe("SchemaValidator", () => {
   it("passes for a valid TaskBrief", () => {
     const output = validTaskBrief();
     assert.deepEqual(SchemaValidator.validate("TaskBrief", output), output);
+  });
+
+  it("passes for valid deliverable-centered ExecutionResult", () => {
+    const output = {
+      status: "success",
+      deliverable: {
+        type: "answer",
+        content: "手冲咖啡需要咖啡豆、热水、滤杯和滤纸，按粉水比萃取。",
+      },
+      evidenceOfCompletion: ["deliverable.content is present"],
+      limitations: ["mock output"],
+      completedSteps: ["produce_deliverable"],
+      artifacts: ["answer deliverable"],
+      summary: "Produced coffee answer.",
+      errors: [],
+      rawOutput: "{}",
+    };
+    assert.deepEqual(SchemaValidator.validate("ExecutionResult", output), output);
   });
 
   it("passes for a valid TaskNegotiationResult", () => {
@@ -567,6 +590,14 @@ function validTaskBrief() {
   return {
     taskId: "task_1",
     goal: "goal",
+    userRequest: "goal",
+    taskType: "general_answer",
+    expectedDeliverable: {
+      type: "answer",
+      description: "A direct answer.",
+    },
+    answerRequirements: [],
+    contentQualityCriteria: [],
     currentState: "state",
     constraints: [],
     resources: [],
