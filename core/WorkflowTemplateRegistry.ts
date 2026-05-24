@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
-import { basename, join, normalize } from "node:path";
+import { basename, isAbsolute, join, normalize, relative } from "node:path";
+import { agentFlowPath, agentFlowRoot } from "./AgentFlowPaths.ts";
 import { WorkflowGraph } from "./WorkflowGraph.ts";
 import { WorkflowTemplateValidator } from "./WorkflowTemplateValidator.ts";
 import type { WorkflowGraphConfig } from "./types.ts";
@@ -16,7 +17,7 @@ export type WorkflowTemplateEntry = {
 export class WorkflowTemplateRegistry {
   private readonly workflowsDir: string;
 
-  constructor(workflowsDir = "workflows") {
+  constructor(workflowsDir = agentFlowPath("workflows")) {
     this.workflowsDir = workflowsDir;
   }
 
@@ -29,8 +30,8 @@ export class WorkflowTemplateRegistry {
         name: config.workflow.name,
         version: config.workflow.version ?? "unknown",
         description: config.workflow.description ?? "",
-        path,
-        sourcePath: path,
+        path: displayPath(path),
+        sourcePath: displayPath(path),
         duplicate: (counts.get(config.workflow.name) ?? 0) > 1,
       }))
       .sort((left, right) => left.name.localeCompare(right.name) || left.sourcePath.localeCompare(right.sourcePath));
@@ -39,7 +40,7 @@ export class WorkflowTemplateRegistry {
   async load(template: string): Promise<{ graph: WorkflowGraph; config: WorkflowGraphConfig; path: string; sourcePath: string }> {
     const sourcePath = await this.resolveTemplatePath(template);
     const config = await this.loadConfigFromPath(sourcePath);
-    return { graph: new WorkflowGraph(config), config, path: sourcePath, sourcePath };
+    return { graph: new WorkflowGraph(config), config, path: displayPath(sourcePath), sourcePath: displayPath(sourcePath) };
   }
 
   async resolveTemplatePath(template: string): Promise<string> {
@@ -48,6 +49,12 @@ export class WorkflowTemplateRegistry {
 
     const pathMatch = files.find((path) => normalize(path) === normalizedTemplate);
     if (pathMatch) return pathMatch;
+
+    if (!isAbsolute(template) && normalize(template).includes("/")) {
+      const rootedTemplate = normalize(agentFlowPath(template));
+      const rootedPathMatch = files.find((path) => normalize(path) === rootedTemplate);
+      if (rootedPathMatch) return rootedPathMatch;
+    }
 
     const fileMatch = files.find((path) => {
       const fileName = basename(path);
@@ -98,4 +105,11 @@ function countNames(names: string[]): Map<string, number> {
   const counts = new Map<string, number>();
   for (const name of names) counts.set(name, (counts.get(name) ?? 0) + 1);
   return counts;
+}
+
+function displayPath(path: string): string {
+  const root = agentFlowRoot();
+  const relativePath = relative(root, path);
+  if (!relativePath.startsWith("..") && !isAbsolute(relativePath)) return relativePath;
+  return path;
 }

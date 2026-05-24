@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { agentFlowPath } from "./AgentFlowPaths.ts";
 import type { AgentRole, OutputSchemaName } from "./types.ts";
 import { getOutputSchemaInstruction } from "./OutputSchemaRegistry.ts";
 
@@ -20,7 +21,7 @@ export type RenderedPrompt = {
 export class PromptRenderer {
   private readonly promptsDir: string;
 
-  constructor(promptsDir = "prompts/roles") {
+  constructor(promptsDir = agentFlowPath("prompts/roles")) {
     this.promptsDir = promptsDir;
   }
 

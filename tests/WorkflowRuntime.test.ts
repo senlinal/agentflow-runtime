@@ -30,6 +30,8 @@ describe("WorkflowRuntime", () => {
       "executor",
       "verifier",
     ]);
+    assert.equal(result.trace.every((item) => item.subAgentDispatched === false), true);
+    assert.equal(result.subAgentDispatches, undefined);
   });
 
   it("goes to end when verifier pass=true", async () => {

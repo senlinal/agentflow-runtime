@@ -1,5 +1,6 @@
 import { appendFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { agentFlowPath } from "../AgentFlowPaths.ts";
 import type { CodeChangePlanExecutionRecord, RollbackGuide } from "../types.ts";
 import { truncateAndRedact } from "../SecretRedactor.ts";
 
@@ -35,7 +36,7 @@ export type ExecutionRecordStoreSaveResult = {
 export class ExecutionRecordStore {
   private readonly baseDir: string;
 
-  constructor(baseDir = ".agentflow/executions") {
+  constructor(baseDir = agentFlowPath(".agentflow/executions")) {
     this.baseDir = baseDir;
   }
 

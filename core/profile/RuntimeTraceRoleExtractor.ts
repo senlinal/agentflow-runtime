@@ -15,9 +15,17 @@ export type RuntimeVerifiedRoleEvent = {
   nextNode?: string;
   step?: number;
   timestamp?: string;
-  source: "runtime_trace";
+  source: "runtime_trace" | "subagent_dispatch_trace";
   isMock: boolean;
   isLLMBacked: boolean;
+  subAgentDispatched?: boolean;
+  subAgentId?: string;
+  workerSessionId?: string;
+  modelProvider?: string;
+  modelName?: string;
+  inputArtifactPath?: string;
+  outputArtifactPath?: string;
+  subAgentMetadataPath?: string;
   deliverableType?: string;
   deliverablePreview?: string;
   answersUserRequest?: boolean;
@@ -30,7 +38,7 @@ export type RuntimeProof = {
   tracePath?: string;
   contextPath?: string;
   verifiedRoleCount: number;
-  roleSource: "runtime_trace" | "unavailable";
+  roleSource: "runtime_trace" | "subagent_dispatch_trace" | "unavailable";
 };
 
 export class RuntimeTraceRoleExtractor {
@@ -69,9 +77,17 @@ export class RuntimeTraceRoleExtractor {
           nextNode: item.nextNode,
           step: item.step,
           timestamp: item.timestamp,
-          source: "runtime_trace" as const,
+          source: item.subAgentDispatched ? "subagent_dispatch_trace" as const : "runtime_trace" as const,
           isMock: executorType === "mock",
           isLLMBacked: executorType === "llm",
+          subAgentDispatched: item.subAgentDispatched,
+          subAgentId: item.subAgentId,
+          workerSessionId: item.workerSessionId,
+          modelProvider: item.modelProvider,
+          modelName: item.modelName,
+          inputArtifactPath: item.inputArtifactPath,
+          outputArtifactPath: item.outputArtifactPath,
+          subAgentMetadataPath: item.subAgentMetadataPath,
           deliverableType: item.deliverableType,
           deliverablePreview: item.deliverablePreview,
           answersUserRequest: item.answersUserRequest,

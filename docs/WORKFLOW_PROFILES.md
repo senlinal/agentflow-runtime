@@ -73,7 +73,7 @@ npm run workflow:profile:inspect -- --profile agent-workforce-llm
 
 The basic profile uses `executorType: mock` and explicitly labels those rows as mock simulation. The LLM profile points to `abcde-basic-llm` and is opt-in; inspect it freely, but do not run it unless real LLM configuration is intentionally enabled. See `docs/RUNTIME_VERIFIED_AGENTS.md`.
 
-Task-solving timelines add `deliverable`, `contentPreview`, `answersUserRequest`, `isNotMetaOnly`, and `pass` fields so the user can see whether the multi-role run produced the requested answer instead of only describing role activity. See `docs/TASK_FIDELITY.md`.
+Task-solving timelines add `subAgentDispatched`, `subAgentId`, artifact paths, `deliverable`, `contentPreview`, `answersUserRequest`, `isNotMetaOnly`, and `pass` fields so the user can see whether the multi-role run produced the requested answer instead of only describing role activity. See `docs/TASK_FIDELITY.md`.
 
 ## Profile Sessions
 

@@ -19,9 +19,9 @@ describe("AgentFlow MCP tools", () => {
     assert.match(result.formattedText, /AgentFlow Profile Run/);
     assert.match(result.formattedText, /Runtime Proof/);
     assert.equal(result.runtimeProof.runtimeStarted, true);
-    assert.equal(result.runtimeProof.roleSource, "runtime_trace");
+    assert.equal(result.runtimeProof.roleSource, "subagent_dispatch_trace");
     assert.equal(result.runtimeProof.verifiedRoleCount > 1, true);
-    assert.equal(result.roleTimeline.every((event) => event.source === "runtime_trace"), true);
+    assert.equal(result.roleTimeline.every((event) => event.source === "subagent_dispatch_trace"), true);
     assert.ok(result.roleTimeline.some((event) => event.role === "Planner"));
     assert.ok(result.summaryPath?.endsWith("summary.md"));
     assert.ok(result.tracePath?.endsWith("trace.json"));

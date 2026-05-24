@@ -51,6 +51,7 @@ const requiredFiles = [
   "cli/project-memory-compact.ts",
   "cli/project-memory-autonomy.ts",
   "cli/opencode-workflow-command.ts",
+  "scripts/opencode-install-global.ts",
   "docs/PROJECT_MEMORY.md",
 ];
 
@@ -89,7 +90,10 @@ if (workflowCommand.includes("```json")) {
   process.exit(1);
 }
 
-for (const requiredText of ["!`node --experimental-strip-types cli/opencode-workflow-command.ts $ARGUMENTS`"]) {
+for (const requiredText of [
+  "AGENTFLOW_PROJECT_ROOT",
+  "cli/opencode-workflow-command.ts",
+]) {
   if (!workflowCommand.includes(requiredText)) {
     console.error(`workflow.md does not include quiet workflow entrypoint text: ${requiredText}`);
     process.exit(1);
@@ -121,6 +125,7 @@ const opencodeConfig = readFileSync("opencode.json", "utf8");
 for (const requiredText of [
   '"mcp"',
   '"agentflow"',
+  '"AGENTFLOW_PROJECT_ROOT=."',
   '"mcp/agentflow-mcp-server.ts"',
   '"bash": "ask"',
   '"edit": "ask"',

@@ -107,7 +107,7 @@ function formatRuntimeProof(result: ProfileWorkflowRunResult): string[] {
 }
 
 function formatDispatchProof(result: ProfileWorkflowRunResult): string[] {
-  const events = result.roleTimeline.filter((event) => event.source === "runtime_trace");
+  const events = result.roleTimeline.filter(isVerifiedRoleEvent);
   if (events.length === 0) {
     return [
       "- dispatchModel: unavailable",
@@ -120,19 +120,20 @@ function formatDispatchProof(result: ProfileWorkflowRunResult): string[] {
   const runtimeNodeCount = events.length;
   const subAgents = [...new Set(events.map((event) => openCodeSubAgentName(event)).filter(Boolean))];
   return [
-    "- dispatchModel: WorkflowRuntime trace -> OpenCode Task subagents",
-    "- roleSource: runtime_trace",
+    "- dispatchModel: WorkflowRuntime trace -> SubAgentDispatcher artifacts",
+    `- roleSource: ${events.some((event) => event.source === "subagent_dispatch_trace") ? "subagent_dispatch_trace" : "runtime_trace"}`,
     `- runtimeNodeCount: ${runtimeNodeCount}`,
+    `- subAgentDispatchCount: ${events.filter((event) => event.subAgentDispatched === true).length}`,
     `- llmBackedNodeCount: ${llmCount}`,
     `- mockNodeCount: ${mockCount}`,
-    "- openCodeSubAgentDispatch: required_by_workflow_command",
+    "- subAgentDispatchRecords: required_for_subagent_claims",
     `- dispatchTargets: ${subAgents.length > 0 ? subAgents.map((agent) => `@${agent}`).join(", ") : "none"}`,
-    "- note: Runtime trace proves which roles must be dispatched. Mock nodes remain simulations unless the workflow uses llm or subagent-backed execution.",
+    "- note: No subagent dispatch record, no subagent. Mock dispatches remain simulations unless the executor is llm-backed.",
   ];
 }
 
 function formatTimeline(result: ProfileWorkflowRunResult): string[] {
-  const events = result.roleTimeline.filter((event) => event.source === "runtime_trace");
+  const events = result.roleTimeline.filter(isVerifiedRoleEvent);
   if (events.length === 0) {
     if (result.executedWorkflows.length === 0) return ["- No AgentFlow workflow was executed."];
     return ["- AgentFlow Runtime trace not found. No verified agents can be displayed."];
@@ -142,7 +143,7 @@ function formatTimeline(result: ProfileWorkflowRunResult): string[] {
       `${index + 1}. ${event.role}`,
       `   workflow: ${event.workflow ?? "n/a"}`,
       `   nodeId: ${event.nodeId}`,
-      `   subagent: ${openCodeSubAgentName(event) ? `@${openCodeSubAgentName(event)}` : "n/a"}`,
+      `   subagent: ${event.subAgentDispatched === true && openCodeSubAgentName(event) ? `@${openCodeSubAgentName(event)}` : "n/a"}`,
       `   nodeType: ${event.nodeType ?? event.type ?? "unknown"}`,
       `   executorType: ${event.executorType ?? event.type ?? "unknown"}`,
       `   type: ${event.type ?? event.executorType ?? "unknown"}`,
@@ -150,12 +151,20 @@ function formatTimeline(result: ProfileWorkflowRunResult): string[] {
       `   outputKey: ${event.outputKey ?? "n/a"}`,
       `   outputSchema: ${event.outputSchema ?? "n/a"}`,
       `   source: ${event.source}`,
+      `   subAgentDispatched: ${event.subAgentDispatched === true}`,
+      `   subAgentId: ${event.subAgentId ?? "n/a"}`,
+      `   workerSessionId: ${event.workerSessionId ?? "n/a"}`,
       `   isMock: ${event.isMock === true}`,
       `   isLLMBacked: ${event.isLLMBacked === true}`,
+      ...(event.modelProvider ? [`   modelProvider: ${event.modelProvider}`] : []),
+      ...(event.modelName ? [`   modelName: ${event.modelName}`] : []),
       `   note: ${roleExecutionNote(event)}`,
       `   next: ${event.nextNode ?? "n/a"}`,
       `   output: ${event.summary ?? "n/a"}`,
     ];
+    if (event.inputArtifactPath) parts.push(`   inputArtifactPath: ${event.inputArtifactPath}`);
+    if (event.outputArtifactPath) parts.push(`   outputArtifactPath: ${event.outputArtifactPath}`);
+    if (event.subAgentMetadataPath) parts.push(`   metadataArtifactPath: ${event.subAgentMetadataPath}`);
     if (event.deliverableType) parts.push(`   deliverable: ${event.deliverableType}`);
     if (event.deliverablePreview) parts.push(`   contentPreview: "${event.deliverablePreview}"`);
     if (typeof event.answersUserRequest === "boolean") parts.push(`   answersUserRequest: ${event.answersUserRequest}`);
@@ -169,9 +178,14 @@ function formatTimeline(result: ProfileWorkflowRunResult): string[] {
 }
 
 function roleExecutionNote(event: ProfileRoleTimelineEvent): string {
-  if (event.isLLMBacked) return "llm-backed role execution";
-  if (event.isMock) return "mock simulation, not LLM-backed";
+  if (event.subAgentDispatched !== true) return "workflow node executed; no subagent dispatch record";
+  if (event.isLLMBacked) return "llm-backed subagent execution";
+  if (event.isMock) return "mock subagent simulation, not LLM-backed";
   return `runtime executor type: ${event.executorType ?? event.type ?? "unknown"}`;
+}
+
+function isVerifiedRoleEvent(event: ProfileRoleTimelineEvent): boolean {
+  return event.source === "runtime_trace" || event.source === "subagent_dispatch_trace";
 }
 
 function openCodeSubAgentName(event: ProfileRoleTimelineEvent): string | undefined {

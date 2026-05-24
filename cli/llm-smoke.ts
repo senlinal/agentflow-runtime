@@ -1,6 +1,9 @@
+import { loadDotenv } from "../core/EnvLoader.ts";
 import { parseArgs } from "./args.ts";
 import { LLMSmokeTester, type LLMSmokeTestReport } from "../core/LLMSmokeTester.ts";
 import { redactSecrets } from "../core/SecretRedactor.ts";
+
+loadDotenv();
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));

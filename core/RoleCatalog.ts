@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { agentFlowPath } from "./AgentFlowPaths.ts";
 import { isSupportedOutputSchema } from "./OutputSchemaRegistry.ts";
 import type { RoleDefinition } from "./types.ts";
 
@@ -9,7 +10,7 @@ export class RoleCatalog {
   private rolesCache: RoleDefinition[] | null = null;
   private readonly rolesDir: string;
 
-  constructor(rolesDir = "roles") {
+  constructor(rolesDir = agentFlowPath("roles")) {
     this.rolesDir = rolesDir;
   }
 

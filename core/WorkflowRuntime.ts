@@ -1,15 +1,19 @@
 import { NodeRegistry } from "./NodeRegistry.ts";
 import { SchemaValidator } from "./SchemaValidator.ts";
-import type { ConditionEvaluationResult, WorkflowContext, WorkflowTrace } from "./types.ts";
+import type { ConditionEvaluationResult, SubAgentDispatchMetadata, WorkflowContext, WorkflowTrace } from "./types.ts";
+import type { SubAgentArtifactRecord } from "./subagent/SubAgentArtifactStore.ts";
+import type { SubAgentDispatchHandle, SubAgentDispatcher } from "./subagent/SubAgentDispatcher.ts";
 import { WorkflowGraph } from "./WorkflowGraph.ts";
 
 export class WorkflowRuntime {
   private readonly graph: WorkflowGraph;
   private readonly registry: NodeRegistry;
+  private readonly subAgentDispatcher?: SubAgentDispatcher;
 
-  constructor(graph: WorkflowGraph, registry: NodeRegistry) {
+  constructor(graph: WorkflowGraph, registry: NodeRegistry, subAgentDispatcher?: SubAgentDispatcher) {
     this.graph = graph;
     this.registry = registry;
+    this.subAgentDispatcher = subAgentDispatcher;
   }
 
   async run(context: WorkflowContext): Promise<WorkflowContext> {
@@ -19,16 +23,23 @@ export class WorkflowRuntime {
     while (currentNodeId !== "end") {
       const node = this.graph.getNode(currentNodeId);
       const timestamp = new Date().toISOString();
+      let dispatchHandle: SubAgentDispatchHandle | undefined;
+      let dispatchRecord: SubAgentArtifactRecord | undefined;
 
       try {
         const executor = this.registry.getExecutor(node);
+        dispatchHandle = await this.subAgentDispatcher?.start(node, context, step);
         const output = SchemaValidator.validate(node.outputSchema, await executor.execute(node, context));
+        dispatchRecord = dispatchHandle
+          ? await this.subAgentDispatcher?.complete(dispatchHandle, output, context)
+          : undefined;
         context = {
           ...context,
           [node.outputKey]: output,
+          subAgentDispatches: appendDispatch(context.subAgentDispatches, dispatchRecord),
           history: [
             ...context.history,
-            { nodeId: node.id, role: node.role, outputKey: node.outputKey, output, timestamp },
+            { nodeId: node.id, role: node.role, outputKey: node.outputKey, output, timestamp, subAgentId: dispatchRecord?.subAgentId },
           ],
         };
 
@@ -59,6 +70,7 @@ export class WorkflowRuntime {
           nextNode: resolved.nextNode,
           conditionResults: resolved.conditionResults,
           timestamp,
+          dispatchRecord,
         });
         context = { ...context, trace: [...context.trace, trace] };
 
@@ -67,6 +79,9 @@ export class WorkflowRuntime {
         step += 1;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        if (dispatchHandle) {
+          dispatchRecord = await this.subAgentDispatcher?.fail(dispatchHandle, message, context);
+        }
         const trace = createTrace({
           step,
           node,
@@ -75,10 +90,12 @@ export class WorkflowRuntime {
           conditionResults: [{ edge: `${node.id}->end`, matched: true, reason: "error" }],
           timestamp,
           error: message,
+          dispatchRecord,
         });
         context = {
           ...context,
           stopReason: `Node ${node.id} failed: ${message}`,
+          subAgentDispatches: appendDispatch(context.subAgentDispatches, dispatchRecord),
           trace: [...context.trace, trace],
         };
         printStep(trace);
@@ -105,6 +122,7 @@ function createTrace(input: {
   conditionResults: ConditionEvaluationResult[];
   timestamp: string;
   error?: string;
+  dispatchRecord?: SubAgentArtifactRecord;
 }): WorkflowTrace {
   return {
     step: input.step,
@@ -114,14 +132,23 @@ function createTrace(input: {
     inputKeys: input.node.inputKeys,
     outputKey: input.node.outputKey,
     outputSchema: input.node.outputSchema,
-        outputSummary: summarize(input.context[input.node.outputKey]),
-        ...summarizeDeliverable(input.context[input.node.outputKey]),
-        ...summarizeVerification(input.context[input.node.outputKey]),
-        conditionResults: input.conditionResults,
+    outputSummary: summarize(input.context[input.node.outputKey]),
+    ...summarizeDispatch(input.dispatchRecord),
+    ...summarizeDeliverable(input.context[input.node.outputKey]),
+    ...summarizeVerification(input.context[input.node.outputKey]),
+    conditionResults: input.conditionResults,
     nextNode: input.nextNode,
     timestamp: input.timestamp,
     ...(input.error ? { error: input.error } : {}),
   };
+}
+
+function appendDispatch(
+  existing: SubAgentDispatchMetadata[] | undefined,
+  dispatchRecord: SubAgentArtifactRecord | undefined,
+): SubAgentDispatchMetadata[] | undefined {
+  if (!dispatchRecord) return existing;
+  return [...(existing ?? []), dispatchRecord];
 }
 
 function summarize(value: unknown): string {
@@ -132,6 +159,24 @@ function summarize(value: unknown): string {
   if (typeof record.reason === "string") return record.reason;
   if (Array.isArray(record.correctionInstructions)) return record.correctionInstructions.join(" ");
   return JSON.stringify(record).slice(0, 160);
+}
+
+function summarizeDispatch(record: SubAgentArtifactRecord | undefined): Partial<WorkflowTrace> {
+  if (!record) return { subAgentDispatched: false };
+  return {
+    subAgentDispatched: true,
+    subAgentId: record.subAgentId,
+    workerSessionId: record.workerSessionId,
+    executorType: record.executorType,
+    isMock: record.isMock,
+    isLLMBacked: record.isLLMBacked,
+    ...(record.modelProvider ? { modelProvider: record.modelProvider } : {}),
+    ...(record.modelName ? { modelName: record.modelName } : {}),
+    inputArtifactPath: record.inputArtifactPath,
+    outputArtifactPath: record.outputArtifactPath,
+    subAgentMetadataPath: record.metadataPath,
+    subAgentTraceSource: "subagent_dispatch_trace",
+  };
 }
 
 function summarizeDeliverable(value: unknown): { deliverableType?: string; deliverablePreview?: string } {

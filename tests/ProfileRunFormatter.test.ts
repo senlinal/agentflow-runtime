@@ -24,18 +24,25 @@ test("ProfileRunFormatter", async (t) => {
     assert.match(text, /AgentFlow Role Timeline/);
     assert.match(text, /Runtime Proof/);
     assert.match(text, /Agent Dispatch Proof/);
-    assert.match(text, /dispatchModel: WorkflowRuntime node execution/);
-    assert.match(text, /openCodeSubAgentDispatch: false/);
-    assert.match(text, /Mock nodes are not real LLM sub-agents/);
+    assert.match(text, /dispatchModel: WorkflowRuntime trace -> SubAgentDispatcher artifacts/);
+    assert.match(text, /subAgentDispatchCount: 1/);
+    assert.match(text, /dispatchTargets: @agentflow-task-negotiator/);
+    assert.match(text, /No subagent dispatch record, no subagent/);
     assert.match(text, /runtimeStarted: true/);
     assert.match(text, /verifiedRoleCount: 1/);
     assert.match(text, /1\. TaskNegotiator/);
-    assert.match(text, /source: runtime_trace/);
+    assert.match(text, /source: subagent_dispatch_trace/);
+    assert.match(text, /subAgentDispatched: true/);
+    assert.match(text, /subAgentId: taskNegotiator-0-test/);
+    assert.match(text, /workerSessionId: worker-tasknegotiator-test/);
     assert.match(text, /nodeType: negotiate/);
+    assert.match(text, /subagent: @agentflow-task-negotiator/);
     assert.match(text, /executorType: negotiate/);
     assert.match(text, /isMock: false/);
     assert.match(text, /isLLMBacked: false/);
     assert.match(text, /note: runtime executor type: negotiate/);
+    assert.match(text, /inputArtifactPath: \.workflow-runs\/run\/subagents\/taskNegotiator-0-test\/input\.json/);
+    assert.match(text, /outputArtifactPath: \.workflow-runs\/run\/subagents\/taskNegotiator-0-test\/output\.json/);
     assert.match(text, /outputKey: taskNegotiationResult/);
     assert.match(text, /outputSchema: TaskNegotiationResult/);
     assert.match(text, /summary: \.workflow-runs\/run\/summary\.md/);
@@ -130,7 +137,13 @@ function sampleResult(overrides: Partial<ProfileWorkflowRunResult> = {}): Profil
         summary: "Need scope confirmation.",
         outputKey: "taskNegotiationResult",
         outputSchema: "TaskNegotiationResult",
-        source: "runtime_trace",
+        source: "subagent_dispatch_trace",
+        subAgentDispatched: true,
+        subAgentId: "taskNegotiator-0-test",
+        workerSessionId: "worker-tasknegotiator-test",
+        inputArtifactPath: ".workflow-runs/run/subagents/taskNegotiator-0-test/input.json",
+        outputArtifactPath: ".workflow-runs/run/subagents/taskNegotiator-0-test/output.json",
+        subAgentMetadataPath: ".workflow-runs/run/subagents/taskNegotiator-0-test/metadata.json",
         nextNode: "end",
         runId: "run",
         summaryPath: ".workflow-runs/run/summary.md",

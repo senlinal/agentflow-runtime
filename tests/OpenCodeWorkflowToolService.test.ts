@@ -57,7 +57,7 @@ describe("OpenCodeWorkflowToolService", () => {
     assert.equal(result.profileId, "rag-optimization");
     assert.equal(result.finalStatus, "blocked");
     assert.ok(result.roleTimeline.length >= 1);
-    assert.equal(result.roleTimeline.every((event) => event.source === "runtime_trace"), true);
+    assert.equal(result.roleTimeline.every((event) => event.source === "subagent_dispatch_trace"), true);
     assert.ok(result.formattedText.includes("AgentFlow Profile Run"));
     assert.ok(result.formattedText.includes("AgentFlow Role Timeline"));
     assert.ok(result.formattedText.includes("Runtime Proof"));

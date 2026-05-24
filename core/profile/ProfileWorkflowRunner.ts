@@ -39,7 +39,7 @@ export type ProfileRoleTimelineEvent = {
   summary?: string;
   outputKey?: string;
   outputSchema?: string;
-  source?: "runtime_trace";
+  source?: "runtime_trace" | "subagent_dispatch_trace";
   nextNode?: string;
   step?: number;
   runId?: string;
@@ -48,6 +48,14 @@ export type ProfileRoleTimelineEvent = {
   contextPath?: string;
   isMock?: boolean;
   isLLMBacked?: boolean;
+  subAgentDispatched?: boolean;
+  subAgentId?: string;
+  workerSessionId?: string;
+  modelProvider?: string;
+  modelName?: string;
+  inputArtifactPath?: string;
+  outputArtifactPath?: string;
+  subAgentMetadataPath?: string;
   deliverableType?: string;
   deliverablePreview?: string;
   answersUserRequest?: boolean;
@@ -370,6 +378,14 @@ export class ProfileWorkflowRunner {
       contextPath: result.contextPath,
       isMock: event.isMock,
       isLLMBacked: event.isLLMBacked,
+      subAgentDispatched: event.subAgentDispatched,
+      subAgentId: event.subAgentId,
+      workerSessionId: event.workerSessionId,
+      modelProvider: event.modelProvider,
+      modelName: event.modelName,
+      inputArtifactPath: event.inputArtifactPath,
+      outputArtifactPath: event.outputArtifactPath,
+      subAgentMetadataPath: event.subAgentMetadataPath,
       deliverableType: event.deliverableType,
       deliverablePreview: event.deliverablePreview,
       answersUserRequest: event.answersUserRequest,
@@ -588,13 +604,13 @@ function executedWorkflows(steps: ProfileWorkflowStep[]): string[] {
 function buildRuntimeProof(roleTimeline: ProfileRoleTimelineEvent[], steps: ProfileWorkflowStep[]): RuntimeProof {
   const tracePath = tracePaths(steps)[0];
   const contextPath = contextPaths(steps)[0];
-  const verifiedRoleCount = roleTimeline.filter((event) => event.source === "runtime_trace").length;
+  const verifiedRoleCount = roleTimeline.filter((event) => event.source === "runtime_trace" || event.source === "subagent_dispatch_trace").length;
   return {
     runtimeStarted: verifiedRoleCount > 0,
     ...(tracePath ? { tracePath } : {}),
     ...(contextPath ? { contextPath } : {}),
     verifiedRoleCount,
-    roleSource: verifiedRoleCount > 0 ? "runtime_trace" : "unavailable",
+    roleSource: roleTimeline.some((event) => event.source === "subagent_dispatch_trace") ? "subagent_dispatch_trace" : verifiedRoleCount > 0 ? "runtime_trace" : "unavailable",
   };
 }
 

@@ -1,5 +1,6 @@
 import { mkdir, readFile, readdir, writeFile, appendFile } from "node:fs/promises";
 import { join } from "node:path";
+import { agentFlowPath } from "../AgentFlowPaths.ts";
 import type { ScopeConfirmationRecord } from "../types.ts";
 
 export type ScopeConfirmationListFilters = {
@@ -11,7 +12,7 @@ export type ScopeConfirmationListFilters = {
 export class ScopeConfirmationStore {
   private readonly baseDir: string;
 
-  constructor(baseDir = ".agentflow/scope-confirmations") {
+  constructor(baseDir = agentFlowPath(".agentflow/scope-confirmations")) {
     this.baseDir = baseDir;
   }
 

@@ -1,7 +1,8 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
+import { agentFlowPath } from "../../core/AgentFlowPaths.ts";
 
-export async function agentflowShowLastRun(rootDir = ".workflow-runs"): Promise<{
+export async function agentflowShowLastRun(rootDir = agentFlowPath(".workflow-runs")): Promise<{
   found: boolean;
   runId?: string;
   summaryPath?: string;

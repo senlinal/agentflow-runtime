@@ -10,7 +10,7 @@ Text such as `[Planner]` or `Supervisor plan` is not proof that an AgentFlow rol
 source=runtime_trace
 ```
 
-Each timeline row also shows `nodeType`, `executorType`, `isMock`, and `isLLMBacked`. `executorType` is read from the runtime trace, which is written from the workflow node configuration. It is not inferred from model prose.
+Each timeline row also shows `nodeType`, `executorType`, `isMock`, `isLLMBacked`, and the configured OpenCode subagent target. `executorType` is read from the runtime trace, which is written from the workflow node configuration. It is not inferred from model prose.
 
 If no trace exists, the formatter must say:
 
@@ -44,7 +44,9 @@ npm run workflow:run-profile -- --profile agent-workforce-basic --task "演示 P
 
 The profile runs `abcde-basic`, whose runtime nodes include Planner, Debater, PlannerRevision, Executor, Verifier, and GoalKeeper. The output includes summary, trace, context, Runtime Proof, and Role Timeline.
 
-These nodes use `executorType: mock`, so the timeline explicitly says `mock simulation, not LLM-backed`. This proves the orchestration is real while making clear the role intelligence is simulated.
+These nodes use `executorType: mock`, so the timeline explicitly says `mock simulation, not LLM-backed`. This proves the orchestration node is real while making clear the role intelligence is simulated.
+
+OpenCode subagents for AgentFlow roles live under `.opencode/agents/agentflow-*.md`. The `/workflow` command must first run AgentFlow Runtime, then dispatch an OpenCode Task subagent only for roles that appear in the runtime trace. This prevents a primary agent from inventing roles while still creating real child sessions for visible roles.
 
 The OpenCode MCP smoke path returns the same runtime-proofed timeline:
 
@@ -66,6 +68,8 @@ npm run workflow:validate -- --template abcde-basic-llm
 ```
 
 When it is explicitly run with a configured provider, timeline entries must say `executorType: llm`, `isLLMBacked: true`, and `note: llm-backed role execution`.
+
+If you need real node intelligence rather than a visible simulation, do not use `mock` nodes. Use `type: "llm"` with explicit provider configuration or add a subagent-backed executor/adapter that writes structured output through `SchemaValidator`. Mock output may be used to test routing and formatting, but it must not be presented as a real LLM or subagent result.
 
 ## Verification
 

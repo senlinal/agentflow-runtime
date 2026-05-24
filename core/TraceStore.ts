@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
+import { agentFlowPath } from "./AgentFlowPaths.ts";
 import type { WorkflowContext } from "./types.ts";
 
 export type TraceStoreResult = {
@@ -14,11 +15,11 @@ export type TraceStoreResult = {
 export class TraceStore {
   static async save(
     context: WorkflowContext,
-    options: { workflowName?: string; templateVersion?: string; baseDir?: string } = {},
+    options: { workflowName?: string; templateVersion?: string; baseDir?: string; runId?: string; runDir?: string } = {},
   ): Promise<TraceStoreResult> {
-    const runId = `${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`;
-    const baseDir = options.baseDir ?? ".workflow-runs";
-    const runDir = join(baseDir, runId);
+    const runId = options.runId ?? `${new Date().toISOString().replace(/[:.]/g, "-")}-${cryptoRandomId()}`;
+    const baseDir = options.baseDir ?? agentFlowPath(".workflow-runs");
+    const runDir = options.runDir ?? join(baseDir, runId);
     await mkdir(runDir, { recursive: true });
 
     const tracePath = join(runDir, "trace.json");
@@ -35,6 +36,10 @@ export class TraceStore {
 
     return { runId, runDir, tracePath, contextPath, summaryPath };
   }
+}
+
+function cryptoRandomId(): string {
+  return randomUUID().slice(0, 8);
 }
 
 function buildSummary(context: WorkflowContext, runId: string, workflowName: string, templateVersion: string): string {
@@ -132,6 +137,7 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
       : "No FeasibilityReport.",
     "",
     buildLlmMetadataSummary(context),
+    buildSubAgentDispatchSummary(context),
     buildScopeConfirmationSummary(context),
     buildExecutionVerificationSummary(context),
     buildRepairSummary(context),
@@ -173,6 +179,35 @@ function buildSummary(context: WorkflowContext, runId: string, workflowName: str
     "## Final Result",
     "",
     executionResult?.summary ?? "No execution result.",
+    "",
+  ].join("\n");
+}
+
+function buildSubAgentDispatchSummary(context: WorkflowContext): string {
+  const records = context.subAgentDispatches ?? [];
+  if (records.length === 0) {
+    return [
+      "## SubAgent Dispatch",
+      "",
+      "No subagent dispatch records were created. Workflow nodes may have executed, but no subagent execution is proven.",
+      "",
+    ].join("\n");
+  }
+  return [
+    "## SubAgent Dispatch",
+    "",
+    ...records.map((record) =>
+      [
+        `- ${record.subAgentId} / ${record.role}`,
+        `  - workerSessionId: ${record.workerSessionId}`,
+        `  - executorType: ${record.executorType}`,
+        `  - isMock: ${record.isMock}`,
+        `  - isLLMBacked: ${record.isLLMBacked}`,
+        `  - input: ${record.inputArtifactPath}`,
+        `  - output: ${record.outputArtifactPath ?? "n/a"}`,
+        `  - metadata: ${record.metadataPath}`,
+      ].join("\n")
+    ),
     "",
   ].join("\n");
 }

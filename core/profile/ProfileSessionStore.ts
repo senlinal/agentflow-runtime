@@ -1,11 +1,12 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { agentFlowPath } from "../AgentFlowPaths.ts";
 import type { ProfileSession } from "../types.ts";
 
 export class ProfileSessionStore {
   private readonly baseDir: string;
 
-  constructor(baseDir = ".agentflow/profile-sessions") {
+  constructor(baseDir = agentFlowPath(".agentflow/profile-sessions")) {
     this.baseDir = baseDir;
   }
 

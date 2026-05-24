@@ -1,5 +1,6 @@
 import { appendFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { agentFlowPath } from "../AgentFlowPaths.ts";
 import type { CompactMemorySummary, ProjectMemoryRecord, ProjectMemorySummary } from "../types.ts";
 import { MemoryCompactor } from "./MemoryCompactor.ts";
 
@@ -14,7 +15,7 @@ export type ProjectMemoryListFilters = {
 export class ProjectMemoryStore {
   private readonly baseDir: string;
 
-  constructor(baseDir = ".agentflow/project-memory") {
+  constructor(baseDir = agentFlowPath(".agentflow/project-memory")) {
     this.baseDir = baseDir;
   }
 

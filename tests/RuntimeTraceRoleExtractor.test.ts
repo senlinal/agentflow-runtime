@@ -21,6 +21,12 @@ test("RuntimeTraceRoleExtractor", async (t) => {
         outputKey: "plan",
         outputSchema: "Plan",
         outputSummary: "plan summary",
+        subAgentDispatched: true,
+        subAgentId: "planner-0-test",
+        workerSessionId: "worker-planner-test",
+        inputArtifactPath: ".workflow-runs/run/subagents/planner-0-test/input.json",
+        outputArtifactPath: ".workflow-runs/run/subagents/planner-0-test/output.json",
+        subAgentMetadataPath: ".workflow-runs/run/subagents/planner-0-test/metadata.json",
         conditionResults: [],
         nextNode: "debater",
         timestamp: "2026-05-24T00:00:00.000Z",
@@ -69,7 +75,11 @@ test("RuntimeTraceRoleExtractor", async (t) => {
     const roles = await extractor.extractFromTraceFile(tracePath, { workflow: "abcde-basic" });
 
     assert.deepEqual(roles.map((role) => role.role), ["Planner", "Debater", "Executor", "Verifier"]);
-    assert.equal(roles.every((role) => role.source === "runtime_trace"), true);
+    assert.equal(roles[0].source, "subagent_dispatch_trace");
+    assert.equal(roles[0].subAgentDispatched, true);
+    assert.equal(roles[0].subAgentId, "planner-0-test");
+    assert.equal(roles[0].inputArtifactPath, ".workflow-runs/run/subagents/planner-0-test/input.json");
+    assert.equal(roles.slice(1).every((role) => role.source === "runtime_trace"), true);
     assert.equal(roles[0].outputSchema, "Plan");
     assert.equal(roles[0].type, "mock");
     assert.equal(roles[0].nodeType, "mock");

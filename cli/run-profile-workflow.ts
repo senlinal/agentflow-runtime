@@ -1,5 +1,8 @@
+import { loadDotenv } from "../core/EnvLoader.ts";
 import { ProfileWorkflowRunner } from "../core/profile/ProfileWorkflowRunner.ts";
 import { parseArgs } from "./args.ts";
+
+loadDotenv();
 
 const args = parseArgs(process.argv.slice(2));
 const result = await runQuietly(() =>

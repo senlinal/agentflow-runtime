@@ -12,6 +12,8 @@ The command should not call unavailable planning helpers, unavailable file listi
 
 `ProfileWorkflowRunner` reads `profiles/current.json`, routes the task with `ProfileRouter`, and switches profiles only when the router marks the switch safe and the user did not explicitly request a profile.
 
+When OpenCode is opened outside the AgentFlow repository, `AGENTFLOW_PROJECT_ROOT` must point to the runtime repository. Runtime assets are resolved from that root, while the current OpenCode workspace remains the user's active project. Do not `chdir` into AgentFlow just to make `/workflow` work.
+
 Current profile data controls:
 
 - default workflow;
@@ -39,6 +41,18 @@ The user-facing result should show the `AgentFlow Role Timeline` from `formatted
 - next node;
 - output summary;
 - summary, trace, and context paths when available.
+
+## Subagent Dispatch
+
+`/workflow` must not let a primary OpenCode agent merely role-play Planner, Executor, Verifier, or GoalKeeper. It should:
+
+1. Run AgentFlow first through the local CLI shim or MCP tool.
+2. Read only timeline entries marked `source: runtime_trace`.
+3. Dispatch the matching `.opencode/agents/agentflow-*.md` subagent via the OpenCode Task tool for each verified role.
+4. Include the trace path, context path, workflow, role, node id, output key, output schema, and output summary in the Task prompt.
+5. Preserve the mock boundary: `isMock: true` means the runtime node output is a simulation, not real model-backed node intelligence.
+
+The runtime trace decides which subagents are allowed to run. OpenCode subagents provide child sessions and role visibility; they must not replace `WorkflowRuntime` routing or schema validation.
 
 ## Fallback
 

@@ -699,6 +699,18 @@ export type WorkflowTrace = {
   outputKey: keyof WorkflowContext;
   outputSchema?: OutputSchemaName;
   outputSummary: string;
+  subAgentDispatched?: boolean;
+  subAgentId?: string;
+  workerSessionId?: string;
+  executorType?: NodeType | "unknown";
+  isMock?: boolean;
+  isLLMBacked?: boolean;
+  modelProvider?: string;
+  modelName?: string;
+  inputArtifactPath?: string;
+  outputArtifactPath?: string;
+  subAgentMetadataPath?: string;
+  subAgentTraceSource?: "subagent_dispatch_trace";
   deliverableType?: TaskBrief["expectedDeliverable"]["type"];
   deliverablePreview?: string;
   answersUserRequest?: boolean;
@@ -739,6 +751,7 @@ export type WorkflowContext = TaskSpec & {
   history: unknown[];
   trace: WorkflowTrace[];
   runtimeMetadata?: RuntimeMetadata;
+  subAgentDispatches?: SubAgentDispatchMetadata[];
   stopReason?: string;
 };
 
@@ -757,6 +770,29 @@ export type RuntimeMetadata = {
   e2eRealProject?: Record<string, unknown>;
   externalProject?: Record<string, unknown>;
   patchExport?: Record<string, unknown>;
+};
+
+export type SubAgentDispatchMetadata = {
+  subAgentId: string;
+  workerSessionId: string;
+  nodeId: string;
+  role: AgentRole;
+  executorType: NodeType | "unknown";
+  isMock: boolean;
+  isLLMBacked: boolean;
+  modelProvider?: string;
+  modelName?: string;
+  callStatus?: "success" | "failed" | "not_applicable";
+  inputKeys: string[];
+  outputKey: keyof WorkflowContext;
+  outputSchema?: OutputSchemaName;
+  startedAt: string;
+  completedAt?: string;
+  inputArtifactPath: string;
+  outputArtifactPath?: string;
+  metadataPath: string;
+  promptPath?: string;
+  summaryPath?: string;
 };
 
 export type WorkflowCondition = {

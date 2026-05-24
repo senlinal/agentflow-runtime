@@ -1,9 +1,21 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "command": {
+    "workflow": {
+      "description": "Run AgentFlow runtime workflow with verified role timeline",
+      "template": "User command: /workflow $ARGUMENTS\n\n!`AGENTFLOW_PROJECT_ROOT=\"${AGENTFLOW_PROJECT_ROOT:-$PWD}\" node --experimental-strip-types \"${AGENTFLOW_PROJECT_ROOT:-$PWD}/cli/opencode-workflow-command.ts\" --compact $ARGUMENTS`\n\nDisplay the AgentFlow runtime result above, then dispatch OpenCode Task subagents only for timeline roles whose `source` is `runtime_trace`; `isMock: true` remains simulation, not real model-backed execution."
+    }
+  },
   "mcp": {
     "agentflow": {
       "type": "local",
-      "command": ["node", "--experimental-strip-types", "mcp/agentflow-mcp-server.ts"],
+      "command": [
+        "env",
+        "AGENTFLOW_PROJECT_ROOT=.",
+        "node",
+        "--experimental-strip-types",
+        "mcp/agentflow-mcp-server.ts"
+      ],
       "enabled": true
     }
   },
@@ -11,6 +23,10 @@
     "bash": "ask",
     "edit": "ask",
     "read": "allow",
+    "task": {
+      "*": "deny",
+      "agentflow-*": "allow"
+    },
     "webfetch": "allow",
     "websearch": "allow",
     "external_directory": {

@@ -86,6 +86,7 @@ npm run workflow:run-profile -- --profile task-solving --task "解释一下咖�
 ```
 
 This preserves `TaskBrief.userRequest`, sets `expectedDeliverable.type=answer`, makes Executor return `deliverable.content`, and makes Verifier reject meta-only output.
+Each role also writes subagent artifacts under `.workflow-runs/<runId>/subagents/<subAgentId>/`, and the Role Timeline reports `subAgentDispatched`, artifact paths, and whether the node was mock or LLM-backed.
 
 The default text output includes `AgentFlow Profile Run`, `Routing Decision`, `AgentFlow Role Timeline`, summary paths, trace paths, context paths, warnings, and next actions. In opencode, `/workflow` should call `run_profile_workflow` first and show that formatted runtime result instead of displaying internal command instructions.
 

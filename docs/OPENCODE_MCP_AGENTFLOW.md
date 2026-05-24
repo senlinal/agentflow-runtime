@@ -13,12 +13,29 @@ npm run mcp:agentflow
   "mcp": {
     "agentflow": {
       "type": "local",
-      "command": ["node", "--experimental-strip-types", "mcp/agentflow-mcp-server.ts"],
+      "command": [
+        "env",
+        "AGENTFLOW_PROJECT_ROOT=.",
+        "node",
+        "--experimental-strip-types",
+        "mcp/agentflow-mcp-server.ts"
+      ],
       "enabled": true
     }
   }
 }
 ```
+
+## Global OpenCode Use
+
+AgentFlow can be installed as a global OpenCode integration so `/workflow` works from any workspace:
+
+```bash
+npm run opencode:install-global -- --dry-run
+npm run opencode:install-global
+```
+
+The installer writes global OpenCode command and subagent files, and configures the MCP server with an absolute `AGENTFLOW_PROJECT_ROOT`. Runtime assets such as `profiles/`, `workflows/`, `.workflow-runs/`, and `.agentflow/` stay under the AgentFlow repository. The workspace where OpenCode is opened remains the active project for any later project work.
 
 Restart OpenCode after changing this file. The available tools should include:
 

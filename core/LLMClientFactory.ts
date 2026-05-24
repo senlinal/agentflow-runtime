@@ -25,7 +25,7 @@ export class LLMClientFactory {
           providerOptions: config.provider === "deepseek"
             ? {
               responseFormat: { type: "json_object" },
-              thinking: config.deepSeekReasoning ? { enabled: config.deepSeekReasoning.enabled } : undefined,
+              thinking: config.deepSeekReasoning ? { type: config.deepSeekReasoning.enabled ? "enabled" : "disabled" } : undefined,
               reasoningEffort: config.deepSeekReasoning?.effort,
             }
             : undefined,

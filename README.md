@@ -146,7 +146,7 @@ npm run mcp:agentflow:smoke
 
 See `docs/RUNTIME_VERIFIED_AGENTS.md`.
 
-For task-solving runs, the Role Timeline also shows Executor deliverable summaries and Verifier fidelity flags such as `answersUserRequest` and `isNotMetaOnly`. See `docs/TASK_FIDELITY.md`.
+For task-solving runs, the Role Timeline also shows subagent dispatch artifact paths, Executor deliverable summaries, and Verifier fidelity flags such as `answersUserRequest` and `isNotMetaOnly`. See `docs/TASK_FIDELITY.md`.
 
 OpenCode should call AgentFlow through the MCP tool `agentflow_run_profile_workflow`, which returns the same runtime proof and role timeline.
 

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { agentFlowPath } from "../AgentFlowPaths.ts";
 import type { PatchExportRecord } from "../types.ts";
 import { truncateAndRedact } from "../SecretRedactor.ts";
 
@@ -34,7 +35,7 @@ export type PatchExportFilters = {
 export class PatchExportStore {
   private readonly baseDir: string;
 
-  constructor(baseDir = ".agentflow/patch-exports") {
+  constructor(baseDir = agentFlowPath(".agentflow/patch-exports")) {
     this.baseDir = baseDir;
   }
 

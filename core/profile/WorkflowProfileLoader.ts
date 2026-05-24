@@ -1,5 +1,6 @@
 import { access, readdir, readFile, writeFile } from "node:fs/promises";
-import { basename, join, isAbsolute } from "node:path";
+import { basename, join, isAbsolute, relative } from "node:path";
+import { agentFlowPath, agentFlowRoot } from "../AgentFlowPaths.ts";
 import { WorkflowTemplateRegistry } from "../WorkflowTemplateRegistry.ts";
 
 export type CurrentWorkflowProfile = {
@@ -43,7 +44,7 @@ export class WorkflowProfileLoader {
   private readonly profilesDir: string;
   private readonly workflowRegistry: WorkflowTemplateRegistry;
 
-  constructor(profilesDir = "profiles", workflowRegistry = new WorkflowTemplateRegistry()) {
+  constructor(profilesDir = agentFlowPath("profiles"), workflowRegistry = new WorkflowTemplateRegistry()) {
     this.profilesDir = profilesDir;
     this.workflowRegistry = workflowRegistry;
   }
@@ -53,7 +54,7 @@ export class WorkflowProfileLoader {
     const profiles = await Promise.all(files.map(async (sourcePath) => {
       const profile = await this.readProfile(sourcePath);
       const validation = await this.validateProfile(profile);
-      return { ...profile, sourcePath, warnings: validation.warnings };
+      return { ...profile, sourcePath: displayPath(sourcePath), warnings: validation.warnings };
     }));
     return profiles.sort((left, right) => left.id.localeCompare(right.id));
   }
@@ -72,7 +73,7 @@ export class WorkflowProfileLoader {
       profile,
       validation,
       workflowChain: this.resolveProfileWorkflowChain(profile),
-      sourcePath,
+      sourcePath: displayPath(sourcePath),
     };
   }
 
@@ -83,14 +84,14 @@ export class WorkflowProfileLoader {
     if (profile.id !== id.replace(/\.json$/, "")) {
       throw new Error(`Workflow profile id mismatch in ${sourcePath}: expected ${id.replace(/\.json$/, "")}, got ${profile.id}`);
     }
-    return { profile, sourcePath };
+    return { profile, sourcePath: displayPath(sourcePath) };
   }
 
   async useProfile(id: string): Promise<{ activeProfile: string; path: string }> {
     await this.loadProfile(id);
     const path = join(this.profilesDir, "current.json");
     await writeFile(path, `${JSON.stringify({ activeProfile: id }, null, 2)}\n`);
-    return { activeProfile: id, path };
+    return { activeProfile: id, path: displayPath(path) };
   }
 
   async validateProfile(profile: WorkflowProfile): Promise<WorkflowProfileValidationResult> {
@@ -127,7 +128,7 @@ export class WorkflowProfileLoader {
     }
     for (const file of profile.memoryFiles ?? []) {
       try {
-        await access(file);
+        await access(agentFlowPath(file));
       } catch {
         warnings.push(`Memory file not found: ${file}`);
       }
@@ -165,11 +166,18 @@ export class WorkflowProfileLoader {
 
   private async validateExistingPath(path: string, errors: string[], field: string): Promise<void> {
     try {
-      await access(path);
+      await access(agentFlowPath(path));
     } catch {
       errors.push(`${field} references missing file: ${path}`);
     }
   }
+}
+
+function displayPath(path: string): string {
+  const root = agentFlowRoot();
+  const relativePath = relative(root, path);
+  if (!relativePath.startsWith("..") && !isAbsolute(relativePath)) return relativePath;
+  return path;
 }
 
 async function assertExists(path: string, message: string): Promise<void> {

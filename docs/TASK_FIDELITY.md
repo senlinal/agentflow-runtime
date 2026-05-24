@@ -60,3 +60,24 @@ expectedDeliverable.type: answer
 ```
 
 The Executor produces concrete coffee-making instructions in `deliverable.content`, and the Role Timeline shows the deliverable type, content preview, and verifier fidelity flags.
+
+## SubAgent Dispatch Proof
+
+Every executed workflow node now creates a dispatch artifact directory:
+
+```text
+.workflow-runs/<runId>/subagents/<subAgentId>/
+  input.json
+  output.json
+  metadata.json
+  prompt.md
+  summary.md
+```
+
+The Role Timeline only calls a role a subagent when a dispatch record exists. The proof rules are:
+
+- No subagent dispatch record, no subagent.
+- No LLM call record, no LLM-backed agent.
+- No deliverable, no real work.
+
+Mock nodes still create dispatch records, but they are labeled `mock subagent simulation, not LLM-backed`. LLM nodes are labeled `llm-backed subagent execution` only when the executor type is `llm`; metadata records the provider, model, and call status when available.

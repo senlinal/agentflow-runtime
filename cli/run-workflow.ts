@@ -1,7 +1,10 @@
 import { parseArgs } from "./args.ts";
 import { TaskBriefLoader } from "../core/TaskBriefLoader.ts";
+import { loadDotenv } from "../core/EnvLoader.ts";
 import { WorkflowRunner } from "../core/WorkflowRunner.ts";
-import { WorkflowTemplateRegistry } from "../core/WorkflowTemplateRegistry.ts";
+import { parseArgs } from "./args.ts";
+
+loadDotenv();
 
 const args = parseArgs(process.argv.slice(2));
 if (!args.template) throw new Error("Missing --template");

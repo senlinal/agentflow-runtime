@@ -20,9 +20,9 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.equal(result.steps[0].enteredExecutor, false);
     assert.equal(result.executedWorkflows.includes("task-negotiation"), true);
     assert.ok(result.roleTimeline.some((event) => event.role === "TaskNegotiator"));
-    assert.equal(result.roleTimeline.every((event) => event.source === "runtime_trace"), true);
+    assert.equal(result.roleTimeline.every((event) => event.source === "subagent_dispatch_trace"), true);
     assert.equal(result.runtimeProof.runtimeStarted, true);
-    assert.equal(result.runtimeProof.roleSource, "runtime_trace");
+    assert.equal(result.runtimeProof.roleSource, "subagent_dispatch_trace");
     assert.ok(result.formattedText.includes("AgentFlow Profile Run"));
     assert.ok(result.formattedText.includes("AgentFlow Role Timeline"));
     assert.ok(result.formattedText.includes("Runtime Proof"));
@@ -63,15 +63,15 @@ test("ProfileWorkflowRunner", async (t) => {
 
     assert.equal(result.profileId, "agent-workforce-basic");
     assert.equal(result.runtimeProof.runtimeStarted, true);
-    assert.equal(result.runtimeProof.roleSource, "runtime_trace");
+    assert.equal(result.runtimeProof.roleSource, "subagent_dispatch_trace");
     assert.equal(result.runtimeProof.verifiedRoleCount > 1, true);
-    assert.equal(result.roleTimeline.every((event) => event.source === "runtime_trace"), true);
+    assert.equal(result.roleTimeline.every((event) => event.source === "subagent_dispatch_trace"), true);
     assert.ok(result.roleTimeline.some((event) => event.role === "Planner"));
     assert.ok(result.roleTimeline.some((event) => event.role === "Debater"));
     assert.ok(result.roleTimeline.some((event) => event.role === "Executor"));
     assert.ok(result.roleTimeline.some((event) => event.role === "Verifier"));
     assert.match(result.formattedText, /Runtime Proof/);
-    assert.match(result.formattedText, /source: runtime_trace/);
+    assert.match(result.formattedText, /source: subagent_dispatch_trace/);
   });
 
   await t.test("auto-switches website tasks from rag profile to frontend-site-build", async () => {

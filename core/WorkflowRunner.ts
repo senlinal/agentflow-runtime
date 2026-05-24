@@ -1,7 +1,13 @@
 import { createInitialContext } from "./context.ts";
+import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
+import { randomUUID } from "node:crypto";
+import { agentFlowPath } from "./AgentFlowPaths.ts";
 import { LLMConfigLoader } from "./LLMConfigLoader.ts";
 import { LLMConfigReporter } from "./LLMConfigReporter.ts";
 import { NodeRegistry } from "./NodeRegistry.ts";
+import { SubAgentArtifactStore } from "./subagent/SubAgentArtifactStore.ts";
+import { SubAgentDispatcher } from "./subagent/SubAgentDispatcher.ts";
 import { TraceStore, type TraceStoreResult } from "./TraceStore.ts";
 import type { TaskBrief, WorkflowContext, WorkflowGraphConfig, WorkflowTrace } from "./types.ts";
 import { WorkflowGraph } from "./WorkflowGraph.ts";
@@ -19,6 +25,7 @@ export type WorkflowRunnerResult = {
 
 export type WorkflowRunnerOptions = {
   contextOverrides?: Partial<WorkflowContext>;
+  baseRunDir?: string;
 };
 
 export class WorkflowRunner {
@@ -30,6 +37,9 @@ export class WorkflowRunner {
 
   async run(config: WorkflowGraphConfig, taskBrief: TaskBrief, options: WorkflowRunnerOptions = {}): Promise<WorkflowRunnerResult> {
     const graph = new WorkflowGraph(config);
+    const runId = `${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`;
+    const runDir = join(options.baseRunDir ?? agentFlowPath(".workflow-runs"), runId);
+    await mkdir(runDir, { recursive: true });
     const context = {
       ...createInitialContext({
         taskId: taskBrief.taskId,
@@ -47,10 +57,13 @@ export class WorkflowRunner {
       ...options.contextOverrides,
     };
 
-    const finalContext = await new WorkflowRuntime(graph, this.registry).run(context);
+    const subAgentDispatcher = new SubAgentDispatcher(new SubAgentArtifactStore(runDir));
+    const finalContext = await new WorkflowRuntime(graph, this.registry, subAgentDispatcher).run(context);
     const traceStore = await TraceStore.save(finalContext, {
       workflowName: graph.name,
       templateVersion: config.workflow.version,
+      runId,
+      runDir,
     });
 
     return {

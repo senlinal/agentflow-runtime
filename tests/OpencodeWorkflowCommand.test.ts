@@ -6,8 +6,10 @@ describe("opencode workflow command", () => {
   it("is quiet, tool-first, and has a non-shell-only fallback", async () => {
     const command = await readFile(".opencode/commands/workflow.md", "utf8");
 
-    assert.ok(command.trimEnd().split("\n").length <= 4);
-    assert.match(command, /opencode-workflow-command\.ts \$ARGUMENTS/);
+    assert.match(command, /AGENTFLOW_PROJECT_ROOT/);
+    assert.match(command, /opencode-workflow-command\.ts" --compact \$ARGUMENTS/);
+    assert.match(command, /OpenCode Task subagent/);
+    assert.match(command, /source` is `runtime_trace/);
     assert.doesNotMatch(command, /```json/);
     assert.doesNotMatch(command, /todowrite/);
     assert.doesNotMatch(command, /list_files/);
@@ -42,11 +44,24 @@ describe("opencode workflow command", () => {
     const config = await readFile("opencode.json", "utf8");
 
     assert.match(config, /"agentflow"/);
-    assert.match(config, /"mcp\/agentflow-mcp-server\.ts"/);
+    assert.match(config, /AGENTFLOW_PROJECT_ROOT=\./);
+    assert.match(config, /mcp\/agentflow-mcp-server\.ts/);
     assert.match(config, /"bash": "ask"/);
     assert.match(config, /"edit": "ask"/);
+    assert.match(config, /"task"/);
+    assert.match(config, /"agentflow-\*": "allow"/);
     assert.match(config, /"~\/development\/garbage_item_upload\/\*\*": "allow"/);
     assert.match(config, /"\/Users\/\*\/development\/garbage_item_upload\/\*\*": "allow"/);
+  });
+
+  it("defines AgentFlow role subagents for OpenCode Task dispatch", async () => {
+    const planner = await readFile(".opencode/agents/agentflow-planner.md", "utf8");
+    const verifier = await readFile(".opencode/agents/agentflow-verifier.md", "utf8");
+
+    assert.match(planner, /mode: subagent/);
+    assert.match(planner, /verified AgentFlow runtime trace item/);
+    assert.match(verifier, /mode: subagent/);
+    assert.match(verifier, /role Verifier/);
   });
 
   it("exports the policy plugin as an OpenCode plugin function", async () => {
