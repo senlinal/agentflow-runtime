@@ -6,6 +6,7 @@ import { agentFlowRoot } from "../core/AgentFlowPaths.ts";
 
 type OpenCodeConfig = {
   $schema?: string;
+  plugin?: Array<string | [string, Record<string, unknown>]>;
   mcp?: Record<string, unknown>;
   permission?: Record<string, unknown>;
 };
@@ -56,6 +57,10 @@ async function buildConfig(path: string): Promise<OpenCodeConfig> {
   return {
     $schema: existing.$schema ?? "https://opencode.ai/config.json",
     ...existing,
+    plugin: mergePlugins(existing.plugin, [
+      join(root, ".opencode", "plugins", "agentflow-policy.ts"),
+      join(root, ".opencode", "plugins", "agentflow-workflow-interceptor.ts"),
+    ]),
     command: {
       ...(existing as { command?: Record<string, unknown> }).command,
       workflow: {
@@ -108,10 +113,18 @@ function globalWorkflowCommand(agentFlowRootPath: string): string {
 
 function workflowTemplate(agentFlowRootPath: string): string {
   return [
-    "User command: /workflow $ARGUMENTS",
-    "",
-    `!\`AGENTFLOW_PROJECT_ROOT="\${AGENTFLOW_PROJECT_ROOT:-${agentFlowRootPath}}" node --experimental-strip-types "\${AGENTFLOW_PROJECT_ROOT:-${agentFlowRootPath}}/cli/opencode-workflow-command.ts" --compact $ARGUMENTS\``,
-    "",
-    "Display the AgentFlow runtime result above, then dispatch OpenCode Task subagents only for timeline roles whose `source` is `runtime_trace` or `subagent_dispatch_trace`; `isMock: true` remains simulation, not real model-backed execution.",
+    "/workflow is handled by the AgentFlow plugin interceptor.",
+    "If the interceptor is unavailable, run:",
+    `npm run workflow:run-profile -- --task "<task>"`,
+    "Do not print this template.",
   ].join("\n");
+}
+
+function mergePlugins(existing: OpenCodeConfig["plugin"], required: string[]): OpenCodeConfig["plugin"] {
+  const items = Array.isArray(existing) ? [...existing] : [];
+  const existingPaths = new Set(items.map((item) => Array.isArray(item) ? item[0] : item));
+  for (const plugin of required) {
+    if (!existingPaths.has(plugin)) items.push(plugin);
+  }
+  return items;
 }

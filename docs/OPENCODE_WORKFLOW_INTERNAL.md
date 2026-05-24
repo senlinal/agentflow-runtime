@@ -4,9 +4,9 @@ This document keeps the detailed `/workflow` behavior out of the slash command f
 
 ## Runtime Entry
 
-`/workflow` is a quiet command. It should invoke `run_profile_workflow` first and show the returned `formattedText`. It must not replace AgentFlow with a generic supervisor plan.
+`/workflow` is intercepted by `.opencode/plugins/agentflow-workflow-interceptor.ts` before markdown command instructions are expanded. The interceptor invokes `agentflow_run_profile_workflow` first and shows the returned `formattedText`. It must not replace AgentFlow with a generic supervisor plan.
 
-The command should not call unavailable planning helpers, unavailable file listing helpers, shell fallback, or code execution tools unless the current runtime explicitly exposes them and the workflow state allows them.
+The command should not call unavailable planning helpers, unavailable file listing helpers, search-mode, shell fallback, or code execution tools unless the current runtime explicitly exposes them and the workflow state allows them.
 
 ## Profile Routing
 
@@ -29,7 +29,7 @@ Profile runs load recent Project Memory and compacted memory. `MemoryAutonomyGat
 
 ## Scope Resume
 
-If a previous profile session is waiting for scope confirmation, a user answer should be passed to `run_profile_workflow` as `answer` and optionally `sessionId`. The runner creates or resumes the `ScopeConfirmationRecord`, runs `confirmed-scope-gate`, and either continues to follow-up workflows or returns next actions.
+If a previous profile session is waiting for scope confirmation, a user answer should be passed to `agentflow_run_profile_workflow` as `answer` and optionally `sessionId`. The runner creates or resumes the `ScopeConfirmationRecord`, runs `confirmed-scope-gate`, and either continues to follow-up workflows or returns next actions.
 
 ## Role Timeline
 
@@ -46,7 +46,7 @@ The user-facing result should show the `AgentFlow Role Timeline` from `formatted
 
 `/workflow` must not let a primary OpenCode agent merely role-play Planner, Executor, Verifier, or GoalKeeper. It should:
 
-1. Run AgentFlow first through the local CLI shim or MCP tool.
+1. Run AgentFlow first through the workflow interceptor and MCP tool.
 2. Read only timeline entries marked `source: runtime_trace` or `source: subagent_dispatch_trace`.
 3. Dispatch the matching `.opencode/agents/agentflow-*.md` subagent via the OpenCode Task tool for each verified role.
 4. Include the trace path, context path, workflow, role, node id, output key, output schema, and output summary in the Task prompt.
@@ -58,7 +58,16 @@ The runtime trace decides which subagents are allowed to run. OpenCode subagents
 
 ## Fallback
 
-If `run_profile_workflow` is unavailable, do not pretend AgentFlow ran. If a shell tool is available, the safe CLI fallback is:
+If `agentflow_run_profile_workflow` is unavailable, do not pretend AgentFlow ran. The plugin should output:
+
+```text
+AgentFlow Runtime was not started.
+Reason: agentflow_run_profile_workflow MCP tool is unavailable.
+Fallback:
+npm run workflow:run-profile -- --task "<task>"
+```
+
+The safe CLI fallback is:
 
 ```bash
 npm run workflow:run-profile -- --task "<task>"

@@ -14,7 +14,7 @@ const result = await callAgentFlowTool("agentflow_run_profile_workflow", {
 
 assert.equal(typeof result.formattedText, "string");
 assert.equal(result.runtimeProof?.runtimeStarted, true);
-assert.equal(result.runtimeProof?.roleSource, "runtime_trace");
+assert.equal(result.runtimeProof?.roleSource, "subagent_dispatch_trace");
 assert.equal((result.runtimeProof?.verifiedRoleCount ?? 0) > 1, true);
 assert.equal((result.roleTimeline?.length ?? 0) > 1, true);
 

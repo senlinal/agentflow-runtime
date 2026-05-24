@@ -22,7 +22,8 @@ This means:
 - `.opencode/tools/run_profile_workflow.ts` is also a compatibility wrapper and should not register a duplicate custom tool.
 - `mcp/agentflow-mcp-server.ts` is the actual runtime tool provider.
 - `mcp/agentflow-server.ts` is a compatibility wrapper.
-- `npm run opencode:check` verifies file shape, MCP config, and quiet command text, but a live opencode session must still be restarted to pick up MCP config changes.
+- `npm run opencode:check` verifies file shape, MCP config, workflow interceptor registration, and minimal command text, but a live opencode session must still be restarted to pick up MCP/plugin config changes.
+- `.opencode/plugins/agentflow-workflow-interceptor.ts` is the `/workflow` entrypoint. It calls the MCP dispatcher directly and prevents the markdown command prompt from becoming the user-visible answer.
 
 ## Expected Tool
 
@@ -41,6 +42,8 @@ Expected behavior:
 
 - Input: `task`, optional `profile`, optional resume fields, `dryRun`, `allowExecution`.
 - Output: `formattedText`, `roleTimeline`, `routingDecision`, `autonomyDecision`, `executedWorkflows`, `summaryPath`, `tracePath`, `contextPath`, and `nextActions`.
+
+`/workflow` should not fall back to model analysis, search-mode, or a Supervisor Research Plan. If the MCP tool is unavailable, it should state that AgentFlow Runtime was not started and show the CLI fallback.
 
 ## Fallback
 

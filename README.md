@@ -407,6 +407,7 @@ Included files:
 - `.opencode/tools/validate-workflow.ts`
 - `.opencode/tools/create-workflow.ts`
 - `.opencode/plugins/agentflow-policy.ts`
+- `.opencode/plugins/agentflow-workflow-interceptor.ts`
 
 Check adapter files:
 

@@ -35,7 +35,7 @@ npm run opencode:install-global -- --dry-run
 npm run opencode:install-global
 ```
 
-The installer writes global OpenCode command and subagent files, and configures the MCP server with an absolute `AGENTFLOW_PROJECT_ROOT`. Runtime assets such as `profiles/`, `workflows/`, `.workflow-runs/`, and `.agentflow/` stay under the AgentFlow repository. The workspace where OpenCode is opened remains the active project for any later project work.
+The installer writes global OpenCode command and subagent files, registers the AgentFlow policy and workflow interceptor plugins, and configures the MCP server with an absolute `AGENTFLOW_PROJECT_ROOT`. Runtime assets such as `profiles/`, `workflows/`, `.workflow-runs/`, and `.agentflow/` stay under the AgentFlow repository. The workspace where OpenCode is opened remains the active project for any later project work.
 
 Restart OpenCode after changing this file. The available tools should include:
 
@@ -72,10 +72,11 @@ Profiles with LLM-backed workflow nodes are blocked unless `allowLLM=true`. In `
 
 ## /workflow Behavior
 
-The slash command should call `agentflow_run_profile_workflow`, display only `formattedText`, and apply the rule: No trace, no agent.
+The workflow plugin interceptor should catch `/workflow` through `command.execute.before`, call `agentflow_run_profile_workflow`, display only `formattedText`, and apply the rule: No trace, no agent. The markdown command is only a short fallback notice because markdown slash commands can be expanded into visible prompt instructions.
 
-If MCP is not loaded, use the explicit CLI fallback:
+If MCP is not loaded, the interceptor returns this explicit CLI fallback:
 
+```bash
 npm run workflow:run-profile -- --task "<task>"
 ```
 

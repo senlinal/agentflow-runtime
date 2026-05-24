@@ -9,14 +9,20 @@ const execFileAsync = promisify(execFile);
 describe("opencode workflow command", () => {
   it("is quiet, tool-first, and has a non-shell-only fallback", async () => {
     const command = await readFile(".opencode/commands/workflow.md", "utf8");
+    const lines = command.trimEnd().split("\n");
 
-    assert.match(command, /AGENTFLOW_PROJECT_ROOT/);
-    assert.match(command, /opencode-workflow-command\.ts" --compact \$ARGUMENTS/);
-    assert.match(command, /OpenCode Task subagent/);
-    assert.match(command, /source` is `runtime_trace` or `subagent_dispatch_trace/);
+    assert.equal(lines.length <= 10, true);
+    assert.match(command, /AgentFlow plugin interceptor/);
+    assert.match(command, /npm run workflow:run-profile -- --task "<task>"/);
+    assert.match(command, /Do not print this file/);
+    assert.doesNotMatch(command, /AGENTFLOW_PROJECT_ROOT/);
+    assert.doesNotMatch(command, /opencode-workflow-command/);
+    assert.doesNotMatch(command, /!\`/);
     assert.doesNotMatch(command, /```json/);
     assert.doesNotMatch(command, /todowrite/);
     assert.doesNotMatch(command, /list_files/);
+    assert.doesNotMatch(command, /auto-slash-command/);
+    assert.doesNotMatch(command, /Command Instructions/);
     assert.doesNotMatch(command, /agentflow_run_profile_workflow/);
     assert.doesNotMatch(command, /Research Plan/);
   });
@@ -89,9 +95,13 @@ describe("opencode workflow command", () => {
   it("configures AgentFlow as a local MCP server and avoids automatic shell/edit permission", async () => {
     const config = await readFile("opencode.json", "utf8");
 
+    assert.match(config, /"plugin"/);
+    assert.match(config, /\.opencode\/plugins\/agentflow-policy\.ts/);
+    assert.match(config, /\.opencode\/plugins\/agentflow-workflow-interceptor\.ts/);
     assert.match(config, /"agentflow"/);
     assert.match(config, /AGENTFLOW_PROJECT_ROOT=\./);
     assert.match(config, /mcp\/agentflow-mcp-server\.ts/);
+    assert.doesNotMatch(config, /opencode-workflow-command\.ts/);
     assert.match(config, /"bash": "ask"/);
     assert.match(config, /"edit": "ask"/);
     assert.match(config, /"task"/);
@@ -116,5 +126,17 @@ describe("opencode workflow command", () => {
     assert.match(plugin, /export async function AgentFlowPolicy/);
     assert.match(plugin, /export default AgentFlowPolicy/);
     assert.match(plugin, /tool\.execute\.before/);
+  });
+
+  it("exports the workflow interceptor plugin as an OpenCode plugin function", async () => {
+    const plugin = await readFile(".opencode/plugins/agentflow-workflow-interceptor.ts", "utf8");
+
+    assert.match(plugin, /export async function AgentFlowWorkflowInterceptor/);
+    assert.match(plugin, /export default AgentFlowWorkflowInterceptor/);
+    assert.match(plugin, /command\.execute\.before/);
+    assert.match(plugin, /agentflow_run_profile_workflow/);
+    assert.doesNotMatch(plugin, /todowrite/);
+    assert.doesNotMatch(plugin, /list_files/);
+    assert.doesNotMatch(plugin, /Research Plan/);
   });
 });

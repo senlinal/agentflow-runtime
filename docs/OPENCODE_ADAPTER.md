@@ -4,9 +4,11 @@
 
 The core workflow runtime is independent of opencode. `WorkflowRuntime` and `WorkflowRunner` control node execution, schema validation, trace writing, and edge-based routing.
 
-opencode is only an outer shell for this phase. Commands under `.opencode/commands/` describe how a user can invoke workflows from the TUI, and the `agentflow` MCP server exposes the live `run_profile_workflow` tool. Files under `.opencode/tools/` are compatibility wrappers and older custom-tool adapters; they do not replace Planner, Executor, Verifier, GoalKeeper, or condition routing.
+opencode is only an outer shell for this phase. The `agentflow` MCP server exposes the live `agentflow_run_profile_workflow` tool. Files under `.opencode/tools/` are compatibility wrappers and older custom-tool adapters; they do not replace Planner, Executor, Verifier, GoalKeeper, or condition routing.
 
 Plugin-level permission interception is handled by `.opencode/plugins/agentflow-policy.ts`. The plugin is an adapter only: it does not change workflow routing, node execution, schemas, or Runtime behavior.
+
+Plugin-level `/workflow` interception is handled by `.opencode/plugins/agentflow-workflow-interceptor.ts`. This is the stable OpenCode path because markdown slash commands can still be expanded as prompt text by OpenCode or command-pack supervisors. The markdown command is intentionally short and should not carry runtime instructions.
 
 ## Command Usage
 
@@ -16,7 +18,7 @@ Default workflow run:
 /workflow 目标：基于当前 Runtime 增加一个模板运行能力。现状：已有 WorkflowRunner 和 MockLLMClient。约束：不接真实 LLM，不做 UI。验收：生成 trace 并通过测试。
 ```
 
-The `/workflow` command is a quiet AgentFlow entrypoint. It should call the MCP `run_profile_workflow` tool first and display the returned `formattedText`, including the AgentFlow Role Timeline. It should not print the command file, expose internal policy text, or create a generic supervisor plan. If the MCP tool is unavailable and no shell fallback exists, it should tell the user to run `npm run workflow:run-profile -- --task "<task>"` in a project terminal.
+The `/workflow` command is intercepted before the markdown command prompt is used. The interceptor calls `agentflow_run_profile_workflow` and displays the returned `formattedText`, including Runtime Proof, Role Timeline, SubAgent proof, and artifact paths. It must not print the command file, expose internal policy text, enter search-mode, or create a generic supervisor plan. If the MCP tool is unavailable, it prints the explicit CLI fallback `npm run workflow:run-profile -- --task "<task>"`.
 
 Inspect a template:
 
@@ -34,7 +36,7 @@ Create a template from a spec:
 
 The live profile runner is provided by the local MCP server:
 
-- `mcp/agentflow-server.ts` -> `run_profile_workflow`
+- `mcp/agentflow-mcp-server.ts` -> `agentflow_run_profile_workflow`
 
 Legacy compatibility wrappers still exist for direct JSON-stdin checks:
 
@@ -55,6 +57,10 @@ opencode does not choose or store LLM provider credentials. If a workflow uses `
 ## Policy Plugin
 
 `.opencode/plugins/agentflow-policy.ts` listens to `tool.execute.before` and delegates decisions to `OpenCodePolicyService`.
+
+## Workflow Interceptor Plugin
+
+`.opencode/plugins/agentflow-workflow-interceptor.ts` listens to `command.execute.before` for `command=workflow`. It parses `/workflow <task>`, `/workflow run <profile> <task>`, and resume answers, then calls the AgentFlow MCP dispatcher with `allowExecution=false` and `allowLLM=false`. If the call fails, it reports that AgentFlow Runtime was not started and does not fabricate roles.
 
 Allowed by default:
 

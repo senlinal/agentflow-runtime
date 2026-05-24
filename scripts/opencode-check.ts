@@ -9,6 +9,7 @@ const requiredFiles = [
   ".opencode/tools/run-profile-workflow.ts",
   ".opencode/tools/run_profile_workflow.ts",
   ".opencode/plugins/agentflow-policy.ts",
+  ".opencode/plugins/agentflow-workflow-interceptor.ts",
   "adapters/opencode/PolicyAuditLogger.ts",
   "adapters/opencode/PolicyApprovalStore.ts",
   "adapters/opencode/ToolCallHasher.ts",
@@ -81,26 +82,22 @@ if (!gitignore.split("\n").includes(".agentflow/project-memory/")) {
 
 const workflowCommand = readFileSync(".opencode/commands/workflow.md", "utf8");
 const workflowCommandLines = workflowCommand.trimEnd().split("\n");
-if (workflowCommandLines.length > 6) {
+if (workflowCommandLines.length > 10) {
   console.error(`workflow.md is too long for a quiet slash command: ${workflowCommandLines.length} lines`);
   process.exit(1);
 }
-if (workflowCommand.includes("```json")) {
-  console.error("workflow.md must not include JSON examples; keep slash command text minimal");
-  process.exit(1);
-}
-
 for (const requiredText of [
-  "AGENTFLOW_PROJECT_ROOT",
-  "cli/opencode-workflow-command.ts",
+  "AgentFlow plugin interceptor",
+  "npm run workflow:run-profile -- --task",
+  "Do not print this file",
 ]) {
   if (!workflowCommand.includes(requiredText)) {
-    console.error(`workflow.md does not include quiet workflow entrypoint text: ${requiredText}`);
+    console.error(`workflow.md does not include plugin interceptor fallback text: ${requiredText}`);
     process.exit(1);
   }
 }
 
-for (const forbiddenText of ["todowrite", "list_files", "Research Plan", "agentflow_run_profile_workflow", "run_profile_workflow"]) {
+for (const forbiddenText of ["todowrite", "list_files", "Research Plan", "Command Instructions", "auto-slash-command", "search-mode", "AGENTFLOW_PROJECT_ROOT", "opencode-workflow-command.ts", "!`", "agentflow_run_profile_workflow", "run_profile_workflow"]) {
   if (workflowCommand.includes(forbiddenText)) {
     console.error(`workflow.md appears to expose or require forbidden behavior: ${forbiddenText}`);
     process.exit(1);
@@ -123,6 +120,9 @@ for (const forbiddenText of ['@opencode-ai/plugin', "export default tool({", "to
 
 const opencodeConfig = readFileSync("opencode.json", "utf8");
 for (const requiredText of [
+  '"plugin"',
+  '"./.opencode/plugins/agentflow-policy.ts"',
+  '"./.opencode/plugins/agentflow-workflow-interceptor.ts"',
   '"mcp"',
   '"agentflow"',
   '"AGENTFLOW_PROJECT_ROOT=."',
@@ -136,6 +136,10 @@ for (const requiredText of [
     console.error(`opencode.json is missing expected AgentFlow MCP or permission setting: ${requiredText}`);
     process.exit(1);
   }
+}
+if (opencodeConfig.includes("opencode-workflow-command.ts") || opencodeConfig.includes("AGENTFLOW_PROJECT_ROOT=\\\"${AGENTFLOW_PROJECT_ROOT")) {
+  console.error("opencode.json workflow command still appears to contain the old shell shim");
+  process.exit(1);
 }
 
 const mcpServer = readFileSync("mcp/agentflow-mcp-server.ts", "utf8");
@@ -158,6 +162,27 @@ const policyPlugin = readFileSync(".opencode/plugins/agentflow-policy.ts", "utf8
 for (const requiredText of ["export async function AgentFlowPolicy", "export default AgentFlowPolicy", "tool.execute.before"]) {
   if (!policyPlugin.includes(requiredText)) {
     console.error(`agentflow policy plugin is missing OpenCode function export text: ${requiredText}`);
+    process.exit(1);
+  }
+}
+
+const workflowInterceptor = readFileSync(".opencode/plugins/agentflow-workflow-interceptor.ts", "utf8");
+for (const requiredText of [
+  "export async function AgentFlowWorkflowInterceptor",
+  "export default AgentFlowWorkflowInterceptor",
+  "command.execute.before",
+  "agentflow_run_profile_workflow",
+  "parseWorkflowCommand",
+  "AgentFlow Runtime was not started.",
+]) {
+  if (!workflowInterceptor.includes(requiredText)) {
+    console.error(`agentflow workflow interceptor is missing expected text: ${requiredText}`);
+    process.exit(1);
+  }
+}
+for (const forbiddenText of ["todowrite", "list_files", "Research Plan", "search-mode"]) {
+  if (workflowInterceptor.includes(forbiddenText)) {
+    console.error(`agentflow workflow interceptor includes forbidden supervisor behavior: ${forbiddenText}`);
     process.exit(1);
   }
 }
