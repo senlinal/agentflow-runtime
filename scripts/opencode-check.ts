@@ -80,7 +80,7 @@ if (!gitignore.split("\n").includes(".agentflow/project-memory/")) {
 
 const workflowCommand = readFileSync(".opencode/commands/workflow.md", "utf8");
 const workflowCommandLines = workflowCommand.trimEnd().split("\n");
-if (workflowCommandLines.length > 40) {
+if (workflowCommandLines.length > 6) {
   console.error(`workflow.md is too long for a quiet slash command: ${workflowCommandLines.length} lines`);
   process.exit(1);
 }
@@ -89,14 +89,14 @@ if (workflowCommand.includes("```json")) {
   process.exit(1);
 }
 
-for (const requiredText of ["agentflow_run_profile_workflow", "run_profile_workflow", "No trace, no agent", "formattedText"]) {
+for (const requiredText of ["!`node --experimental-strip-types cli/opencode-workflow-command.ts $ARGUMENTS`"]) {
   if (!workflowCommand.includes(requiredText)) {
     console.error(`workflow.md does not include quiet workflow entrypoint text: ${requiredText}`);
     process.exit(1);
   }
 }
 
-for (const forbiddenText of ["todowrite", "list_files", "Research Plan"]) {
+for (const forbiddenText of ["todowrite", "list_files", "Research Plan", "agentflow_run_profile_workflow", "run_profile_workflow"]) {
   if (workflowCommand.includes(forbiddenText)) {
     console.error(`workflow.md appears to expose or require forbidden behavior: ${forbiddenText}`);
     process.exit(1);

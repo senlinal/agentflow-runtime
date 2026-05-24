@@ -23,6 +23,10 @@ test("ProfileRunFormatter", async (t) => {
     assert.match(text, /recommendedProfile: frontend-site-build/);
     assert.match(text, /AgentFlow Role Timeline/);
     assert.match(text, /Runtime Proof/);
+    assert.match(text, /Agent Dispatch Proof/);
+    assert.match(text, /dispatchModel: WorkflowRuntime node execution/);
+    assert.match(text, /openCodeSubAgentDispatch: false/);
+    assert.match(text, /Mock nodes are not real LLM sub-agents/);
     assert.match(text, /runtimeStarted: true/);
     assert.match(text, /verifiedRoleCount: 1/);
     assert.match(text, /1\. TaskNegotiator/);
@@ -65,6 +69,7 @@ test("ProfileRunFormatter", async (t) => {
     assert.match(text, /Final status: blocked/);
     assert.match(text, /Workflow contains execution-capable nodes/);
     assert.match(text, /AgentFlow Runtime was not started/);
+    assert.match(text, /dispatchModel: unavailable/);
     assert.match(text, /Next Actions/);
   });
 

@@ -26,6 +26,9 @@ export class ProfileRunFormatter {
       "Runtime Proof",
       ...formatRuntimeProof(result),
       "",
+      "Agent Dispatch Proof",
+      ...formatDispatchProof(result),
+      "",
       "AgentFlow Role Timeline",
       ...formatTimeline(result),
       "",
@@ -97,6 +100,29 @@ function formatRuntimeProof(result: ProfileWorkflowRunResult): string[] {
     ...(proof.runtimeStarted
       ? []
       : ["- AgentFlow Runtime was not started. This is not a verified multi-agent run."]),
+  ];
+}
+
+function formatDispatchProof(result: ProfileWorkflowRunResult): string[] {
+  const events = result.roleTimeline.filter((event) => event.source === "runtime_trace");
+  if (events.length === 0) {
+    return [
+      "- dispatchModel: unavailable",
+      "- subAgentDispatch: false",
+      "- reason: no runtime trace roles were verified",
+    ];
+  }
+  const llmCount = events.filter((event) => event.isLLMBacked === true).length;
+  const mockCount = events.filter((event) => event.isMock === true).length;
+  const runtimeNodeCount = events.length;
+  return [
+    "- dispatchModel: WorkflowRuntime node execution",
+    "- roleSource: runtime_trace",
+    `- runtimeNodeCount: ${runtimeNodeCount}`,
+    `- llmBackedNodeCount: ${llmCount}`,
+    `- mockNodeCount: ${mockCount}`,
+    "- openCodeSubAgentDispatch: false",
+    "- note: This proves AgentFlow Runtime role-node execution. Mock nodes are not real LLM sub-agents.",
   ];
 }
 

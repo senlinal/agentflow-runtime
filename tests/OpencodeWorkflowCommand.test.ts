@@ -6,14 +6,12 @@ describe("opencode workflow command", () => {
   it("is quiet, tool-first, and has a non-shell-only fallback", async () => {
     const command = await readFile(".opencode/commands/workflow.md", "utf8");
 
-    assert.ok(command.trimEnd().split("\n").length <= 40);
-    assert.match(command, /agentflow_run_profile_workflow/);
-    assert.match(command, /run_profile_workflow/);
-    assert.match(command, /formattedText/);
-    assert.match(command, /No trace, no agent/);
+    assert.ok(command.trimEnd().split("\n").length <= 4);
+    assert.match(command, /opencode-workflow-command\.ts \$ARGUMENTS/);
     assert.doesNotMatch(command, /```json/);
     assert.doesNotMatch(command, /todowrite/);
     assert.doesNotMatch(command, /list_files/);
+    assert.doesNotMatch(command, /agentflow_run_profile_workflow/);
     assert.doesNotMatch(command, /Research Plan/);
   });
 
