@@ -49,6 +49,40 @@ test("LLM-backed agent workforce pilot", async (t) => {
     }
   });
 
+  await t.test("blocks agent-workforce-llm when provider is still mock", async () => {
+    const restore = withProviderEnv({ provider: "mock" });
+    try {
+      const result = await createRunner().run({
+        profileId: "agent-workforce-llm",
+        task: "解释一下咖啡的做法",
+        allowLLM: true,
+      });
+
+      assert.equal(result.finalStatus, "blocked");
+      assert.equal(result.runtimeProof.runtimeStarted, false);
+      assert.match(result.steps[0].reason, /requires provider=deepseek/);
+    } finally {
+      restore();
+    }
+  });
+
+  await t.test("does not call default mock provider when allowLLM uses production registry", async () => {
+    const restore = withProviderEnv({ provider: "mock" });
+    try {
+      const result = await createRunner(undefined, false).run({
+        profileId: "agent-workforce-llm",
+        task: "解释一下咖啡的做法",
+        allowLLM: true,
+      });
+
+      assert.equal(result.finalStatus, "blocked");
+      assert.equal(result.roleTimeline.length, 0);
+      assert.equal(result.runtimeProof.runtimeStarted, false);
+    } finally {
+      restore();
+    }
+  });
+
   await t.test("uses LLMExecutor only for thinking roles and keeps Executor/Verifier mock", async () => {
     const restore = withDeepSeekEnv({ apiKey: "test-key" });
     try {
@@ -115,10 +149,10 @@ class DeepSeekMockClient implements LLMClient {
   }
 }
 
-function createRunner(llmClient: LLMClient = new DeepSeekMockClient()): ProfileWorkflowRunner {
+function createRunner(llmClient: LLMClient | undefined = new DeepSeekMockClient(), registerLlm = true): ProfileWorkflowRunner {
   const root = join(tmpdir(), `agentflow-llm-workforce-${Date.now()}-${Math.random().toString(16).slice(2)}`);
   const registry = NodeRegistry.withDefaults();
-  registry.register("llm", new LLMExecutor(llmClient));
+  if (registerLlm && llmClient) registry.register("llm", new LLMExecutor(llmClient));
   return new ProfileWorkflowRunner(
     undefined,
     undefined,
@@ -127,6 +161,25 @@ function createRunner(llmClient: LLMClient = new DeepSeekMockClient()): ProfileW
     new ScopeConfirmationStore(join(root, "scopes")),
     new ProjectMemoryStore(join(root, "memory")),
   );
+}
+
+function withProviderEnv(input: { provider: string }): () => void {
+  const previous = {
+    provider: process.env.AGENTFLOW_LLM_PROVIDER,
+    model: process.env.AGENTFLOW_DEEPSEEK_MODEL,
+    key: process.env.AGENTFLOW_DEEPSEEK_API_KEY,
+    fallbackKey: process.env.DEEPSEEK_API_KEY,
+  };
+  process.env.AGENTFLOW_LLM_PROVIDER = input.provider;
+  delete process.env.AGENTFLOW_DEEPSEEK_MODEL;
+  delete process.env.AGENTFLOW_DEEPSEEK_API_KEY;
+  delete process.env.DEEPSEEK_API_KEY;
+  return () => {
+    restoreEnv("AGENTFLOW_LLM_PROVIDER", previous.provider);
+    restoreEnv("AGENTFLOW_DEEPSEEK_MODEL", previous.model);
+    restoreEnv("AGENTFLOW_DEEPSEEK_API_KEY", previous.key);
+    restoreEnv("DEEPSEEK_API_KEY", previous.fallbackKey);
+  };
 }
 
 function mustFindRole(result: Awaited<ReturnType<ProfileWorkflowRunner["run"]>>, role: string) {

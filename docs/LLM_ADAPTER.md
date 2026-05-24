@@ -142,9 +142,9 @@ npm run workflow:run-profile -- \
   --allow-llm
 ```
 
-`--allow-llm` is required for profile runs that contain `type: "llm"` nodes. If the active provider has no credential, the profile runner blocks before calling the runtime. For DeepSeek, set `AGENTFLOW_LLM_PROVIDER=deepseek` and configure the DeepSeek credential in the environment.
+`--allow-llm` is required for profile runs that contain `type: "llm"` nodes. The `agent-workforce-llm` pilot additionally requires `AGENTFLOW_LLM_PROVIDER=deepseek`; the default `mock` provider is blocked before runtime execution. If the active provider has no credential, the profile runner also blocks before calling the runtime.
 
-LLM-backed proof requires both runtime trace data and a node-level LLM call record. Role Timeline and subagent metadata should show `executorType=llm`, `isMock=false`, `isLLMBacked=true`, `modelProvider=deepseek`, `modelName=deepseek-v4-flash` or the configured model, and `callStatus=completed`. A node without `modelProvider` and `callStatus` must not be called LLM-backed.
+LLM-backed proof requires both runtime trace data and a node-level non-mock LLM call record. Role Timeline and subagent metadata should show `executorType=llm`, `isMock=false`, `isLLMBacked=true`, `modelProvider=deepseek`, `modelName=deepseek-v4-flash` or the configured model, and `callStatus=completed`. A node without `modelProvider` and `callStatus`, or with `modelProvider=mock` / `modelName=mock-structured`, must not be called LLM-backed.
 
 ## Structured Output Stability
 

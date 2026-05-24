@@ -20,7 +20,7 @@ Each directory contains `input.json`, `output.json`, `metadata.json`, `prompt.md
 - `callStatus`
 - input, output, and metadata artifact paths
 
-`isLLMBacked=true` is allowed only when the runtime has an LLM call record for that node. A node configured as `type: "llm"` but missing a call record remains `isLLMBacked=false`. Completed DeepSeek calls should show `modelProvider=deepseek`, `modelName=deepseek-v4-flash` or the configured model, and `callStatus=completed`.
+`isLLMBacked=true` is allowed only when the runtime has a non-mock LLM call record for that node. A node configured as `type: "llm"` but missing a call record remains `isLLMBacked=false`. A call record with `provider=mock` or `model=mock-structured` is also not LLM-backed proof. Completed DeepSeek calls should show `modelProvider=deepseek`, `modelName=deepseek-v4-flash` or the configured model, and `callStatus=completed`.
 
 Mock dispatches are valid runtime simulations, but they must stay labeled `isMock=true`, `isLLMBacked=false`, and `callStatus=not_applicable`.
 
@@ -39,4 +39,4 @@ npm run workflow:run-profile -- \
   --allow-llm
 ```
 
-Without `--allow-llm`, the profile runner blocks before runtime execution. Without a configured DeepSeek credential, it also blocks before runtime execution.
+Without `--allow-llm`, the profile runner blocks before runtime execution. If the active provider is still `mock`, or if a DeepSeek credential is missing, it also blocks before runtime execution.

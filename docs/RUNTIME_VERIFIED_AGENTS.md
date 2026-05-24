@@ -78,7 +78,7 @@ npm run workflow:run-profile -- \
   --allow-llm
 ```
 
-The runner blocks this profile unless `--allow-llm` is present. If DeepSeek credentials are not configured, it blocks before the runtime starts. Use `npm run llm:config` to confirm `provider`, `model`, `hasApiKey`, and `warnings`.
+The runner blocks this profile unless `--allow-llm` is present. It also requires `provider=deepseek`; the default `mock` provider is not allowed for this pilot. If DeepSeek credentials are not configured, it blocks before the runtime starts. Use `npm run llm:config` to confirm `provider`, `model`, `hasApiKey`, and `warnings`.
 
 An LLM-backed role requires a real LLM call record. A row or metadata file must include:
 
@@ -91,7 +91,7 @@ modelName: deepseek-v4-flash
 callStatus: completed
 ```
 
-If `modelProvider` or `callStatus` is missing, the role must not be described as LLM-backed. Mock rows remain labeled `mock subagent simulation, not LLM-backed`.
+If `modelProvider` or `callStatus` is missing, or if the call record says `modelProvider=mock` / `modelName=mock-structured`, the role must not be described as LLM-backed. Mock rows remain labeled `mock subagent simulation, not LLM-backed`.
 
 If you need real node intelligence rather than a visible simulation, do not use `mock` nodes. Use `type: "llm"` with explicit provider configuration or add a subagent-backed executor/adapter that writes structured output through `SchemaValidator`. Mock output may be used to test routing and formatting, but it must not be presented as a real LLM or subagent result.
 

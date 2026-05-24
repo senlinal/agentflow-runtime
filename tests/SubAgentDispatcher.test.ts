@@ -48,6 +48,30 @@ test("SubAgentDispatcher", async (t) => {
     assert.equal(metadata.modelProvider, undefined);
     assert.equal(metadata.callStatus, undefined);
   });
+
+  await t.test("does not mark mock-structured LLM calls as LLM-backed", async () => {
+    const runDir = join(tmpdir(), `agentflow-subagent-mock-call-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    const dispatcher = new SubAgentDispatcher(new SubAgentArtifactStore(runDir));
+    const context = createInitialContext({ taskId: "test", userGoal: "解释一下咖啡的做法" });
+    context.runtimeMetadata = {
+      llmCalls: [{
+        nodeId: "planner",
+        provider: "mock",
+        model: "mock-structured",
+        success: true,
+      }],
+    };
+
+    const handle = await dispatcher.start(llmPlannerNode(), context, 0);
+    const record = await dispatcher.complete(handle, { planId: "plan", summary: "coffee plan" }, context);
+    const metadata = JSON.parse(await readFile(record.metadataPath, "utf8")) as SubAgentDispatchMetadata;
+
+    assert.equal(metadata.executorType, "llm");
+    assert.equal(metadata.isLLMBacked, false);
+    assert.equal(metadata.modelProvider, "mock");
+    assert.equal(metadata.modelName, "mock-structured");
+    assert.equal(metadata.callStatus, "not_applicable");
+  });
 });
 
 function llmPlannerNode(): AgentNode {

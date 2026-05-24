@@ -100,10 +100,20 @@ function llmMetadata(
 ): Pick<SubAgentDispatchMetadata, "modelProvider" | "modelName" | "callStatus" | "isLLMBacked"> {
   if (executorType !== "llm") return { isLLMBacked: false, callStatus: "not_applicable" };
   if (!llmCall) return { isLLMBacked: false, ...(fallbackStatus ? { callStatus: fallbackStatus } : {}) };
+  const provider = typeof llmCall.provider === "string" ? llmCall.provider : undefined;
+  const model = typeof llmCall.model === "string" ? llmCall.model : undefined;
+  if (!provider || provider === "mock" || model === "mock-structured") {
+    return {
+      isLLMBacked: false,
+      ...(provider ? { modelProvider: provider } : {}),
+      ...(model ? { modelName: model } : {}),
+      callStatus: llmCall.success === false ? "failed" : "not_applicable",
+    };
+  }
   return {
     isLLMBacked: true,
-    ...(typeof llmCall.provider === "string" ? { modelProvider: llmCall.provider } : {}),
-    ...(typeof llmCall.model === "string" ? { modelName: llmCall.model } : {}),
+    modelProvider: provider,
+    ...(model ? { modelName: model } : {}),
     callStatus: llmCall.success === false ? "failed" : "completed",
   };
 }

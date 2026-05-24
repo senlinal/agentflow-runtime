@@ -285,7 +285,10 @@ export class ProfileWorkflowRunner {
 
       if (llmWorkflow) {
         try {
-          LLMConfigLoader.fromEnv(process.env, { validateCredentials: true });
+          const llmConfig = LLMConfigLoader.fromEnv(process.env, { validateCredentials: true });
+          if (profile.id === "agent-workforce-llm" && llmConfig.provider !== "deepseek") {
+            throw new Error(`agent-workforce-llm requires provider=deepseek, got provider=${llmConfig.provider}.`);
+          }
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           steps.push({

@@ -254,7 +254,7 @@ npm run llm:smoke
 
 `llm:smoke` is dry-run by default and does not call external providers. Do not run `--execute` unless you intentionally want a real provider call.
 
-If `npm run llm:config` reports `hasApiKey: false`, do not run the LLM-backed profile. Configure DeepSeek in the environment first. Role metadata without `modelProvider` and `callStatus` is not LLM-backed proof.
+If `npm run llm:config` reports `provider: mock` or `hasApiKey: false`, do not run the LLM-backed profile. Configure DeepSeek in the environment first. Role metadata without `modelProvider` and `callStatus`, or with `mock-structured`, is not LLM-backed proof.
 
 ## 9. Full Local Verification
 

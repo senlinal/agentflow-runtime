@@ -165,7 +165,7 @@ npm run workflow:run-profile -- \
   --allow-llm
 ```
 
-Without `--allow-llm`, the profile runner blocks. Without a configured DeepSeek credential, it also blocks before the runtime starts. A role is LLM-backed only when its timeline row and subagent `metadata.json` include `modelProvider`, `modelName`, `callStatus`, and `isLLMBacked=true`.
+Without `--allow-llm`, the profile runner blocks. If the active provider is still `mock`, or if a DeepSeek credential is missing, it also blocks before the runtime starts. A role is LLM-backed only when its timeline row and subagent `metadata.json` include non-mock `modelProvider`, `modelName`, `callStatus`, and `isLLMBacked=true`.
 
 Profile runs create resumable sessions when scope confirmation is needed:
 
@@ -388,7 +388,7 @@ LLM details:
 - DeepSeek default model is `deepseek-v4-flash`.
 - API keys are read from environment variables and must not be committed.
 - `agent-workforce-basic` is a mock subagent simulation; `agent-workforce-llm` is the opt-in LLM-backed pilot.
-- Missing `modelProvider` or `callStatus` means a role must not be described as LLM-backed.
+- Missing `modelProvider` or `callStatus`, or `modelProvider=mock` / `modelName=mock-structured`, means a role must not be described as LLM-backed.
 - See `docs/LLM_ADAPTER.md` for full details.
 
 ## opencode Adapter
