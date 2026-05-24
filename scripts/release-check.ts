@@ -77,6 +77,7 @@ const requiredFiles = [
   "cli/project-memory-summary.ts",
   "cli/project-memory-compact.ts",
   "cli/project-memory-autonomy.ts",
+  "cli/opencode-workflow-command.ts",
   "demo-task-negotiation.ts",
   "demo-scope-confirmation.ts",
   "demo-e2e-real-project.ts",

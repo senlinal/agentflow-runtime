@@ -44,6 +44,7 @@ const requiredFiles = [
   "cli/project-memory-summary.ts",
   "cli/project-memory-compact.ts",
   "cli/project-memory-autonomy.ts",
+  "cli/opencode-workflow-command.ts",
   "docs/PROJECT_MEMORY.md",
 ];
 
@@ -73,7 +74,7 @@ if (!gitignore.split("\n").includes(".agentflow/project-memory/")) {
 
 const workflowCommand = readFileSync(".opencode/commands/workflow.md", "utf8");
 const workflowCommandLines = workflowCommand.trimEnd().split("\n");
-if (workflowCommandLines.length > 10) {
+if (workflowCommandLines.length > 6) {
   console.error(`workflow.md is too long for a quiet slash command: ${workflowCommandLines.length} lines`);
   process.exit(1);
 }
@@ -82,23 +83,14 @@ if (workflowCommand.includes("```json")) {
   process.exit(1);
 }
 
-for (const requiredText of ["formattedText", "No supervisor plan", "No unavailable tools", "No trace, no agent", "Runtime Proof"]) {
+for (const requiredText of ["!`node --experimental-strip-types cli/opencode-workflow-command.ts $ARGUMENTS`"]) {
   if (!workflowCommand.includes(requiredText)) {
     console.error(`workflow.md does not include quiet workflow entrypoint text: ${requiredText}`);
     process.exit(1);
   }
 }
-for (const requiredText of [
-  "npm run workflow:run-profile -- --task",
-  "Call AgentFlow tool",
-]) {
-  if (!workflowCommand.includes(requiredText)) {
-    console.error(`workflow.md does not include quiet/fallback text: ${requiredText}`);
-    process.exit(1);
-  }
-}
 
-for (const forbiddenText of ["todowrite", "list_files", "bash as the only fallback"]) {
+for (const forbiddenText of ["todowrite", "list_files", "Supervisor", "Research Plan", "run_profile_workflow"]) {
   if (workflowCommand.includes(forbiddenText)) {
     console.error(`workflow.md appears to expose or require forbidden behavior: ${forbiddenText}`);
     process.exit(1);
@@ -127,6 +119,7 @@ for (const requiredText of [
   '"bash": "ask"',
   '"edit": "ask"',
   '"~/development/garbage_item_upload/**": "allow"',
+  '"/Users/*/development/garbage_item_upload/**": "allow"',
 ]) {
   if (!opencodeConfig.includes(requiredText)) {
     console.error(`opencode.json is missing expected AgentFlow MCP or permission setting: ${requiredText}`);
@@ -138,6 +131,14 @@ const mcpServer = readFileSync("mcp/agentflow-server.ts", "utf8");
 for (const requiredText of ["tools/list", "tools/call", "run_profile_workflow", "structuredContent"]) {
   if (!mcpServer.includes(requiredText)) {
     console.error(`AgentFlow MCP server is missing expected text: ${requiredText}`);
+    process.exit(1);
+  }
+}
+
+const policyPlugin = readFileSync(".opencode/plugins/agentflow-policy.ts", "utf8");
+for (const requiredText of ["export async function AgentFlowPolicy", "export default AgentFlowPolicy", "tool.execute.before"]) {
+  if (!policyPlugin.includes(requiredText)) {
+    console.error(`agentflow policy plugin is missing OpenCode function export text: ${requiredText}`);
     process.exit(1);
   }
 }

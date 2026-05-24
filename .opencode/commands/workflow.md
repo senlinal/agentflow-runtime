@@ -1,7 +1,4 @@
-# /workflow
-
-Call AgentFlow tool for the user task.
-Show only returned `formattedText`.
-If unavailable, say to use `npm run workflow:run-profile -- --task "<task>"`.
-No supervisor plan. No unavailable tools. No CodeExecutor unless approved.
-No trace, no agent. Require Runtime Proof before saying roles executed.
+---
+description: Run AgentFlow Runtime and show its verified role timeline
+---
+!`node --experimental-strip-types cli/opencode-workflow-command.ts $ARGUMENTS`

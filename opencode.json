@@ -15,7 +15,8 @@
     "websearch": "allow",
     "external_directory": {
       "*": "ask",
-      "~/development/garbage_item_upload/**": "allow"
+      "~/development/garbage_item_upload/**": "allow",
+      "/Users/*/development/garbage_item_upload/**": "allow"
     }
   }
 }

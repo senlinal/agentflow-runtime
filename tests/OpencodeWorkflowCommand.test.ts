@@ -6,15 +6,22 @@ describe("opencode workflow command", () => {
   it("is quiet, tool-first, and has a non-shell-only fallback", async () => {
     const command = await readFile(".opencode/commands/workflow.md", "utf8");
 
-    assert.ok(command.trimEnd().split("\n").length <= 10);
-    assert.match(command, /formattedText/);
-    assert.match(command, /Call AgentFlow tool/);
-    assert.match(command, /No supervisor plan/);
-    assert.match(command, /No unavailable tools/);
-    assert.match(command, /npm run workflow:run-profile -- --task/);
+    assert.ok(command.trimEnd().split("\n").length <= 6);
+    assert.match(command, /opencode-workflow-command\.ts \$ARGUMENTS/);
     assert.doesNotMatch(command, /```json/);
     assert.doesNotMatch(command, /todowrite/);
     assert.doesNotMatch(command, /list_files/);
+    assert.doesNotMatch(command, /Supervisor/);
+    assert.doesNotMatch(command, /Research Plan/);
+  });
+
+  it("routes slash command arguments through the local AgentFlow CLI shim", async () => {
+    const shim = await readFile("cli/opencode-workflow-command.ts", "utf8");
+
+    assert.match(shim, /ProfileWorkflowRunner/);
+    assert.match(shim, /formattedText/);
+    assert.match(shim, /tokens\[0\] === "run"/);
+    assert.doesNotMatch(shim, /CodeExecutor/);
   });
 
   it("keeps run_profile_workflow as an MCP-backed compatibility wrapper", async () => {
@@ -38,5 +45,14 @@ describe("opencode workflow command", () => {
     assert.match(config, /"bash": "ask"/);
     assert.match(config, /"edit": "ask"/);
     assert.match(config, /"~\/development\/garbage_item_upload\/\*\*": "allow"/);
+    assert.match(config, /"\/Users\/\*\/development\/garbage_item_upload\/\*\*": "allow"/);
+  });
+
+  it("exports the policy plugin as an OpenCode plugin function", async () => {
+    const plugin = await readFile(".opencode/plugins/agentflow-policy.ts", "utf8");
+
+    assert.match(plugin, /export async function AgentFlowPolicy/);
+    assert.match(plugin, /export default AgentFlowPolicy/);
+    assert.match(plugin, /tool\.execute\.before/);
   });
 });
