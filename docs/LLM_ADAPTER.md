@@ -80,7 +80,7 @@ Do not commit `.env`. API keys, tokens, and provider error bodies are sanitized 
 
 ## Running an LLM Workflow
 
-`workflows/abcde-basic.llm.json` is an opt-in template named `abcde-basic-llm`. It is not used by default demos.
+`workflows/abcde-basic.llm.json` is an opt-in template named `abcde-basic-llm`. It is not used by default demos. In the `agent-workforce-llm` pilot, only Planner, Debater, PlannerRevision, and GoalKeeper are LLM nodes. Executor and Verifier remain mock simulation nodes and do not call CodeExecutor.
 
 ```bash
 AGENTFLOW_LLM_PROVIDER=openai-compatible \
@@ -133,6 +133,19 @@ AGENTFLOW_DEEPSEEK_MODEL=deepseek-v4-flash \
 npm run workflow -- --template abcde-basic-llm --input inputs/feasible-task.json
 ```
 
+Profile-run example:
+
+```bash
+npm run workflow:run-profile -- \
+  --profile agent-workforce-llm \
+  --task "解释一下咖啡的做法" \
+  --allow-llm
+```
+
+`--allow-llm` is required for profile runs that contain `type: "llm"` nodes. If the active provider has no credential, the profile runner blocks before calling the runtime. For DeepSeek, set `AGENTFLOW_LLM_PROVIDER=deepseek` and configure the DeepSeek credential in the environment.
+
+LLM-backed proof requires both runtime trace data and a node-level LLM call record. Role Timeline and subagent metadata should show `executorType=llm`, `isMock=false`, `isLLMBacked=true`, `modelProvider=deepseek`, `modelName=deepseek-v4-flash` or the configured model, and `callStatus=completed`. A node without `modelProvider` and `callStatus` must not be called LLM-backed.
+
 ## Structured Output Stability
 
 The adapter requests JSON output and then applies a local stability layer:
@@ -163,6 +176,6 @@ Tests use fake `fetch` responses and never call external APIs. Existing demo wor
 
 - Real providers currently supported: `openai-compatible` and `deepseek`.
 - DeepSeek uses the OpenAI-compatible adapter under the hood.
-- There is no Coding Executor.
+- The LLM workforce pilot does not use CodeExecutor; its Executor role is a safe mock simulation.
 - There is no UI.
 - Real model output can still be inconsistent; schema validation remains the final gate before context writes.

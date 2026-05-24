@@ -1,6 +1,7 @@
 import { ScopeConfirmationService } from "../scope/ScopeConfirmationService.ts";
 import { ScopeConfirmationStore } from "../scope/ScopeConfirmationStore.ts";
 import { TaskBriefLoader } from "../TaskBriefLoader.ts";
+import { LLMConfigLoader } from "../LLMConfigLoader.ts";
 import type { AutonomyDecision, CompactMemorySummary, ProfileSession, ProjectMemoryRecord, ProjectMemorySummary, ScopeConfirmationRecord, TaskBrief, TaskNegotiationResult, WorkflowGraphConfig } from "../types.ts";
 import { WorkflowRunner, type WorkflowRunnerResult } from "../WorkflowRunner.ts";
 import { WorkflowTemplateRegistry } from "../WorkflowTemplateRegistry.ts";
@@ -25,6 +26,7 @@ export type ProfileWorkflowRunRequest = {
   answer?: string;
   dryRun?: boolean;
   allowExecution?: boolean;
+  allowLLM?: boolean;
 };
 
 export type ProfileRoleTimelineEvent = {
@@ -53,6 +55,7 @@ export type ProfileRoleTimelineEvent = {
   workerSessionId?: string;
   modelProvider?: string;
   modelName?: string;
+  callStatus?: string;
   inputArtifactPath?: string;
   outputArtifactPath?: string;
   subAgentMetadataPath?: string;
@@ -82,6 +85,7 @@ export type ProfileWorkflowRunResult = {
   taskBrief: TaskBrief;
   dryRun: boolean;
   allowExecution: boolean;
+  allowLLM: boolean;
   steps: ProfileWorkflowStep[];
   roleTimeline: ProfileRoleTimelineEvent[];
   executedWorkflows: string[];
@@ -171,6 +175,7 @@ export class ProfileWorkflowRunner {
     const workflowChain = this.profileLoader.resolveProfileWorkflowChain(profile);
     const dryRun = request.dryRun === true;
     const allowExecution = request.allowExecution === true;
+    const allowLLM = request.allowLLM === true;
     const steps: ProfileWorkflowStep[] = [];
     const roleTimeline: ProfileRoleTimelineEvent[] = [];
     const warnings = [...validation.warnings, ...(profileRoutingDecision?.warnings ?? [])];
@@ -215,6 +220,7 @@ export class ProfileWorkflowRunner {
         taskBrief,
         dryRun,
         allowExecution,
+        allowLLM,
         steps,
         roleTimeline,
         executedWorkflows: executedWorkflows(steps),
@@ -265,6 +271,34 @@ export class ProfileWorkflowRunner {
         continue;
       }
 
+      const llmWorkflow = isLLMWorkflow(config);
+      if (llmWorkflow && !allowLLM) {
+        steps.push({
+          workflow,
+          status: "blocked",
+          reason: "Workflow contains LLM-backed nodes and allowLLM=false. Pass --allow-llm only for an intentional provider call.",
+        });
+        warnings.push("LLM workflow blocked because allowLLM=false.");
+        blocked = true;
+        continue;
+      }
+
+      if (llmWorkflow) {
+        try {
+          LLMConfigLoader.fromEnv(process.env, { validateCredentials: true });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          steps.push({
+            workflow,
+            status: "blocked",
+            reason: `LLM workflow blocked because provider configuration is incomplete: ${message}`,
+          });
+          warnings.push("Configure DeepSeek with AGENTFLOW_LLM_PROVIDER=deepseek and AGENTFLOW_DEEPSEEK_API_KEY or DEEPSEEK_API_KEY before using --allow-llm.");
+          blocked = true;
+          continue;
+        }
+      }
+
       if (isScopeWorkflow && !scopeConfirmation) {
         steps.push({
           workflow,
@@ -303,6 +337,7 @@ export class ProfileWorkflowRunner {
       taskBrief,
       dryRun,
       allowExecution,
+      allowLLM,
       steps,
       roleTimeline,
       executedWorkflows: executedWorkflows(steps),
@@ -383,6 +418,7 @@ export class ProfileWorkflowRunner {
       workerSessionId: event.workerSessionId,
       modelProvider: event.modelProvider,
       modelName: event.modelName,
+      callStatus: event.callStatus,
       inputArtifactPath: event.inputArtifactPath,
       outputArtifactPath: event.outputArtifactPath,
       subAgentMetadataPath: event.subAgentMetadataPath,
@@ -531,7 +567,7 @@ export class ProfileWorkflowRunner {
           profileId,
           type: "rejected_route",
           title: `Blocked workflow ${step.workflow}`,
-          summary: step.reason,
+          summary: safeMemorySummary(step.reason),
           source: { sessionId: session?.sessionId, workflowRunId: step.runId },
           tags: ["blocked-route", step.workflow],
           status: "active",
@@ -569,6 +605,10 @@ export class ProfileWorkflowRunner {
   }
 }
 
+function safeMemorySummary(value: string): string {
+  return value.replace(/api[_-]?key/gi, "credential variable");
+}
+
 function toOpenCodeSubAgentName(role: string): string {
   return `agentflow-${role.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()}`;
 }
@@ -577,6 +617,10 @@ function isExecutionWorkflow(config: WorkflowGraphConfig): boolean {
   return config.nodes.some((node) =>
     ["code", "test", "materialize", "approval", "dryRun", "execute"].includes(node.type)
   );
+}
+
+function isLLMWorkflow(config: WorkflowGraphConfig): boolean {
+  return config.nodes.some((node) => node.type === "llm");
 }
 
 function toStep(workflow: string, result: WorkflowRunnerResult): ProfileWorkflowStep {

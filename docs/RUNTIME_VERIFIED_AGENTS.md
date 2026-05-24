@@ -10,7 +10,7 @@ Text such as `[Planner]` or `Supervisor plan` is not proof that an AgentFlow rol
 source=runtime_trace
 ```
 
-Each timeline row also shows `nodeType`, `executorType`, `isMock`, `isLLMBacked`, and the configured OpenCode subagent target. `executorType` is read from the runtime trace, which is written from the workflow node configuration. It is not inferred from model prose.
+Each timeline row also shows `nodeType`, `executorType`, `isMock`, `isLLMBacked`, `modelProvider`, `modelName`, `callStatus`, and the configured OpenCode subagent target when those fields exist. `executorType` is read from the runtime trace, which is written from the workflow node configuration. It is not inferred from model prose.
 
 If no trace exists, the formatter must say:
 
@@ -58,7 +58,7 @@ The MCP tool must still obey: No trace, no agent.
 
 ## Agent Workforce LLM Profile
 
-`agent-workforce-llm` points to `abcde-basic-llm`, where the same role sequence is configured as `type: "llm"` nodes. It is opt-in and should not be run unless real LLM configuration is explicitly provided.
+`agent-workforce-llm` points to `abcde-basic-llm`. In the current pilot, Planner, Debater, PlannerRevision, and GoalKeeper are configured as `type: "llm"` thinking roles. Executor and Verifier remain `type: "mock"` so the pilot can answer a small task without invoking CodeExecutor, external project execution, or destructive actions.
 
 Inspect it without calling a real model:
 
@@ -68,6 +68,30 @@ npm run workflow:validate -- --template abcde-basic-llm
 ```
 
 When it is explicitly run with a configured provider, timeline entries must say `executorType: llm`, `isLLMBacked: true`, and `note: llm-backed role execution`.
+
+Run it only with explicit LLM approval:
+
+```bash
+npm run workflow:run-profile -- \
+  --profile agent-workforce-llm \
+  --task "解释一下咖啡的做法" \
+  --allow-llm
+```
+
+The runner blocks this profile unless `--allow-llm` is present. If DeepSeek credentials are not configured, it blocks before the runtime starts. Use `npm run llm:config` to confirm `provider`, `model`, `hasApiKey`, and `warnings`.
+
+An LLM-backed role requires a real LLM call record. A row or metadata file must include:
+
+```text
+executorType: llm
+isMock: false
+isLLMBacked: true
+modelProvider: deepseek
+modelName: deepseek-v4-flash
+callStatus: completed
+```
+
+If `modelProvider` or `callStatus` is missing, the role must not be described as LLM-backed. Mock rows remain labeled `mock subagent simulation, not LLM-backed`.
 
 If you need real node intelligence rather than a visible simulation, do not use `mock` nodes. Use `type: "llm"` with explicit provider configuration or add a subagent-backed executor/adapter that writes structured output through `SchemaValidator`. Mock output may be used to test routing and formatting, but it must not be presented as a real LLM or subagent result.
 

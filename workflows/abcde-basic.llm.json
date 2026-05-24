@@ -1,7 +1,7 @@
 {
   "name": "abcde-basic-llm",
   "version": "1.0.0",
-  "description": "Opt-in ABCDE workflow using real LLM nodes through the OpenAI-compatible adapter.",
+  "description": "Opt-in ABCDE workflow using real LLM nodes for thinking roles and mock simulation for safe Executor/Verifier roles.",
   "start": "planner",
   "maxIterations": 6,
   "inputSchema": "TaskBrief",
@@ -26,8 +26,8 @@
     { "rolePreset": "planner", "type": "llm", "retryPolicy": { "maxAttempts": 2, "backoffMs": 100 } },
     { "rolePreset": "debater", "type": "llm", "retryPolicy": { "maxAttempts": 2, "backoffMs": 100 } },
     { "rolePreset": "planner-revision", "type": "llm", "retryPolicy": { "maxAttempts": 2, "backoffMs": 100 } },
-    { "rolePreset": "executor", "type": "llm", "retryPolicy": { "maxAttempts": 2, "backoffMs": 100 } },
-    { "rolePreset": "verifier", "type": "llm", "retryPolicy": { "maxAttempts": 2, "backoffMs": 100 } },
+    { "rolePreset": "executor", "type": "mock" },
+    { "rolePreset": "verifier", "type": "mock" },
     { "rolePreset": "goalkeeper", "type": "llm", "retryPolicy": { "maxAttempts": 2, "backoffMs": 100 } }
   ],
   "edges": [

@@ -23,6 +23,7 @@ export type RuntimeVerifiedRoleEvent = {
   workerSessionId?: string;
   modelProvider?: string;
   modelName?: string;
+  callStatus?: "completed" | "failed" | "not_applicable";
   inputArtifactPath?: string;
   outputArtifactPath?: string;
   subAgentMetadataPath?: string;
@@ -79,12 +80,13 @@ export class RuntimeTraceRoleExtractor {
           timestamp: item.timestamp,
           source: item.subAgentDispatched ? "subagent_dispatch_trace" as const : "runtime_trace" as const,
           isMock: executorType === "mock",
-          isLLMBacked: executorType === "llm",
+          isLLMBacked: item.isLLMBacked === true,
           subAgentDispatched: item.subAgentDispatched,
           subAgentId: item.subAgentId,
           workerSessionId: item.workerSessionId,
           modelProvider: item.modelProvider,
           modelName: item.modelName,
+          callStatus: item.callStatus,
           inputArtifactPath: item.inputArtifactPath,
           outputArtifactPath: item.outputArtifactPath,
           subAgentMetadataPath: item.subAgentMetadataPath,

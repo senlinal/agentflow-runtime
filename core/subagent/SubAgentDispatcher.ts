@@ -28,7 +28,7 @@ export class SubAgentDispatcher {
       role: node.role,
       executorType: node.type,
       isMock: node.type === "mock",
-      isLLMBacked: node.type === "llm",
+      isLLMBacked: false,
       callStatus: node.type === "llm" ? undefined : "not_applicable",
       inputKeys: node.inputKeys,
       outputKey: node.outputKey,
@@ -56,7 +56,7 @@ export class SubAgentDispatcher {
     const llmCall = latestLlmCallForNode(context, handle.metadata.nodeId);
     const metadata: SubAgentDispatchMetadata = {
       ...handle.metadata,
-      ...llmMetadata(llmCall),
+      ...llmMetadata(handle.metadata.executorType, llmCall),
       completedAt: new Date().toISOString(),
     };
     return this.store.complete({
@@ -70,7 +70,7 @@ export class SubAgentDispatcher {
     const llmCall = latestLlmCallForNode(context, handle.metadata.nodeId);
     const metadata: SubAgentDispatchMetadata = {
       ...handle.metadata,
-      ...llmMetadata(llmCall, "failed"),
+      ...llmMetadata(handle.metadata.executorType, llmCall, "failed"),
       completedAt: new Date().toISOString(),
     };
     return this.store.complete({
@@ -94,14 +94,17 @@ function latestLlmCallForNode(context: WorkflowContext, nodeId: string): Record<
 }
 
 function llmMetadata(
+  executorType: SubAgentDispatchMetadata["executorType"],
   llmCall: Record<string, unknown> | undefined,
   fallbackStatus?: "failed",
-): Pick<SubAgentDispatchMetadata, "modelProvider" | "modelName" | "callStatus"> {
-  if (!llmCall) return fallbackStatus ? { callStatus: fallbackStatus } : {};
+): Pick<SubAgentDispatchMetadata, "modelProvider" | "modelName" | "callStatus" | "isLLMBacked"> {
+  if (executorType !== "llm") return { isLLMBacked: false, callStatus: "not_applicable" };
+  if (!llmCall) return { isLLMBacked: false, ...(fallbackStatus ? { callStatus: fallbackStatus } : {}) };
   return {
+    isLLMBacked: true,
     ...(typeof llmCall.provider === "string" ? { modelProvider: llmCall.provider } : {}),
     ...(typeof llmCall.model === "string" ? { modelName: llmCall.model } : {}),
-    callStatus: llmCall.success === false ? "failed" : "success",
+    callStatus: llmCall.success === false ? "failed" : "completed",
   };
 }
 

@@ -120,7 +120,7 @@ Built-in profiles:
 - `frontend-site-build`: handles single-page websites, landing pages, personal sites, HTML/CSS/JS, and lightweight React or Next.js page work. It starts with negotiation and does not deploy, delete files, call real LLMs, or execute code changes by default.
 - `task-solving`: handles explanations, definitions, how-to answers, and conceptual help. It preserves `userRequest`, sets `expectedDeliverable`, and verifies the actual deliverable rather than workflow metadata.
 - `agent-workforce-basic`: runs `abcde-basic` to visibly demonstrate Planner, Debater, PlannerRevision, Executor, Verifier, and GoalKeeper as runtime-traced roles.
-- `agent-workforce-llm`: opt-in profile for the same visible workforce using `abcde-basic-llm` LLM nodes. Do not run it without explicit real LLM configuration.
+- `agent-workforce-llm`: opt-in profile for the same visible workforce using `abcde-basic-llm`. Planner, Debater, PlannerRevision, and GoalKeeper can be DeepSeek-backed; Executor and Verifier remain mock simulation in the pilot. Do not run it without explicit `--allow-llm` and real LLM configuration.
 
 The opencode `/workflow` command and `workflow:run-profile` use a rule-based profile router before choosing a default workflow. If `profiles/current.json` points to `rag-optimization` but the user asks for a Claude.ai-style personal website, the runner records `detectedTaskType=frontend_site_build`, recommends `frontend-site-build`, and can safely auto-switch when the user did not explicitly choose a profile. See `docs/WORKFLOW_PROFILES.md`.
 
@@ -137,7 +137,7 @@ The first implementation runs only safe pre-execution profile steps by default. 
 
 The text output is formatted by the profile runner and includes `Routing Decision`, `Autonomy Decision`, `AgentFlow Role Timeline`, artifact paths, warnings, and next actions. The opencode `/workflow` command should show this runtime result instead of exposing its internal command protocol.
 
-Role timelines are runtime-verified: no trace, no agent. A role appears only when it is present in `trace.json` with `source=runtime_trace`. Each row shows `nodeType`, `executorType`, `isMock`, and `isLLMBacked`, so mock simulations cannot be mistaken for LLM-backed agents. To demonstrate the full multi-agent workforce:
+Role timelines are runtime-verified: no trace, no agent. A role appears only when it is present in `trace.json` with `source=runtime_trace` or `source=subagent_dispatch_trace`. Each row shows `nodeType`, `executorType`, `isMock`, `isLLMBacked`, `modelProvider`, `modelName`, and `callStatus` when available, so mock simulations cannot be mistaken for LLM-backed agents. To demonstrate the full multi-agent workforce:
 
 ```bash
 npm run workflow:run-profile -- --profile agent-workforce-basic --task "演示 Planner、Debater、Executor、Verifier 多角色协作"
@@ -155,6 +155,17 @@ Inspect the opt-in LLM workforce profile without calling a model:
 ```bash
 npm run workflow:profile:inspect -- --profile agent-workforce-llm
 ```
+
+Run the controlled DeepSeek-backed pilot only with explicit approval:
+
+```bash
+npm run workflow:run-profile -- \
+  --profile agent-workforce-llm \
+  --task "解释一下咖啡的做法" \
+  --allow-llm
+```
+
+Without `--allow-llm`, the profile runner blocks. Without a configured DeepSeek credential, it also blocks before the runtime starts. A role is LLM-backed only when its timeline row and subagent `metadata.json` include `modelProvider`, `modelName`, `callStatus`, and `isLLMBacked=true`.
 
 Profile runs create resumable sessions when scope confirmation is needed:
 
@@ -376,6 +387,8 @@ LLM details:
 - DeepSeek is first-class and reuses the OpenAI-compatible client.
 - DeepSeek default model is `deepseek-v4-flash`.
 - API keys are read from environment variables and must not be committed.
+- `agent-workforce-basic` is a mock subagent simulation; `agent-workforce-llm` is the opt-in LLM-backed pilot.
+- Missing `modelProvider` or `callStatus` means a role must not be described as LLM-backed.
 - See `docs/LLM_ADAPTER.md` for full details.
 
 ## opencode Adapter

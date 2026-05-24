@@ -88,7 +88,7 @@ test("RuntimeTraceRoleExtractor", async (t) => {
     assert.equal(roles[0].isLLMBacked, false);
   });
 
-  await t.test("marks llm nodes as llm-backed without guessing from text", () => {
+  await t.test("does not mark llm nodes as llm-backed without dispatch call evidence", () => {
     const roles = extractor.extractFromTrace([{
       step: 0,
       nodeId: "planner",
@@ -105,7 +105,7 @@ test("RuntimeTraceRoleExtractor", async (t) => {
 
     assert.equal(roles[0].executorType, "llm");
     assert.equal(roles[0].isMock, false);
-    assert.equal(roles[0].isLLMBacked, true);
+    assert.equal(roles[0].isLLMBacked, false);
   });
 
   await t.test("throws clearly when trace file is missing", async () => {

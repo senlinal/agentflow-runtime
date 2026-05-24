@@ -15,6 +15,7 @@ const result = await runQuietly(() =>
     answer: args.answer,
     dryRun: args.dryRun === "true",
     allowExecution: args.allowExecution === "true",
+    allowLLM: args.allowLLM === "true" || args["allow-llm"] === "true",
   })
 );
 

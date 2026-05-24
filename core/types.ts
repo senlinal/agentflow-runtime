@@ -707,6 +707,7 @@ export type WorkflowTrace = {
   isLLMBacked?: boolean;
   modelProvider?: string;
   modelName?: string;
+  callStatus?: "completed" | "failed" | "not_applicable";
   inputArtifactPath?: string;
   outputArtifactPath?: string;
   subAgentMetadataPath?: string;
@@ -782,7 +783,7 @@ export type SubAgentDispatchMetadata = {
   isLLMBacked: boolean;
   modelProvider?: string;
   modelName?: string;
-  callStatus?: "success" | "failed" | "not_applicable";
+  callStatus?: "completed" | "failed" | "not_applicable";
   inputKeys: string[];
   outputKey: keyof WorkflowContext;
   outputSchema?: OutputSchemaName;

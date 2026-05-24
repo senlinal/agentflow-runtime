@@ -172,6 +172,7 @@ function summarizeDispatch(record: SubAgentArtifactRecord | undefined): Partial<
     isLLMBacked: record.isLLMBacked,
     ...(record.modelProvider ? { modelProvider: record.modelProvider } : {}),
     ...(record.modelName ? { modelName: record.modelName } : {}),
+    ...(record.callStatus ? { callStatus: record.callStatus } : {}),
     inputArtifactPath: record.inputArtifactPath,
     outputArtifactPath: record.outputArtifactPath,
     subAgentMetadataPath: record.metadataPath,

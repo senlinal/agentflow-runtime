@@ -98,7 +98,7 @@ npm run mcp:agentflow:smoke
 ```
 
 The Role Timeline is built from `trace.json`. No trace means no displayed AgentFlow role.
-Timeline rows include `executorType`. `executorType: mock` is labeled as `mock simulation, not LLM-backed`; `executorType: llm` is labeled as `llm-backed role execution`.
+Timeline rows include `executorType`, `isMock`, `isLLMBacked`, `modelProvider`, `modelName`, and `callStatus` when available. `executorType: mock` is labeled as `mock simulation, not LLM-backed`; `executorType: llm` is labeled as LLM-backed only when a matching LLM call record exists.
 
 For OpenCode, restart the app after config changes and confirm the `agentflow` MCP tools are visible. `/workflow` should prefer `agentflow_run_profile_workflow` and display only its `formattedText`.
 
@@ -107,6 +107,17 @@ Inspect the opt-in LLM-backed workforce profile without calling a provider:
 ```bash
 npm run workflow:profile:inspect -- --profile agent-workforce-llm
 ```
+
+Run the controlled DeepSeek pilot only when you intend a real provider call:
+
+```bash
+npm run workflow:run-profile -- \
+  --profile agent-workforce-llm \
+  --task "解释一下咖啡的做法" \
+  --allow-llm
+```
+
+`agent-workforce-basic` is a mock subagent simulation. `agent-workforce-llm` uses DeepSeek for Planner, Debater, PlannerRevision, and GoalKeeper; Executor and Verifier remain mock simulation in the pilot.
 
 If the run asks for scope confirmation, inspect and resume the profile session:
 
@@ -242,6 +253,8 @@ npm run llm:smoke
 ```
 
 `llm:smoke` is dry-run by default and does not call external providers. Do not run `--execute` unless you intentionally want a real provider call.
+
+If `npm run llm:config` reports `hasApiKey: false`, do not run the LLM-backed profile. Configure DeepSeek in the environment first. Role metadata without `modelProvider` and `callStatus` is not LLM-backed proof.
 
 ## 9. Full Local Verification
 
