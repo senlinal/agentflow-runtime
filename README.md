@@ -116,12 +116,14 @@ Built-in profiles:
 - `rag-optimization`: starts with `task-negotiation`, uses `confirmed-scope-gate`, then proceeds to feasibility. It blocks production index changes, deployment, deletion, and unconfirmed metric changes.
 - `coding-safe-fix`: defaults to the controlled code/test/verify and approval chain for small scoped fixes.
 - `external-project-fix`: copies external projects into temporary workspaces and exports patches for manual review.
+- `frontend-site-build`: handles single-page websites, landing pages, personal sites, HTML/CSS/JS, and lightweight React or Next.js page work. It starts with negotiation and does not deploy, delete files, call real LLMs, or execute code changes by default.
 
-The opencode `/workflow` command reads the active profile before choosing a default workflow. If a request does not fit the active profile, the agent should recommend a profile switch instead of forcing the task through the wrong template. See `docs/WORKFLOW_PROFILES.md`.
+The opencode `/workflow` command and `workflow:run-profile` use a rule-based profile router before choosing a default workflow. If `profiles/current.json` points to `rag-optimization` but the user asks for a Claude.ai-style personal website, the runner records `detectedTaskType=frontend_site_build`, recommends `frontend-site-build`, and can safely auto-switch when the user did not explicitly choose a profile. See `docs/WORKFLOW_PROFILES.md`.
 
 Run the active profile directly from CLI:
 
 ```bash
+npm run workflow:route-profile -- --task "做一个仿 Claude.ai 风格的个人网站"
 npm run workflow:run-profile -- --task "继续 RAG 召回优化，分析上一轮实验结果，给出下一步方案"
 npm run workflow:run-profile -- --profile rag-optimization --task "..."
 ```

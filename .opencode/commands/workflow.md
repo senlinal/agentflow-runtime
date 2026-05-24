@@ -16,8 +16,8 @@ Run AgentFlow Runtime through the active workflow profile. This command is an ex
 ## Tool-First Execution
 
 1. Read `AGENTS.md` only as project policy context.
-2. Respect profile policy files such as `docs/WORKER_POLICY.md` and `docs/AUTONOMY_POLICY.md`; the runner handles profile memory, `memory:summary`, `memory:compact`, and `memory:autonomy` behavior.
-3. Call the custom tool `run_profile_workflow` first.
+2. Respect profile policy files such as `docs/WORKER_POLICY.md` and `docs/AUTONOMY_POLICY.md`; the runner handles profile routing, profile memory, `memory:summary`, `memory:compact`, and `memory:autonomy` behavior.
+3. Call the custom tool `run_profile_workflow` first. Do not force the task through `profiles/current.json` if the runner reports a better profile route.
 4. Use this shape for a normal task. This runs safe profile preflight roles such as `MemoryAutonomyGate`, `TaskNegotiator`, and `ConfirmedScopeGate`, while keeping execution-capable workflows blocked:
 
 ```json
@@ -43,7 +43,7 @@ Use `"dryRun": true` only when the user explicitly asks for a preview without ru
 }
 ```
 
-6. If `run_profile_workflow` is not available, fall back to bash:
+6. If `run_profile_workflow` is not available, fall back to bash. The CLI also runs profile routing before executing the safe profile chain:
 
 ```bash
 npm run workflow:run-profile -- --task "<user task>"
@@ -60,8 +60,12 @@ npm run workflow:run-profile -- --sessionId "<sessionId>" --answer "<user answer
 ## Active Profile Behavior
 
 - The runner reads `profiles/current.json`.
-- The active profile decides the default workflow chain.
+- The runner first routes the task by type, then uses the active profile only when it matches or when the user explicitly selected it.
+- If the active profile is `rag-optimization` but the task is clearly a website or landing-page build, the runner recommends and may safely auto-switch to `frontend-site-build`.
+- Show `originalProfile`, `profileSwitched`, `detectedTaskType`, `recommendedProfile`, and `routingReason` when present.
+- The selected profile decides the default workflow chain.
 - `rag-optimization` starts with `task-negotiation`, then `confirmed-scope-gate`, then feasibility followup when scope is confirmed.
+- `frontend-site-build` starts with `task-negotiation` for single-page sites, landing pages, personal websites, HTML/CSS/JS, React/Next.js, and Claude.ai-style page requests. It must not deploy, delete files, call real LLMs, or execute code changes by default.
 - `coding-safe-fix` and `external-project-fix` are execution-capable profiles and must remain blocked unless explicit execution approval is part of the workflow and `allowExecution=true` is deliberately provided.
 - If the user task does not match the active profile, recommend a profile switch instead of forcing the task through the wrong profile.
 
@@ -72,6 +76,10 @@ After the tool or fallback command returns, show a concise runtime result. Do no
 Include:
 
 - `profile`
+- `originalProfile`
+- `profileSwitched`
+- `detectedTaskType`
+- `recommendedProfile`
 - `finalStatus`
 - `autonomyDecision`
 - `autonomyReason`

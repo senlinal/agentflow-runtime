@@ -26,6 +26,21 @@ Uses the controlled code-test-verify and approval chain. It is for small scoped 
 
 Uses the external project import and patch export flow. It copies external projects into a temporary workspace and exports patch guidance without modifying the source project.
 
+### frontend-site-build
+
+Uses `task-negotiation` first for single-page sites, landing pages, personal homepages, static HTML/CSS/JS, and lightweight React or Next.js page work. It defaults to local generation guidance, no deploys, no real LLM calls, no file deletion, and no automatic code execution. If a future step needs to modify an existing external project, it should use the external project import flow or an explicitly scoped workspace.
+
+## Auto Profile Router
+
+`/workflow` and `workflow:run-profile` run a rule-based profile router before executing the safe profile chain. The router detects common task categories:
+
+- RAG, retrieval, knowledge base, recall, reranker, embedding, chunk, or query rewrite -> `rag-optimization`.
+- Bug fixes, failing tests, scoped code changes, or refactors -> `coding-safe-fix`.
+- External project paths, real project patch export, or manual patch review -> `external-project-fix`.
+- Websites, personal sites, landing pages, HTML/CSS, React, Next.js, or Claude.ai-style page requests -> `frontend-site-build`.
+
+If the task clearly mismatches `profiles/current.json`, the runner records the routing decision. Low-risk profile switches such as `rag-optimization` to `frontend-site-build` are allowed automatically when the user did not explicitly choose a profile. Execution-capable routes still remain guarded and blocked unless a dedicated explicit approval path is used.
+
 ## Commands
 
 ```bash
@@ -33,6 +48,7 @@ npm run workflow:profiles
 npm run workflow:profile
 npm run workflow:profile:use -- --profile rag-optimization
 npm run workflow:profile:inspect -- --profile rag-optimization
+npm run workflow:route-profile -- --task "做一个仿 Claude.ai 风格的个人网站"
 npm run workflow:run-profile -- --task "继续 RAG 召回优化，分析上一轮实验结果，给出下一步方案"
 ```
 

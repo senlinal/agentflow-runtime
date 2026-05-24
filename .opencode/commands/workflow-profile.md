@@ -8,6 +8,7 @@ Inspect or switch the active workflow profile used by `/workflow`.
 /workflow-profile
 /workflow-profile use rag-optimization
 /workflow-profile inspect rag-optimization
+/workflow-profile inspect frontend-site-build
 ```
 
 If direct command arguments are not available, run the matching npm commands:
@@ -26,6 +27,7 @@ npm run workflow:profile:use -- --profile rag-optimization
    - `rag-optimization`
    - `coding-safe-fix`
    - `external-project-fix`
+   - `frontend-site-build`
 3. Explain that `/workflow` uses the active profile automatically.
 4. If switching profile, call the local command `npm run workflow:profile:use -- --profile <id>`.
 5. Do not run execution workflows while showing or switching profiles.

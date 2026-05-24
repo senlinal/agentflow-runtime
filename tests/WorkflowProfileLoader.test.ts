@@ -11,6 +11,7 @@ test("WorkflowProfileLoader", async (t) => {
     assert.ok(profiles.some((profile) => profile.id === "rag-optimization"));
     assert.ok(profiles.some((profile) => profile.id === "coding-safe-fix"));
     assert.ok(profiles.some((profile) => profile.id === "external-project-fix"));
+    assert.ok(profiles.some((profile) => profile.id === "frontend-site-build"));
   });
 
   await t.test("loads current profile", async () => {
@@ -26,6 +27,7 @@ test("WorkflowProfileLoader", async (t) => {
     assert.equal((await loader.loadProfile("rag-optimization")).profile.defaultWorkflow, "task-negotiation");
     assert.equal((await loader.loadProfile("coding-safe-fix")).profile.defaultWorkflow, "code-test-verify");
     assert.equal((await loader.loadProfile("external-project-fix")).profile.externalProjectMode, "copy_to_temp_workspace");
+    assert.equal((await loader.loadProfile("frontend-site-build")).profile.defaultWorkflow, "task-negotiation");
   });
 
   await t.test("fails when current activeProfile does not exist", async () => {

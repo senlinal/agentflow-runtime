@@ -56,10 +56,19 @@ npm run workflow:validate -- --template abcde-basic
 npm run workflow:profiles
 npm run workflow:profile
 npm run workflow:profile:inspect -- --profile rag-optimization
+npm run workflow:profile:inspect -- --profile frontend-site-build
 npm run workflow:profile:use -- --profile rag-optimization
 ```
 
-The default `rag-optimization` profile starts with task negotiation, then uses confirmed scope as a gate before feasibility. `coding-safe-fix` is for scoped code fixes, and `external-project-fix` is for temp-workspace external project runs and patch export.
+The default `rag-optimization` profile starts with task negotiation, then uses confirmed scope as a gate before feasibility. `coding-safe-fix` is for scoped code fixes, `external-project-fix` is for temp-workspace external project runs and patch export, and `frontend-site-build` is for personal sites, landing pages, static HTML/CSS/JS, and lightweight React/Next.js page work.
+
+Check how a task will route before running it:
+
+```bash
+npm run workflow:route-profile -- --task "做一个仿 Claude.ai 风格的个人网站"
+```
+
+If the current profile is `rag-optimization`, this website task routes to `frontend-site-build` instead of forcing the wrong profile.
 
 Run the active profile directly:
 

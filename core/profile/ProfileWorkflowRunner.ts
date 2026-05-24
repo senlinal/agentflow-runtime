@@ -6,6 +6,7 @@ import { WorkflowRunner, type WorkflowRunnerResult } from "../WorkflowRunner.ts"
 import { WorkflowTemplateRegistry } from "../WorkflowTemplateRegistry.ts";
 import { EscalationGate } from "./EscalationGate.ts";
 import { MemoryAutonomyGate } from "./MemoryAutonomyGate.ts";
+import { ProfileRouter, type ProfileRoutingDecision } from "./ProfileRouter.ts";
 import { WorkflowProfileLoader, type WorkflowProfile } from "./WorkflowProfileLoader.ts";
 import { ProfileSessionStore } from "./ProfileSessionStore.ts";
 import { ProjectMemoryStore } from "./ProjectMemoryStore.ts";
@@ -61,6 +62,9 @@ export type ProfileWorkflowRunResult = {
   warnings: string[];
   finalStatus: "planned" | "completed" | "blocked" | "stopped";
   nextActions: string[];
+  originalProfileId?: string;
+  profileSwitched: boolean;
+  profileRoutingDecision?: ProfileRoutingDecision;
   autonomyDecision?: AutonomyDecision;
   session?: ProfileSession;
   scopeConfirmationId?: string;
@@ -76,6 +80,7 @@ export class ProfileWorkflowRunner {
   private readonly memoryStore: ProjectMemoryStore;
   private readonly autonomyGate: MemoryAutonomyGate;
   private readonly escalationGate: EscalationGate;
+  private readonly profileRouter: ProfileRouter;
 
   constructor(
     profileLoader = new WorkflowProfileLoader(),
@@ -86,6 +91,7 @@ export class ProfileWorkflowRunner {
     memoryStore = new ProjectMemoryStore(),
     autonomyGate = new MemoryAutonomyGate(),
     escalationGate = new EscalationGate(),
+    profileRouter = new ProfileRouter(),
   ) {
     this.profileLoader = profileLoader;
     this.workflowRegistry = workflowRegistry;
@@ -95,13 +101,26 @@ export class ProfileWorkflowRunner {
     this.memoryStore = memoryStore;
     this.autonomyGate = autonomyGate;
     this.escalationGate = escalationGate;
+    this.profileRouter = profileRouter;
   }
 
   async run(request: ProfileWorkflowRunRequest): Promise<ProfileWorkflowRunResult> {
     const requestedProfile = request.profileId ?? request.profile;
-    const profileResolution = requestedProfile
+    let profileResolution = requestedProfile
       ? await this.resolveExplicitProfile(requestedProfile)
       : await this.profileLoader.loadCurrentProfile();
+    const originalProfileId = profileResolution.profile.id;
+    const profileRoutingDecision = this.routeProfile(request, originalProfileId, requestedProfile);
+    let profileSwitched = false;
+    if (
+      !requestedProfile
+      && profileRoutingDecision?.shouldSwitch
+      && profileRoutingDecision.safeToAutoSwitch
+      && profileRoutingDecision.recommendedProfile
+    ) {
+      profileResolution = await this.resolveExplicitProfile(profileRoutingDecision.recommendedProfile);
+      profileSwitched = true;
+    }
     const profile = profileResolution.profile;
     const validation = await this.profileLoader.validateProfile(profile);
     if (!validation.valid) throw new Error(`Workflow profile is invalid: ${validation.errors.join("; ")}`);
@@ -113,7 +132,10 @@ export class ProfileWorkflowRunner {
     const allowExecution = request.allowExecution === true;
     const steps: ProfileWorkflowStep[] = [];
     const roleTimeline: ProfileRoleTimelineEvent[] = [];
-    const warnings = [...validation.warnings];
+    const warnings = [...validation.warnings, ...(profileRoutingDecision?.warnings ?? [])];
+    if (profileSwitched && profileRoutingDecision?.recommendedProfile) {
+      warnings.push(`Auto-switched profile from ${originalProfileId} to ${profileRoutingDecision.recommendedProfile}: ${profileRoutingDecision.reason}`);
+    }
     let profileSession: ProfileSession | undefined = resume?.session;
     const compactedMemory = await this.memoryStore.getCompacted(profile.id);
     const initialMemorySummary = await this.memoryStore.summarize(profile.id, 10);
@@ -176,6 +198,9 @@ export class ProfileWorkflowRunner {
         warnings,
         finalStatus: "blocked",
         nextActions: escalation.nextAllowedActions,
+        originalProfileId,
+        profileSwitched,
+        ...(profileRoutingDecision ? { profileRoutingDecision } : {}),
         autonomyDecision,
         memorySummary,
         ...(profileSession ? { session: profileSession } : {}),
@@ -289,6 +314,9 @@ export class ProfileWorkflowRunner {
       warnings,
       finalStatus: finalProfileStatus(steps, dryRun),
       nextActions: nextActions(profile, steps, memorySummary),
+      originalProfileId,
+      profileSwitched,
+      ...(profileRoutingDecision ? { profileRoutingDecision } : {}),
       autonomyDecision,
       memorySummary,
       ...(profileSession ? { session: profileSession } : {}),
@@ -302,6 +330,20 @@ export class ProfileWorkflowRunner {
       : await this.profileLoader.loadCurrentProfile();
     const { summary } = await this.memoryStore.compact(resolved.profile.id);
     return summary;
+  }
+
+  private routeProfile(
+    request: ProfileWorkflowRunRequest,
+    currentProfile: string,
+    requestedProfile?: string,
+  ): ProfileRoutingDecision | undefined {
+    const task = request.task?.trim();
+    if (!task) return undefined;
+    return this.profileRouter.route({
+      task,
+      currentProfile,
+      explicitProfile: requestedProfile,
+    });
   }
 
   private async createPendingSession(

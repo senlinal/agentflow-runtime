@@ -1,0 +1,42 @@
+{
+  "id": "frontend-site-build",
+  "name": "Frontend Site Build Profile",
+  "description": "Profile for single-page websites, landing pages, personal homepages, and lightweight HTML/CSS/JS or React/Next.js page work.",
+  "defaultWorkflow": "task-negotiation",
+  "followupWorkflows": [
+    "code-test-verify"
+  ],
+  "defaultInput": "inputs/feasible-task.json",
+  "policyFiles": [
+    "docs/AGENT_POLICY.md",
+    "docs/WORKER_POLICY.md",
+    "docs/AUTONOMY_POLICY.md",
+    "docs/CODING_EXECUTOR.md"
+  ],
+  "memoryFiles": [
+    "docs/PROJECT_MEMORY.md"
+  ],
+  "defaultConstraints": [
+    "do_not_delete_files",
+    "do_not_deploy",
+    "do_not_call_real_llm",
+    "generate_local_files_by_default",
+    "provide_local_start_command",
+    "use_external_project_import_for_external_workspaces"
+  ],
+  "defaultBlockedActions": [
+    "delete_files",
+    "deploy",
+    "call_real_llm",
+    "modify_external_project_directly",
+    "auto_execute_code_changes"
+  ],
+  "autonomyMode": "balanced",
+  "defaultOutput": [
+    "summary",
+    "trace",
+    "scope_questions",
+    "local_run_instructions",
+    "next_actions"
+  ]
+}

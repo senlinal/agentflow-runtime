@@ -26,6 +26,8 @@ const requiredFiles = [
   "profiles/rag-optimization.json",
   "profiles/coding-safe-fix.json",
   "profiles/external-project-fix.json",
+  "profiles/frontend-site-build.json",
+  "core/profile/ProfileRouter.ts",
   "core/profile/ProjectMemoryStore.ts",
   "core/profile/MemoryAutonomyGate.ts",
   "core/profile/EscalationGate.ts",
@@ -61,7 +63,7 @@ if (!gitignore.split("\n").includes(".agentflow/project-memory/")) {
 }
 
 const workflowCommand = readFileSync(".opencode/commands/workflow.md", "utf8");
-for (const requiredText of ["profiles/current.json", "WORKER_POLICY", "AUTONOMY_POLICY", "memory:summary", "memory:autonomy"]) {
+for (const requiredText of ["profiles/current.json", "WORKER_POLICY", "AUTONOMY_POLICY", "memory:summary", "memory:autonomy", "frontend-site-build"]) {
   if (!workflowCommand.includes(requiredText)) {
     console.error(`workflow.md does not reference ${requiredText}`);
     process.exit(1);

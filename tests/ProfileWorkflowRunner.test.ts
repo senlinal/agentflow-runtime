@@ -42,6 +42,46 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.equal(result.steps.some((step) => step.runId), false);
   });
 
+  await t.test("auto-switches website tasks from rag profile to frontend-site-build", async () => {
+    const result = await createRunner().run({
+      task: "做一个仿 Claude.ai 风格的个人网站",
+      dryRun: true,
+    });
+
+    assert.equal(result.originalProfileId, "rag-optimization");
+    assert.equal(result.profileId, "frontend-site-build");
+    assert.equal(result.profileSwitched, true);
+    assert.equal(result.profileRoutingDecision?.detectedTaskType, "frontend_site_build");
+    assert.equal(result.profileRoutingDecision?.recommendedProfile, "frontend-site-build");
+    assert.deepEqual(result.steps.map((step) => step.workflow), ["task-negotiation", "code-test-verify"]);
+    assert.deepEqual(result.steps.map((step) => step.status), ["planned", "planned"]);
+  });
+
+  await t.test("keeps current profile when task matches rag profile", async () => {
+    const result = await createRunner().run({
+      task: "继续 RAG 召回优化，分析上一轮 reranker 实验结果",
+      dryRun: true,
+    });
+
+    assert.equal(result.profileId, "rag-optimization");
+    assert.equal(result.profileSwitched, false);
+    assert.equal(result.profileRoutingDecision?.detectedTaskType, "rag_optimization");
+    assert.equal(result.profileRoutingDecision?.shouldSwitch, false);
+  });
+
+  await t.test("explicit profile disables auto-switch but returns routing warning", async () => {
+    const result = await createRunner().run({
+      profileId: "rag-optimization",
+      task: "做一个仿 Claude.ai 风格的个人网站",
+      dryRun: true,
+    });
+
+    assert.equal(result.profileId, "rag-optimization");
+    assert.equal(result.profileSwitched, false);
+    assert.equal(result.profileRoutingDecision?.recommendedProfile, "frontend-site-build");
+    assert.match(result.warnings.join("\n"), /Explicit profile rag-optimization/);
+  });
+
   await t.test("blocks execution-capable coding profile by default", async () => {
     const result = await createRunner().run({
       profileId: "coding-safe-fix",

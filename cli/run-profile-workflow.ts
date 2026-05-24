@@ -18,6 +18,15 @@ if (args.format === "json") {
 } else {
   console.log(`profile: ${result.profileId}`);
   console.log(`profileName: ${result.profileName}`);
+  console.log(`originalProfile: ${result.originalProfileId ?? result.profileId}`);
+  console.log(`profileSwitched: ${result.profileSwitched}`);
+  if (result.profileRoutingDecision) {
+    console.log(`detectedTaskType: ${result.profileRoutingDecision.detectedTaskType}`);
+    console.log(`recommendedProfile: ${result.profileRoutingDecision.recommendedProfile ?? "none"}`);
+    console.log(`routingShouldSwitch: ${result.profileRoutingDecision.shouldSwitch}`);
+    console.log(`routingSafeToAutoSwitch: ${result.profileRoutingDecision.safeToAutoSwitch}`);
+    console.log(`routingReason: ${result.profileRoutingDecision.reason}`);
+  }
   console.log(`finalStatus: ${result.finalStatus}`);
   console.log(`dryRun: ${result.dryRun}`);
   console.log(`allowExecution: ${result.allowExecution}`);
