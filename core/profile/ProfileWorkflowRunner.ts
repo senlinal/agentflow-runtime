@@ -8,6 +8,7 @@ import { EscalationGate } from "./EscalationGate.ts";
 import { MemoryAutonomyGate } from "./MemoryAutonomyGate.ts";
 import { formatProfileRun } from "./ProfileRunFormatter.ts";
 import { ProfileRouter, type ProfileRoutingDecision } from "./ProfileRouter.ts";
+import { RuntimeTraceRoleExtractor, type RuntimeProof } from "./RuntimeTraceRoleExtractor.ts";
 import { WorkflowProfileLoader, type WorkflowProfile } from "./WorkflowProfileLoader.ts";
 import { ProfileSessionStore } from "./ProfileSessionStore.ts";
 import { ProjectMemoryStore } from "./ProjectMemoryStore.ts";
@@ -26,12 +27,17 @@ export type ProfileWorkflowRunRequest = {
 };
 
 export type ProfileRoleTimelineEvent = {
-  workflow: string;
+  workflow?: string;
   nodeId: string;
   role: string;
-  status: "planned" | "ran" | "blocked" | "skipped";
-  summary: string;
+  type?: string;
+  status: "completed" | "failed" | "blocked" | "skipped";
+  summary?: string;
+  outputKey?: string;
+  outputSchema?: string;
+  source?: "runtime_trace";
   nextNode?: string;
+  step?: number;
   runId?: string;
   summaryPath?: string;
   tracePath?: string;
@@ -45,6 +51,7 @@ export type ProfileWorkflowStep = {
   runId?: string;
   summaryPath?: string;
   tracePath?: string;
+  contextPath?: string;
   finalStatus?: "passed" | "stopped" | "not-passed";
   enteredExecutor?: boolean;
 };
@@ -76,6 +83,7 @@ export type ProfileWorkflowRunResult = {
   session?: ProfileSession;
   scopeConfirmationId?: string;
   memorySummary?: ProjectMemorySummary;
+  runtimeProof: RuntimeProof;
   formattedText: string;
 };
 
@@ -89,6 +97,7 @@ export class ProfileWorkflowRunner {
   private readonly autonomyGate: MemoryAutonomyGate;
   private readonly escalationGate: EscalationGate;
   private readonly profileRouter: ProfileRouter;
+  private readonly runtimeTraceRoleExtractor: RuntimeTraceRoleExtractor;
 
   constructor(
     profileLoader = new WorkflowProfileLoader(),
@@ -100,6 +109,7 @@ export class ProfileWorkflowRunner {
     autonomyGate = new MemoryAutonomyGate(),
     escalationGate = new EscalationGate(),
     profileRouter = new ProfileRouter(),
+    runtimeTraceRoleExtractor = new RuntimeTraceRoleExtractor(),
   ) {
     this.profileLoader = profileLoader;
     this.workflowRegistry = workflowRegistry;
@@ -110,6 +120,7 @@ export class ProfileWorkflowRunner {
     this.autonomyGate = autonomyGate;
     this.escalationGate = escalationGate;
     this.profileRouter = profileRouter;
+    this.runtimeTraceRoleExtractor = runtimeTraceRoleExtractor;
   }
 
   async run(request: ProfileWorkflowRunRequest): Promise<ProfileWorkflowRunResult> {
@@ -161,14 +172,6 @@ export class ProfileWorkflowRunner {
       proposedAction: request.task ?? taskBrief.goal,
       dryRun,
     });
-    roleTimeline.push({
-      workflow: "memory-autonomy-gate",
-      nodeId: "memoryAutonomyGate",
-      role: "MemoryAutonomyGate",
-      status: autonomyDecision.canProceed ? "ran" : "blocked",
-      summary: `${autonomyDecision.decision}: ${autonomyDecision.reason}`,
-      nextNode: autonomyDecision.canProceed ? workflowChain[0] ?? "end" : "end",
-    });
     if (autonomyDecision.decision === "proceed_with_assumptions") {
       warnings.push(`Autonomy gate proceeding with assumptions: ${autonomyDecision.reason}`);
     }
@@ -181,14 +184,6 @@ export class ProfileWorkflowRunner {
       });
       for (const workflow of workflowChain) {
         steps.push({ workflow, status: "skipped", reason: "Memory-aware autonomy gate blocked continuation." });
-        roleTimeline.push({
-          workflow,
-          nodeId: workflow,
-          role: "Workflow",
-          status: "skipped",
-          summary: "Memory-aware autonomy gate blocked continuation.",
-          nextNode: "end",
-        });
       }
       const memorySummary = await this.memoryStore.summarize(profile.id, 10);
       return this.withFormattedText({
@@ -214,6 +209,7 @@ export class ProfileWorkflowRunner {
         ...(profileRoutingDecision ? { profileRoutingDecision } : {}),
         autonomyDecision,
         memorySummary,
+        runtimeProof: buildRuntimeProof(roleTimeline, steps),
         ...(profileSession ? { session: profileSession } : {}),
       });
     }
@@ -225,14 +221,6 @@ export class ProfileWorkflowRunner {
     for (const workflow of workflowChain) {
       if (blocked) {
         steps.push({ workflow, status: "skipped", reason: "Previous profile step blocked continuation." });
-        roleTimeline.push({
-          workflow,
-          nodeId: workflow,
-          role: "Workflow",
-          status: "skipped",
-          summary: "Previous profile step blocked continuation.",
-          nextNode: "end",
-        });
         continue;
       }
 
@@ -242,14 +230,6 @@ export class ProfileWorkflowRunner {
 
       if (dryRun) {
         steps.push({ workflow, status: "planned", reason: "Dry-run only. Workflow was not executed." });
-        roleTimeline.push({
-          workflow,
-          nodeId: workflow,
-          role: "Workflow",
-          status: "planned",
-          summary: "Dry-run only. Workflow was not executed.",
-          nextNode: "not-run",
-        });
         continue;
       }
 
@@ -258,14 +238,6 @@ export class ProfileWorkflowRunner {
           workflow,
           status: "blocked",
           reason: "Workflow contains execution-capable nodes and allowExecution=false.",
-        });
-        roleTimeline.push({
-          workflow,
-          nodeId: workflow,
-          role: "Workflow",
-          status: "blocked",
-          summary: "Workflow contains execution-capable nodes and allowExecution=false.",
-          nextNode: "end",
         });
         blocked = true;
         continue;
@@ -277,14 +249,6 @@ export class ProfileWorkflowRunner {
           status: "blocked",
           reason: "Scope workflow requires a ScopeConfirmationRecord. Provide scopeConfirmationId after human confirmation.",
         });
-        roleTimeline.push({
-          workflow,
-          nodeId: "confirmedScopeGate",
-          role: "ConfirmedScopeGate",
-          status: "blocked",
-          summary: "Scope workflow requires a ScopeConfirmationRecord. Provide scopeConfirmationId after human confirmation.",
-          nextNode: "end",
-        });
         blocked = true;
         continue;
       }
@@ -293,7 +257,7 @@ export class ProfileWorkflowRunner {
         contextOverrides: scopeConfirmation ? { scopeConfirmationRecord: scopeConfirmation } : undefined,
       });
       steps.push(toStep(workflow, result));
-      roleTimeline.push(...toTimeline(workflow, result));
+      roleTimeline.push(...await this.toRuntimeTimeline(workflow, result));
 
       if (workflow === profile.defaultWorkflow && !profileSession) {
         const created = await this.createPendingSession(profile, taskBrief, result);
@@ -333,6 +297,7 @@ export class ProfileWorkflowRunner {
       ...(profileRoutingDecision ? { profileRoutingDecision } : {}),
       autonomyDecision,
       memorySummary,
+      runtimeProof: buildRuntimeProof(roleTimeline, steps),
       ...(profileSession ? { session: profileSession } : {}),
       ...(scopeConfirmation?.confirmationId ? { scopeConfirmationId: scopeConfirmation.confirmationId } : {}),
     });
@@ -366,6 +331,27 @@ export class ProfileWorkflowRunner {
       ...withPlaceholder,
       formattedText: formatProfileRun(withPlaceholder),
     };
+  }
+
+  private async toRuntimeTimeline(workflow: string, result: WorkflowRunnerResult): Promise<ProfileRoleTimelineEvent[]> {
+    const events = await this.runtimeTraceRoleExtractor.extractFromTraceFile(result.tracePath, { workflow });
+    return events.map((event) => ({
+      workflow,
+      nodeId: event.nodeId,
+      role: event.role,
+      type: event.type,
+      status: event.status,
+      summary: event.summary,
+      outputKey: event.outputKey,
+      outputSchema: event.outputSchema,
+      source: event.source,
+      nextNode: event.nextNode,
+      step: event.step,
+      runId: result.runId,
+      summaryPath: result.summaryPath,
+      tracePath: result.tracePath,
+      contextPath: result.contextPath,
+    }));
   }
 
   private async createPendingSession(
@@ -576,23 +562,21 @@ function toStep(workflow: string, result: WorkflowRunnerResult): ProfileWorkflow
   };
 }
 
-function toTimeline(workflow: string, result: WorkflowRunnerResult): ProfileRoleTimelineEvent[] {
-  return result.context.trace.map((item) => ({
-    workflow,
-    nodeId: item.nodeId,
-    role: item.role,
-    status: item.error ? "blocked" : "ran",
-    summary: item.error ? item.error : item.outputSummary,
-    nextNode: item.nextNode,
-    runId: result.runId,
-    summaryPath: result.summaryPath,
-    tracePath: result.tracePath,
-    contextPath: result.contextPath,
-  }));
-}
-
 function executedWorkflows(steps: ProfileWorkflowStep[]): string[] {
   return steps.filter((step) => step.status === "ran").map((step) => step.workflow);
+}
+
+function buildRuntimeProof(roleTimeline: ProfileRoleTimelineEvent[], steps: ProfileWorkflowStep[]): RuntimeProof {
+  const tracePath = tracePaths(steps)[0];
+  const contextPath = contextPaths(steps)[0];
+  const verifiedRoleCount = roleTimeline.filter((event) => event.source === "runtime_trace").length;
+  return {
+    runtimeStarted: verifiedRoleCount > 0,
+    ...(tracePath ? { tracePath } : {}),
+    ...(contextPath ? { contextPath } : {}),
+    verifiedRoleCount,
+    roleSource: verifiedRoleCount > 0 ? "runtime_trace" : "unavailable",
+  };
 }
 
 function summaryPaths(steps: ProfileWorkflowStep[]): string[] {

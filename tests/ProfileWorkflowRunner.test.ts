@@ -20,8 +20,12 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.equal(result.steps[0].enteredExecutor, false);
     assert.equal(result.executedWorkflows.includes("task-negotiation"), true);
     assert.ok(result.roleTimeline.some((event) => event.role === "TaskNegotiator"));
+    assert.equal(result.roleTimeline.every((event) => event.source === "runtime_trace"), true);
+    assert.equal(result.runtimeProof.runtimeStarted, true);
+    assert.equal(result.runtimeProof.roleSource, "runtime_trace");
     assert.ok(result.formattedText.includes("AgentFlow Profile Run"));
     assert.ok(result.formattedText.includes("AgentFlow Role Timeline"));
+    assert.ok(result.formattedText.includes("Runtime Proof"));
     assert.ok(result.routingDecision);
     assert.ok(result.summaryPaths.some((path) => path.endsWith("summary.md")));
     assert.ok(result.tracePaths.some((path) => path.endsWith("trace.json")));
@@ -47,6 +51,27 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.equal(result.finalStatus, "planned");
     assert.deepEqual(result.steps.map((step) => step.status), ["planned", "planned", "planned"]);
     assert.equal(result.steps.some((step) => step.runId), false);
+    assert.equal(result.runtimeProof.runtimeStarted, false);
+    assert.equal(result.roleTimeline.length, 0);
+  });
+
+  await t.test("agent-workforce-basic produces runtime-verified multi-role timeline", async () => {
+    const result = await createRunner().run({
+      profileId: "agent-workforce-basic",
+      task: "演示 Planner、Debater、Executor、Verifier 多角色协作",
+    });
+
+    assert.equal(result.profileId, "agent-workforce-basic");
+    assert.equal(result.runtimeProof.runtimeStarted, true);
+    assert.equal(result.runtimeProof.roleSource, "runtime_trace");
+    assert.equal(result.runtimeProof.verifiedRoleCount > 1, true);
+    assert.equal(result.roleTimeline.every((event) => event.source === "runtime_trace"), true);
+    assert.ok(result.roleTimeline.some((event) => event.role === "Planner"));
+    assert.ok(result.roleTimeline.some((event) => event.role === "Debater"));
+    assert.ok(result.roleTimeline.some((event) => event.role === "Executor"));
+    assert.ok(result.roleTimeline.some((event) => event.role === "Verifier"));
+    assert.match(result.formattedText, /Runtime Proof/);
+    assert.match(result.formattedText, /source: runtime_trace/);
   });
 
   await t.test("auto-switches website tasks from rag profile to frontend-site-build", async () => {
@@ -216,7 +241,8 @@ test("ProfileWorkflowRunner", async (t) => {
 
     assert.equal(later.finalStatus, "blocked");
     assert.equal(later.steps[0].workflow, "memory-autonomy-gate");
-    assert.equal(later.roleTimeline[0].role, "MemoryAutonomyGate");
+    assert.equal(later.roleTimeline.length, 0);
+    assert.equal(later.runtimeProof.runtimeStarted, false);
     assert.equal(later.autonomyDecision?.decision, "ask_human");
     assert.equal(later.autonomyDecision?.mustAskHuman, true);
     assert.equal(later.steps.slice(1).every((step) => step.status === "skipped"), true);

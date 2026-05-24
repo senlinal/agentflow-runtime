@@ -1,0 +1,22 @@
+{
+  "id": "agent-workforce-basic",
+  "name": "Agent Workforce Basic",
+  "description": "A visible multi-agent workforce profile with Planner, Debater, PlannerRevision, Executor, Verifier, and GoalKeeper.",
+  "defaultWorkflow": "abcde-basic",
+  "policyFiles": [
+    "docs/AGENT_POLICY.md",
+    "docs/WORKER_POLICY.md",
+    "docs/AUTONOMY_POLICY.md"
+  ],
+  "defaultConstraints": [
+    "show_runtime_verified_role_timeline",
+    "do_not_fake_agent_roles",
+    "do_not_execute_destructive_actions"
+  ],
+  "defaultOutput": [
+    "role_timeline",
+    "summary",
+    "trace",
+    "context"
+  ]
+}

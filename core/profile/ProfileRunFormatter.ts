@@ -20,8 +20,14 @@ export class ProfileRunFormatter {
       "Executed Workflows",
       result.executedWorkflows.length > 0 ? `- ${result.executedWorkflows.join(" -> ")}` : "- none",
       "",
+      "Workflow Steps",
+      ...formatSteps(result.steps),
+      "",
+      "Runtime Proof",
+      ...formatRuntimeProof(result),
+      "",
       "AgentFlow Role Timeline",
-      ...formatTimeline(result.roleTimeline),
+      ...formatTimeline(result),
       "",
       "Artifacts",
       ...formatArtifacts(result),
@@ -75,16 +81,43 @@ function formatAutonomy(result: ProfileWorkflowRunResult): string[] {
   ];
 }
 
-function formatTimeline(events: ProfileRoleTimelineEvent[]): string[] {
-  if (events.length === 0) return ["- none"];
+function formatSteps(steps: ProfileWorkflowStep[]): string[] {
+  if (steps.length === 0) return ["- none"];
+  return steps.map((step) => `- ${step.workflow}: ${step.status} - ${step.reason}`);
+}
+
+function formatRuntimeProof(result: ProfileWorkflowRunResult): string[] {
+  const proof = result.runtimeProof;
+  return [
+    `- runtimeStarted: ${proof.runtimeStarted}`,
+    `- tracePath: ${proof.tracePath ?? "n/a"}`,
+    `- contextPath: ${proof.contextPath ?? "n/a"}`,
+    `- verifiedRoleCount: ${proof.verifiedRoleCount}`,
+    `- roleSource: ${proof.roleSource}`,
+    ...(proof.runtimeStarted
+      ? []
+      : ["- AgentFlow Runtime was not started. This is not a verified multi-agent run."]),
+  ];
+}
+
+function formatTimeline(result: ProfileWorkflowRunResult): string[] {
+  const events = result.roleTimeline.filter((event) => event.source === "runtime_trace");
+  if (events.length === 0) {
+    if (result.executedWorkflows.length === 0) return ["- No AgentFlow workflow was executed."];
+    return ["- AgentFlow Runtime trace was not found. Role timeline cannot be verified."];
+  }
   return events.map((event, index) => {
     const parts = [
       `${index + 1}. ${event.role}`,
-      `   workflow: ${event.workflow}`,
+      `   workflow: ${event.workflow ?? "n/a"}`,
       `   nodeId: ${event.nodeId}`,
+      `   type: ${event.type ?? "unknown"}`,
       `   status: ${event.status}`,
+      `   outputKey: ${event.outputKey ?? "n/a"}`,
+      `   outputSchema: ${event.outputSchema ?? "n/a"}`,
+      `   source: ${event.source}`,
       `   next: ${event.nextNode ?? "n/a"}`,
-      `   output: ${event.summary}`,
+      `   output: ${event.summary ?? "n/a"}`,
     ];
     if (event.summaryPath) parts.push(`   summary: ${event.summaryPath}`);
     if (event.tracePath) parts.push(`   trace: ${event.tracePath}`);

@@ -664,8 +664,10 @@ export type WorkflowTrace = {
   step: number;
   nodeId: string;
   role: AgentRole;
+  nodeType?: NodeType;
   inputKeys: string[];
   outputKey: keyof WorkflowContext;
+  outputSchema?: OutputSchemaName;
   outputSummary: string;
   conditionResults: ConditionEvaluationResult[];
   nextNode: string;

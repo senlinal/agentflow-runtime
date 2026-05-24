@@ -33,8 +33,10 @@ const requiredFiles = [
   "profiles/coding-safe-fix.json",
   "profiles/external-project-fix.json",
   "profiles/frontend-site-build.json",
+  "profiles/agent-workforce-basic.json",
   "core/profile/ProfileRouter.ts",
   "core/profile/ProfileRunFormatter.ts",
+  "core/profile/RuntimeTraceRoleExtractor.ts",
   "core/profile/ProjectMemoryStore.ts",
   "core/profile/MemoryAutonomyGate.ts",
   "core/profile/EscalationGate.ts",
@@ -80,7 +82,7 @@ if (workflowCommand.includes("```json")) {
   process.exit(1);
 }
 
-for (const requiredText of ["formattedText", "No supervisor plan", "No unavailable tools"]) {
+for (const requiredText of ["formattedText", "No supervisor plan", "No unavailable tools", "No trace, no agent", "Runtime Proof"]) {
   if (!workflowCommand.includes(requiredText)) {
     console.error(`workflow.md does not include quiet workflow entrypoint text: ${requiredText}`);
     process.exit(1);

@@ -22,8 +22,13 @@ test("ProfileRunFormatter", async (t) => {
     assert.match(text, /Routing Decision/);
     assert.match(text, /recommendedProfile: frontend-site-build/);
     assert.match(text, /AgentFlow Role Timeline/);
-    assert.match(text, /1\. MemoryAutonomyGate/);
-    assert.match(text, /2\. TaskNegotiator/);
+    assert.match(text, /Runtime Proof/);
+    assert.match(text, /runtimeStarted: true/);
+    assert.match(text, /verifiedRoleCount: 1/);
+    assert.match(text, /1\. TaskNegotiator/);
+    assert.match(text, /source: runtime_trace/);
+    assert.match(text, /outputKey: taskNegotiationResult/);
+    assert.match(text, /outputSchema: TaskNegotiationResult/);
     assert.match(text, /summary: \.workflow-runs\/run\/summary\.md/);
     assert.match(text, /trace: \.workflow-runs\/run\/trace\.json/);
     assert.match(text, /context: \.workflow-runs\/run\/context\.json/);
@@ -45,11 +50,33 @@ test("ProfileRunFormatter", async (t) => {
         status: "blocked",
         summary: "Workflow contains execution-capable nodes and allowExecution=false.",
       }],
+      runtimeProof: {
+        runtimeStarted: false,
+        verifiedRoleCount: 0,
+        roleSource: "unavailable",
+      },
     }));
 
     assert.match(text, /Final status: blocked/);
     assert.match(text, /Workflow contains execution-capable nodes/);
+    assert.match(text, /AgentFlow Runtime was not started/);
     assert.match(text, /Next Actions/);
+  });
+
+  await t.test("does not fabricate role timeline when trace is unavailable", () => {
+    const text = new ProfileRunFormatter().format(sampleResult({
+      roleTimeline: [],
+      executedWorkflows: ["abcde-basic"],
+      runtimeProof: {
+        runtimeStarted: false,
+        tracePath: ".workflow-runs/run/trace.json",
+        verifiedRoleCount: 0,
+        roleSource: "unavailable",
+      },
+    }));
+
+    assert.match(text, /AgentFlow Runtime trace was not found/);
+    assert.doesNotMatch(text, /1\\. Planner/);
   });
 });
 
@@ -83,19 +110,15 @@ function sampleResult(overrides: Partial<ProfileWorkflowRunResult> = {}): Profil
     }],
     roleTimeline: [
       {
-        workflow: "memory-autonomy-gate",
-        nodeId: "memoryAutonomyGate",
-        role: "MemoryAutonomyGate",
-        status: "ran",
-        summary: "proceed_with_assumptions: no compacted memory",
-        nextNode: "task-negotiation",
-      },
-      {
         workflow: "task-negotiation",
         nodeId: "taskNegotiator",
         role: "TaskNegotiator",
-        status: "ran",
+        type: "negotiate",
+        status: "completed",
         summary: "Need scope confirmation.",
+        outputKey: "taskNegotiationResult",
+        outputSchema: "TaskNegotiationResult",
+        source: "runtime_trace",
         nextNode: "end",
         runId: "run",
         summaryPath: ".workflow-runs/run/summary.md",
@@ -148,6 +171,13 @@ function sampleResult(overrides: Partial<ProfileWorkflowRunResult> = {}): Profil
       rejectedRoutes: [],
       openQuestions: [],
       nextActions: [],
+    },
+    runtimeProof: {
+      runtimeStarted: true,
+      tracePath: ".workflow-runs/run/trace.json",
+      contextPath: ".workflow-runs/run/context.json",
+      verifiedRoleCount: 1,
+      roleSource: "runtime_trace",
     },
     formattedText: "",
     ...overrides,

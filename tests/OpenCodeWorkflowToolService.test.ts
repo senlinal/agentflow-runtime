@@ -56,14 +56,17 @@ describe("OpenCodeWorkflowToolService", () => {
 
     assert.equal(result.profileId, "rag-optimization");
     assert.equal(result.finalStatus, "blocked");
-    assert.ok(result.roleTimeline.length >= 2);
+    assert.ok(result.roleTimeline.length >= 1);
+    assert.equal(result.roleTimeline.every((event) => event.source === "runtime_trace"), true);
     assert.ok(result.formattedText.includes("AgentFlow Profile Run"));
     assert.ok(result.formattedText.includes("AgentFlow Role Timeline"));
+    assert.ok(result.formattedText.includes("Runtime Proof"));
     assert.ok(result.routingDecision);
     assert.ok(result.summaryPath?.endsWith("summary.md"));
     assert.ok(result.tracePath?.endsWith("trace.json"));
     assert.ok(result.contextPath?.endsWith("context.json"));
-    assert.equal(result.roleTimeline[0].role, "MemoryAutonomyGate");
+    assert.equal(result.roleTimeline[0].role, "TaskNegotiator");
+    assert.equal(result.runtimeProof.runtimeStarted, true);
     assert.equal(result.executedWorkflows.includes("task-negotiation"), true);
     assert.ok(result.summaryPaths.some((path) => path.endsWith("summary.md")));
     assert.ok(result.tracePaths.some((path) => path.endsWith("trace.json")));

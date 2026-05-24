@@ -80,6 +80,14 @@ This runs safe profile-aware preflight steps. It does not call `CodeExecutor`, r
 
 The default text output includes `AgentFlow Profile Run`, `Routing Decision`, `AgentFlow Role Timeline`, summary paths, trace paths, context paths, warnings, and next actions. In opencode, `/workflow` should call `run_profile_workflow` first and show that formatted runtime result instead of displaying internal command instructions.
 
+To see a runtime-verified multi-agent workforce, run:
+
+```bash
+npm run workflow:run-profile -- --profile agent-workforce-basic --task "演示 Planner、Debater、Executor、Verifier 多角色协作"
+```
+
+The Role Timeline is built from `trace.json`. No trace means no displayed AgentFlow role.
+
 If the run asks for scope confirmation, inspect and resume the profile session:
 
 ```bash
