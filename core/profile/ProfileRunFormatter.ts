@@ -42,7 +42,7 @@ export class ProfileRunFormatter {
 }
 
 function formatRouting(result: ProfileWorkflowRunResult): string[] {
-  const decision = result.profileRoutingDecision;
+  const decision = result.routingDecision ?? result.profileRoutingDecision;
   if (!decision) {
     return [
       `- currentProfile: ${result.originalProfileId ?? result.profileId}`,

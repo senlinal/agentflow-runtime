@@ -22,6 +22,7 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.ok(result.roleTimeline.some((event) => event.role === "TaskNegotiator"));
     assert.ok(result.formattedText.includes("AgentFlow Profile Run"));
     assert.ok(result.formattedText.includes("AgentFlow Role Timeline"));
+    assert.ok(result.routingDecision);
     assert.ok(result.summaryPaths.some((path) => path.endsWith("summary.md")));
     assert.ok(result.tracePaths.some((path) => path.endsWith("trace.json")));
     assert.ok(result.contextPaths.some((path) => path.endsWith("context.json")));

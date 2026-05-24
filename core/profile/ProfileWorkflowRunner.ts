@@ -70,6 +70,7 @@ export type ProfileWorkflowRunResult = {
   nextActions: string[];
   originalProfileId?: string;
   profileSwitched: boolean;
+  routingDecision?: ProfileRoutingDecision;
   profileRoutingDecision?: ProfileRoutingDecision;
   autonomyDecision?: AutonomyDecision;
   session?: ProfileSession;
@@ -209,6 +210,7 @@ export class ProfileWorkflowRunner {
         nextActions: escalation.nextAllowedActions,
         originalProfileId,
         profileSwitched,
+        ...(profileRoutingDecision ? { routingDecision: profileRoutingDecision } : {}),
         ...(profileRoutingDecision ? { profileRoutingDecision } : {}),
         autonomyDecision,
         memorySummary,
@@ -327,6 +329,7 @@ export class ProfileWorkflowRunner {
       nextActions: nextActions(profile, steps, memorySummary),
       originalProfileId,
       profileSwitched,
+      ...(profileRoutingDecision ? { routingDecision: profileRoutingDecision } : {}),
       ...(profileRoutingDecision ? { profileRoutingDecision } : {}),
       autonomyDecision,
       memorySummary,

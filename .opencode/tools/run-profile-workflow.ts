@@ -2,6 +2,9 @@ import { OpenCodeWorkflowToolService } from "../../adapters/opencode/OpenCodeWor
 import type { ProfileWorkflowRunRequest } from "../../core/profile/ProfileWorkflowRunner.ts";
 import { fileURLToPath } from "node:url";
 
+// Compatibility wrapper for direct CLI-style JSON stdin checks.
+// The OpenCode runtime registration lives in run_profile_workflow.ts because
+// OpenCode uses the filename as the default tool name.
 export async function runProfileWorkflow(input: ProfileWorkflowRunRequest) {
   return new OpenCodeWorkflowToolService().runProfileWorkflow(input);
 }

@@ -59,6 +59,7 @@ describe("OpenCodeWorkflowToolService", () => {
     assert.ok(result.roleTimeline.length >= 2);
     assert.ok(result.formattedText.includes("AgentFlow Profile Run"));
     assert.ok(result.formattedText.includes("AgentFlow Role Timeline"));
+    assert.ok(result.routingDecision);
     assert.ok(result.summaryPath?.endsWith("summary.md"));
     assert.ok(result.tracePath?.endsWith("trace.json"));
     assert.ok(result.contextPath?.endsWith("context.json"));

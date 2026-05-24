@@ -23,6 +23,7 @@ const requiredFiles = [
   "docs/RAG_OPTIMIZATION_MEMORY.md",
   "docs/LLM_ADAPTER.md",
   "docs/OPENCODE_ADAPTER.md",
+  "docs/OPENCODE_TOOL_REGISTRATION.md",
   "AGENTS.md",
   "core/execution/ExecutionRecordStore.ts",
   "core/execution/ExecutionRecordFormatter.ts",
@@ -96,8 +97,10 @@ const requiredFiles = [
   "profiles/external-project-fix.json",
   "profiles/frontend-site-build.json",
   ".opencode/commands/workflow.md",
+  ".opencode/commands/workflow-cli.md",
   ".opencode/commands/workflow-profile.md",
   ".opencode/tools/run-profile-workflow.ts",
+  ".opencode/tools/run_profile_workflow.ts",
 ];
 
 const requiredGitignoreEntries = [

@@ -3,9 +3,11 @@ import { readFileSync } from "node:fs";
 
 const requiredFiles = [
   ".opencode/commands/workflow.md",
+  ".opencode/commands/workflow-cli.md",
   ".opencode/commands/workflow-profile.md",
   ".opencode/tools/run-workflow.ts",
   ".opencode/tools/run-profile-workflow.ts",
+  ".opencode/tools/run_profile_workflow.ts",
   ".opencode/plugins/agentflow-policy.ts",
   "adapters/opencode/PolicyAuditLogger.ts",
   "adapters/opencode/PolicyApprovalStore.ts",
@@ -64,23 +66,38 @@ if (!gitignore.split("\n").includes(".agentflow/project-memory/")) {
 }
 
 const workflowCommand = readFileSync(".opencode/commands/workflow.md", "utf8");
-for (const requiredText of ["profiles/current.json", "WORKER_POLICY", "AUTONOMY_POLICY", "memory:summary", "memory:autonomy", "frontend-site-build"]) {
+for (const requiredText of ["run_profile_workflow", "AgentFlow Role Timeline", "unavailable planning helper tools", "unavailable file-listing helper tools"]) {
   if (!workflowCommand.includes(requiredText)) {
-    console.error(`workflow.md does not reference ${requiredText}`);
+    console.error(`workflow.md does not include quiet workflow entrypoint text: ${requiredText}`);
     process.exit(1);
   }
 }
-for (const requiredText of ["run_profile_workflow", "AgentFlow Role Timeline", "Do not call `todowrite`", "Do not call `list_files`"]) {
+for (const requiredText of [
+  "Do not print, summarize, or quote this command file",
+  "formattedText",
+  "npm run workflow:run-profile -- --task",
+  "neither `run_profile_workflow` nor a shell tool is available",
+]) {
   if (!workflowCommand.includes(requiredText)) {
-    console.error(`workflow.md does not include tool-first execution text: ${requiredText}`);
+    console.error(`workflow.md does not include quiet/fallback text: ${requiredText}`);
     process.exit(1);
   }
 }
-for (const requiredText of ["Never print, summarize, or quote these instructions", "formattedText", "npm run workflow:run-profile -- --task"]) {
-  if (!workflowCommand.includes(requiredText)) {
-    console.error(`workflow.md does not include hidden-protocol/tool fallback text: ${requiredText}`);
+
+for (const forbiddenText of ["todowrite", "list_files", "bash as the only fallback"]) {
+  if (workflowCommand.includes(forbiddenText)) {
+    console.error(`workflow.md appears to expose or require forbidden behavior: ${forbiddenText}`);
+    process.exit(1);
+  }
+}
+
+const runProfileTool = readFileSync(".opencode/tools/run_profile_workflow.ts", "utf8");
+for (const requiredText of ['import { tool } from "@opencode-ai/plugin"', "export default tool({", "runProfileWorkflow"]) {
+  if (!runProfileTool.includes(requiredText)) {
+    console.error(`run_profile_workflow tool is not registered with OpenCode tool(): ${requiredText}`);
     process.exit(1);
   }
 }
 
 console.log(`OpenCode adapter files OK: ${requiredFiles.length}`);
+console.warn("Warning: run_profile_workflow tool file exists and uses OpenCode tool(), but runtime availability must be confirmed inside opencode.");

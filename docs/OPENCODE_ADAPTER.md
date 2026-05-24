@@ -16,7 +16,7 @@ Default workflow run:
 /workflow 目标：基于当前 Runtime 增加一个模板运行能力。现状：已有 WorkflowRunner 和 MockLLMClient。约束：不接真实 LLM，不做 UI。验收：生成 trace 并通过测试。
 ```
 
-The command should build a `TaskBrief`, default to `research-feasibility-execute-verify`, and call the `run_workflow` custom tool. If the user names another template, pass that template to the tool.
+The `/workflow` command is a quiet AgentFlow entrypoint. It should call `run_profile_workflow` first and display the returned `formattedText`, including the AgentFlow Role Timeline. It should not print the command file, expose internal policy text, or create a generic supervisor plan. If the custom tool is unavailable and no shell fallback exists, it should tell the user to run `npm run workflow:run-profile -- --task "<task>"` in a project terminal.
 
 Inspect a template:
 
@@ -32,15 +32,22 @@ Create a template from a spec:
 
 ## Custom Tools
 
-The tool files use kebab-case filenames, while opencode may expose tool names using snake_case depending on its tool naming rules:
+The profile runner tool is registered with an underscore filename because OpenCode uses the default tool filename as the tool name:
+
+- `.opencode/tools/run_profile_workflow.ts` -> `run_profile_workflow`
+
+Legacy compatibility wrappers still exist for direct JSON-stdin checks:
 
 - `.opencode/tools/run-workflow.ts` -> `run_workflow`
+- `.opencode/tools/run-profile-workflow.ts` -> compatibility wrapper for profile runs
 - `.opencode/tools/list-workflows.ts` -> `list_workflows`
 - `.opencode/tools/inspect-workflow.ts` -> `inspect_workflow`
 - `.opencode/tools/validate-workflow.ts` -> `validate_workflow`
 - `.opencode/tools/create-workflow.ts` -> `create_workflow`
 
 Each tool delegates to `adapters/opencode/OpenCodeWorkflowToolService.ts`, which calls existing core services such as `WorkflowRunner`, `WorkflowTemplateRegistry`, and `TemplateCreateService`.
+
+See `docs/OPENCODE_TOOL_REGISTRATION.md` for the distinction between a file existing under `.opencode/tools/` and the live opencode runtime actually showing the tool in its available tool list.
 
 opencode does not choose or store LLM provider credentials. If a workflow uses `type: "llm"`, provider selection is handled inside the core layer through `LLMClientFactory` and `LLMConfigLoader`, including `openai-compatible` and `deepseek`. opencode tools should pass templates and inputs to `WorkflowRunner`; they must not save API keys, bypass `SchemaValidator`, or call model providers directly.
 
