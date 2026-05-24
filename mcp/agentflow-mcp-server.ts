@@ -4,6 +4,9 @@ import {
   agentflowRunProfileWorkflow,
   agentflowShowLastRun,
 } from "./tools/index.ts";
+import { loadDotenv } from "../core/EnvLoader.ts";
+
+loadDotenv();
 
 type JsonRpcRequest = {
   jsonrpc?: "2.0";

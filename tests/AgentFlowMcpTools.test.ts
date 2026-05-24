@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { describe, it } from "node:test";
+import { promisify } from "node:util";
 import { callAgentFlowTool } from "../mcp/agentflow-mcp-server.ts";
+
+const execFileAsync = promisify(execFile);
 
 describe("AgentFlow MCP tools", () => {
   it("runs agent-workforce-basic through MCP and returns runtime proof", async () => {
@@ -89,5 +96,44 @@ describe("AgentFlow MCP tools", () => {
   it("supports show last run without throwing", async () => {
     const result = await callAgentFlowTool("agentflow_show_last_run") as { found: boolean };
     assert.equal(typeof result.found, "boolean");
+  });
+
+  it("loads AgentFlow .env when the MCP server starts outside the project shell", async () => {
+    const root = await mkdtemp(join(tmpdir(), "agentflow-mcp-env-"));
+    await writeFile(join(root, ".env"), [
+      "AGENTFLOW_LLM_PROVIDER=deepseek",
+      "AGENTFLOW_DEEPSEEK_API_KEY=test-only-key",
+      "AGENTFLOW_DEEPSEEK_MODEL=deepseek-v4-flash",
+      "",
+    ].join("\n"), "utf8");
+
+    const { stdout } = await execFileAsync("node", [
+      "--experimental-strip-types",
+      "--input-type=module",
+      "--eval",
+      [
+        `await import(${JSON.stringify(resolve("mcp/agentflow-mcp-server.ts"))});`,
+        "const summary = {",
+        "  provider: process.env.AGENTFLOW_LLM_PROVIDER,",
+        "  hasKey: Boolean(process.env.AGENTFLOW_DEEPSEEK_API_KEY),",
+        "  model: process.env.AGENTFLOW_DEEPSEEK_MODEL,",
+        "};",
+        "console.log(JSON.stringify(summary));",
+      ].join("\n"),
+    ], {
+      cwd: process.cwd(),
+      env: {
+        PATH: process.env.PATH,
+        AGENTFLOW_PROJECT_ROOT: root,
+      },
+      maxBuffer: 1024 * 1024,
+    });
+
+    assert.deepEqual(JSON.parse(stdout), {
+      provider: "deepseek",
+      hasKey: true,
+      model: "deepseek-v4-flash",
+    });
+    assert.doesNotMatch(stdout, /test-only-key/);
   });
 });
