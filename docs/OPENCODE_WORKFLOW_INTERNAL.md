@@ -47,10 +47,12 @@ The user-facing result should show the `AgentFlow Role Timeline` from `formatted
 `/workflow` must not let a primary OpenCode agent merely role-play Planner, Executor, Verifier, or GoalKeeper. It should:
 
 1. Run AgentFlow first through the local CLI shim or MCP tool.
-2. Read only timeline entries marked `source: runtime_trace`.
+2. Read only timeline entries marked `source: runtime_trace` or `source: subagent_dispatch_trace`.
 3. Dispatch the matching `.opencode/agents/agentflow-*.md` subagent via the OpenCode Task tool for each verified role.
 4. Include the trace path, context path, workflow, role, node id, output key, output schema, and output summary in the Task prompt.
 5. Preserve the mock boundary: `isMock: true` means the runtime node output is a simulation, not real model-backed node intelligence.
+
+The compact `/workflow` output should still show role coordination and status for all verified timeline entries. It must not drop `subagent_dispatch_trace` rows, because those rows are the runtime-backed dispatch proof used by current AgentFlow profiles.
 
 The runtime trace decides which subagents are allowed to run. OpenCode subagents provide child sessions and role visibility; they must not replace `WorkflowRuntime` routing or schema validation.
 

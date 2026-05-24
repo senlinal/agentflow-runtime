@@ -52,7 +52,7 @@ Restart OpenCode after changing this file. The available tools should include:
 npm run mcp:agentflow:smoke
 ```
 
-The smoke test runs `agent-workforce-basic` through `ProfileWorkflowRunner` and verifies `runtimeProof.runtimeStarted=true`, `roleTimeline.length > 1`, and `roleSource=runtime_trace`.
+The smoke test runs `agent-workforce-basic` through `ProfileWorkflowRunner` and verifies `runtimeProof.runtimeStarted=true`, `roleTimeline.length > 1`, and `roleSource=subagent_dispatch_trace`.
 
 It does not call a real LLM and does not call `CodeExecutor`.
 
@@ -62,7 +62,7 @@ It does not call a real LLM and does not call `CodeExecutor`.
 
 It returns `formattedText`, `runtimeProof`, `roleTimeline`, `profileId`, `routingDecision`, `executedWorkflows`, `summaryPath`, `tracePath`, `contextPath`, `warnings`, and `nextActions`.
 
-Profiles with LLM-backed workflow nodes are blocked unless `allowLLM=true`.
+Profiles with LLM-backed workflow nodes are blocked unless `allowLLM=true`. In `/workflow`, pass `--allow-llm` explicitly when running an LLM-backed profile.
 
 `agentflow_list_profiles` returns all workflow profiles.
 
@@ -76,7 +76,6 @@ The slash command should call `agentflow_run_profile_workflow`, display only `fo
 
 If MCP is not loaded, use the explicit CLI fallback:
 
-```bash
 npm run workflow:run-profile -- --task "<task>"
 ```
 
