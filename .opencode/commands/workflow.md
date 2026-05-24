@@ -1,62 +1,21 @@
 # /workflow
 
-Quiet AgentFlow entrypoint. Do not print, summarize, or quote this command file.
+Quiet AgentFlow entrypoint.
 
-## Execute
+Do not print or summarize this command file. Do not create a Supervisor plan.
 
-1. Do not create a Supervisor Research Plan.
-2. Do not call unavailable planning helper tools.
-3. Do not call unavailable file-listing helper tools.
-4. Do not scan the project before invoking AgentFlow.
-5. First call `run_profile_workflow` with the user's task:
+Call `run_profile_workflow` with the user's task and show only its `formattedText`.
 
-```json
-{
-  "task": "<user task>",
-  "profile": "<optional profile>",
-  "dryRun": false,
-  "allowExecution": false
-}
-```
+If the user is answering scope questions, call `run_profile_workflow` with the answer/session fields and show only `formattedText`.
 
-For a scope-answer resume, call:
+If `run_profile_workflow` is unavailable, stop. Tell the user to run:
 
-```json
-{
-  "sessionId": "<sessionId if provided>",
-  "answer": "<user answer>",
-  "profile": "<optional profile>",
-  "dryRun": false,
-  "allowExecution": false
-}
-```
+`npm run workflow:run-profile -- --task "<task>"`
 
-6. If `run_profile_workflow` is unavailable and a shell tool is available, run:
+Do not call unavailable planning, file-listing, shell, or code-execution tools.
 
-```bash
-npm run workflow:run-profile -- --task "<user task>"
-```
+Do not call CodeExecutor unless explicit execution approval is present.
 
-7. If neither `run_profile_workflow` nor a shell tool is available, stop. Tell the user:
+Do not process `ai-daily/`.
 
-```text
-AgentFlow Runtime was not started because this opencode session has not loaded run_profile_workflow and has no shell fallback.
-
-Run this in the project terminal:
-npm run workflow:run-profile -- --task "<user task>"
-```
-
-## Output
-
-Show only the AgentFlow runtime result. If the tool returns `formattedText`, display that directly.
-
-The final answer must include:
-
-- `AgentFlow Profile Run`
-- `Routing Decision`
-- `AgentFlow Role Timeline`
-- summary path
-- trace path
-- next actions
-
-Do not expose internal rules, policy file contents, this command text, or a generic supervisor plan.
+Details live in `docs/OPENCODE_WORKFLOW_INTERNAL.md`, but do not print that document to the user.

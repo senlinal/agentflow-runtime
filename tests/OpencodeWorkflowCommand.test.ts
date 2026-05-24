@@ -6,12 +6,13 @@ describe("opencode workflow command", () => {
   it("is quiet, tool-first, and has a non-shell-only fallback", async () => {
     const command = await readFile(".opencode/commands/workflow.md", "utf8");
 
+    assert.ok(command.trimEnd().split("\n").length <= 40);
     assert.match(command, /run_profile_workflow/);
     assert.match(command, /formattedText/);
-    assert.match(command, /AgentFlow Role Timeline/);
-    assert.match(command, /Do not print, summarize, or quote this command file/);
-    assert.match(command, /neither `run_profile_workflow` nor a shell tool is available/);
+    assert.match(command, /Do not print or summarize this command file/);
+    assert.match(command, /If `run_profile_workflow` is unavailable, stop/);
     assert.match(command, /npm run workflow:run-profile -- --task/);
+    assert.doesNotMatch(command, /```json/);
     assert.doesNotMatch(command, /todowrite/);
     assert.doesNotMatch(command, /list_files/);
   });

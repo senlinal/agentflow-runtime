@@ -24,6 +24,7 @@ const requiredFiles = [
   "docs/LLM_ADAPTER.md",
   "docs/OPENCODE_ADAPTER.md",
   "docs/OPENCODE_TOOL_REGISTRATION.md",
+  "docs/OPENCODE_WORKFLOW_INTERNAL.md",
   "AGENTS.md",
   "core/execution/ExecutionRecordStore.ts",
   "core/execution/ExecutionRecordFormatter.ts",

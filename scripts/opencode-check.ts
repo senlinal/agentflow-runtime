@@ -20,6 +20,8 @@ const requiredFiles = [
   "cli/policy-replay.ts",
   "cli/policy-replay-history.ts",
   "docs/OPENCODE_ADAPTER.md",
+  "docs/OPENCODE_TOOL_REGISTRATION.md",
+  "docs/OPENCODE_WORKFLOW_INTERNAL.md",
   "docs/LLM_ADAPTER.md",
   "docs/AGENT_POLICY.md",
   "AGENTS.md",
@@ -66,17 +68,27 @@ if (!gitignore.split("\n").includes(".agentflow/project-memory/")) {
 }
 
 const workflowCommand = readFileSync(".opencode/commands/workflow.md", "utf8");
-for (const requiredText of ["run_profile_workflow", "AgentFlow Role Timeline", "unavailable planning helper tools", "unavailable file-listing helper tools"]) {
+const workflowCommandLines = workflowCommand.trimEnd().split("\n");
+if (workflowCommandLines.length > 40) {
+  console.error(`workflow.md is too long for a quiet slash command: ${workflowCommandLines.length} lines`);
+  process.exit(1);
+}
+if (workflowCommand.includes("```json")) {
+  console.error("workflow.md must not include JSON examples; keep slash command text minimal");
+  process.exit(1);
+}
+
+for (const requiredText of ["run_profile_workflow", "formattedText", "unavailable planning, file-listing, shell, or code-execution tools"]) {
   if (!workflowCommand.includes(requiredText)) {
     console.error(`workflow.md does not include quiet workflow entrypoint text: ${requiredText}`);
     process.exit(1);
   }
 }
 for (const requiredText of [
-  "Do not print, summarize, or quote this command file",
-  "formattedText",
+  "Do not print or summarize this command file",
   "npm run workflow:run-profile -- --task",
-  "neither `run_profile_workflow` nor a shell tool is available",
+  "If `run_profile_workflow` is unavailable, stop",
+  "docs/OPENCODE_WORKFLOW_INTERNAL.md",
 ]) {
   if (!workflowCommand.includes(requiredText)) {
     console.error(`workflow.md does not include quiet/fallback text: ${requiredText}`);
