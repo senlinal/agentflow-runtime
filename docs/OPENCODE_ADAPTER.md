@@ -4,7 +4,7 @@
 
 The core workflow runtime is independent of opencode. `WorkflowRuntime` and `WorkflowRunner` control node execution, schema validation, trace writing, and edge-based routing.
 
-opencode is only an outer shell for this phase. Commands under `.opencode/commands/` describe how a user can invoke workflows from the TUI, and custom tools under `.opencode/tools/` call the adapter service. The tools do not replace Planner, Executor, Verifier, GoalKeeper, or condition routing.
+opencode is only an outer shell for this phase. Commands under `.opencode/commands/` describe how a user can invoke workflows from the TUI, and the `agentflow` MCP server exposes the live `run_profile_workflow` tool. Files under `.opencode/tools/` are compatibility wrappers and older custom-tool adapters; they do not replace Planner, Executor, Verifier, GoalKeeper, or condition routing.
 
 Plugin-level permission interception is handled by `.opencode/plugins/agentflow-policy.ts`. The plugin is an adapter only: it does not change workflow routing, node execution, schemas, or Runtime behavior.
 
@@ -16,7 +16,7 @@ Default workflow run:
 /workflow 目标：基于当前 Runtime 增加一个模板运行能力。现状：已有 WorkflowRunner 和 MockLLMClient。约束：不接真实 LLM，不做 UI。验收：生成 trace 并通过测试。
 ```
 
-The `/workflow` command is a quiet AgentFlow entrypoint. It should call `run_profile_workflow` first and display the returned `formattedText`, including the AgentFlow Role Timeline. It should not print the command file, expose internal policy text, or create a generic supervisor plan. If the custom tool is unavailable and no shell fallback exists, it should tell the user to run `npm run workflow:run-profile -- --task "<task>"` in a project terminal.
+The `/workflow` command is a quiet AgentFlow entrypoint. It should call the MCP `run_profile_workflow` tool first and display the returned `formattedText`, including the AgentFlow Role Timeline. It should not print the command file, expose internal policy text, or create a generic supervisor plan. If the MCP tool is unavailable and no shell fallback exists, it should tell the user to run `npm run workflow:run-profile -- --task "<task>"` in a project terminal.
 
 Inspect a template:
 
@@ -30,14 +30,15 @@ Create a template from a spec:
 /workflow-create spec=template-specs/abcde-basic.json out=workflows/my-workflow.json name=my-workflow
 ```
 
-## Custom Tools
+## MCP Tool And Compatibility Wrappers
 
-The profile runner tool is registered with an underscore filename because OpenCode uses the default tool filename as the tool name:
+The live profile runner is provided by the local MCP server:
 
-- `.opencode/tools/run_profile_workflow.ts` -> `run_profile_workflow`
+- `mcp/agentflow-server.ts` -> `run_profile_workflow`
 
 Legacy compatibility wrappers still exist for direct JSON-stdin checks:
 
+- `.opencode/tools/run_profile_workflow.ts` -> compatibility wrapper for profile runs
 - `.opencode/tools/run-workflow.ts` -> `run_workflow`
 - `.opencode/tools/run-profile-workflow.ts` -> compatibility wrapper for profile runs
 - `.opencode/tools/list-workflows.ts` -> `list_workflows`

@@ -17,13 +17,17 @@ describe("opencode workflow command", () => {
     assert.doesNotMatch(command, /list_files/);
   });
 
-  it("registers run_profile_workflow using the OpenCode tool helper", async () => {
+  it("keeps run_profile_workflow as an MCP-backed compatibility wrapper", async () => {
     const toolFile = await readFile(".opencode/tools/run_profile_workflow.ts", "utf8");
+    const mcpServer = await readFile("mcp/agentflow-server.ts", "utf8");
 
-    assert.match(toolFile, /@opencode-ai\/plugin/);
-    assert.match(toolFile, /export default tool\(\{/);
     assert.match(toolFile, /runProfileWorkflow/);
-    assert.match(toolFile, /formatted role timeline/);
+    assert.match(toolFile, /Compatibility wrapper/);
+    assert.doesNotMatch(toolFile, /@opencode-ai\/plugin/);
+    assert.doesNotMatch(toolFile, /export default tool\(\{/);
+    assert.doesNotMatch(toolFile, /tool\.schema/);
+    assert.match(mcpServer, /run_profile_workflow/);
+    assert.match(mcpServer, /structuredContent/);
   });
 
   it("configures AgentFlow as a local MCP server and avoids automatic shell/edit permission", async () => {
@@ -33,5 +37,6 @@ describe("opencode workflow command", () => {
     assert.match(config, /"mcp\/agentflow-server\.ts"/);
     assert.match(config, /"bash": "ask"/);
     assert.match(config, /"edit": "ask"/);
+    assert.match(config, /"~\/development\/garbage_item_upload\/\*\*": "allow"/);
   });
 });

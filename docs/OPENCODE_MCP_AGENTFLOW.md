@@ -1,36 +1,58 @@
-# AgentFlow MCP Fallback
+# AgentFlow MCP Workflow Entry
 
-Use this plan if a live OpenCode session does not load `.opencode/tools/run_profile_workflow.ts` into the available tools list.
+Use this local MCP server as the primary OpenCode runtime entry for AgentFlow.
 
 ## Problem
 
-The project has a static OpenCode custom tool registration:
+OpenCode slash commands are prompt templates. They can still show command text or trigger the model's own supervisor behavior if no real runtime tool is available.
+
+The stable runtime entry is:
 
 ```text
-.opencode/tools/run_profile_workflow.ts
+mcp/agentflow-server.ts
 ```
 
-The file uses OpenCode's `tool(...)` helper and passes static checks. However, a running OpenCode session may still not show `run_profile_workflow` in its available tools. That means AgentFlow Runtime cannot be launched from `/workflow` through the custom tool in that session.
-
-## Immediate Fallback
-
-Run AgentFlow from the project terminal:
-
-```bash
-npm run workflow:run-profile -- --task "<task>"
-```
-
-This prints the same formatted runtime output, including `AgentFlow Profile Run`, `Routing Decision`, `AgentFlow Role Timeline`, summary path, trace path, and next actions.
-
-## MCP Route
-
-If custom tool loading remains unavailable, wrap `ProfileWorkflowRunner` as an MCP server and expose:
+It exposes one tool:
 
 ```text
 run_profile_workflow
 ```
 
-Recommended tool output:
+The older `.opencode/tools/run_profile_workflow.ts` file is a compatibility wrapper only. It intentionally does not call `tool(...)`, because duplicate custom tool registration caused OpenCode runtime schema errors before AgentFlow could run.
+
+If a live OpenCode session still reports:
+
+```text
+undefined is not an object (evaluating 'p.split')
+```
+
+restart OpenCode so it reloads `opencode.json` and uses the `agentflow` MCP tool instead of a stale custom tool instance.
+
+## Configuration
+
+`opencode.json` contains:
+
+```json
+{
+  "mcp": {
+    "agentflow": {
+      "type": "local",
+      "command": ["node", "--experimental-strip-types", "mcp/agentflow-server.ts"],
+      "enabled": true
+    }
+  }
+}
+```
+
+## Immediate Fallback
+
+If the MCP tool is not available in the OpenCode session, run AgentFlow from the project terminal:
+
+```bash
+npm run workflow:run-profile -- --task "<task>"
+```
+
+The MCP tool returns:
 
 - `formattedText`
 - `roleTimeline`
@@ -45,7 +67,7 @@ Recommended tool output:
 - `sessionId`
 - `pendingQuestions`
 
-The MCP server should call `OpenCodeWorkflowToolService.runProfileWorkflow`, because that service suppresses Runtime console logs before returning structured output. It should not call `CodeExecutor` unless explicit execution approval is present.
+The `/workflow` command should display only `formattedText`.
 
 ## Safety Boundaries
 

@@ -104,15 +104,28 @@ for (const forbiddenText of ["todowrite", "list_files", "bash as the only fallba
 }
 
 const runProfileTool = readFileSync(".opencode/tools/run_profile_workflow.ts", "utf8");
-for (const requiredText of ['import { tool } from "@opencode-ai/plugin"', "export default tool({", "runProfileWorkflow"]) {
+for (const requiredText of ["runProfileWorkflow", "OpenCodeWorkflowToolService", "Compatibility wrapper"]) {
   if (!runProfileTool.includes(requiredText)) {
-    console.error(`run_profile_workflow tool is not registered with OpenCode tool(): ${requiredText}`);
+    console.error(`run_profile_workflow compatibility wrapper is missing expected text: ${requiredText}`);
+    process.exit(1);
+  }
+}
+for (const forbiddenText of ['@opencode-ai/plugin', "export default tool({", "tool.schema"]) {
+  if (runProfileTool.includes(forbiddenText)) {
+    console.error(`run_profile_workflow should not register a duplicate OpenCode custom tool: ${forbiddenText}`);
     process.exit(1);
   }
 }
 
 const opencodeConfig = readFileSync("opencode.json", "utf8");
-for (const requiredText of ['"mcp"', '"agentflow"', '"mcp/agentflow-server.ts"', '"bash": "ask"', '"edit": "ask"']) {
+for (const requiredText of [
+  '"mcp"',
+  '"agentflow"',
+  '"mcp/agentflow-server.ts"',
+  '"bash": "ask"',
+  '"edit": "ask"',
+  '"~/development/garbage_item_upload/**": "allow"',
+]) {
   if (!opencodeConfig.includes(requiredText)) {
     console.error(`opencode.json is missing expected AgentFlow MCP or permission setting: ${requiredText}`);
     process.exit(1);
@@ -128,4 +141,4 @@ for (const requiredText of ["tools/list", "tools/call", "run_profile_workflow", 
 }
 
 console.log(`OpenCode adapter files OK: ${requiredFiles.length}`);
-console.warn("Warning: run_profile_workflow tool file exists and uses OpenCode tool(), but runtime availability must be confirmed inside opencode.");
+console.warn("Warning: run_profile_workflow is provided by the AgentFlow MCP server; restart OpenCode and confirm the agentflow MCP tool is available.");

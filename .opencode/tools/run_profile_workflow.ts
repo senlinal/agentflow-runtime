@@ -1,20 +1,22 @@
-import { tool } from "@opencode-ai/plugin";
 import { OpenCodeWorkflowToolService } from "../../adapters/opencode/OpenCodeWorkflowToolService.ts";
 import type { ProfileWorkflowRunRequest } from "../../core/profile/ProfileWorkflowRunner.ts";
+import { fileURLToPath } from "node:url";
 
-export default tool({
-  description: "Run AgentFlow Runtime through the active workflow profile and return the formatted role timeline.",
-  args: {
-    task: tool.schema.string().optional().describe("User task to run through the active or routed workflow profile."),
-    profile: tool.schema.string().optional().describe("Optional profile id to use explicitly."),
-    inputPath: tool.schema.string().optional().describe("Optional TaskBrief input path."),
-    resume: tool.schema.boolean().optional().describe("Whether this is a scope confirmation resume."),
-    sessionId: tool.schema.string().optional().describe("Optional profile session id for resume."),
-    answer: tool.schema.string().optional().describe("User answer to pending scope questions."),
-    dryRun: tool.schema.boolean().optional().describe("Preview without running even safe profile preflight roles."),
-    allowExecution: tool.schema.boolean().optional().describe("Allow execution-capable workflows. Defaults to false."),
-  },
-  async execute(args) {
-    return new OpenCodeWorkflowToolService().runProfileWorkflow(args as ProfileWorkflowRunRequest);
-  },
-});
+// Compatibility wrapper for direct JSON-stdin checks.
+// The live OpenCode entrypoint is the MCP server configured in opencode.json.
+export async function runProfileWorkflow(input: ProfileWorkflowRunRequest) {
+  return new OpenCodeWorkflowToolService().runProfileWorkflow(input);
+}
+
+export default runProfileWorkflow;
+
+if (fileURLToPath(import.meta.url) === process.argv[1]) {
+  const input = await readJsonInput<ProfileWorkflowRunRequest>();
+  console.log(JSON.stringify(await runProfileWorkflow(input), null, 2));
+}
+
+async function readJsonInput<T>(): Promise<T> {
+  const chunks: string[] = [];
+  for await (const chunk of process.stdin) chunks.push(String(chunk));
+  return JSON.parse(chunks.join("") || "{}") as T;
+}
