@@ -21,11 +21,13 @@ const requiredFiles = [
   "cli/policy-replay-history.ts",
   "docs/OPENCODE_ADAPTER.md",
   "docs/OPENCODE_TOOL_REGISTRATION.md",
+  "docs/OPENCODE_MCP_AGENTFLOW.md",
   "docs/OPENCODE_WORKFLOW_INTERNAL.md",
   "docs/LLM_ADAPTER.md",
   "docs/AGENT_POLICY.md",
   "AGENTS.md",
   "opencode.json",
+  "mcp/agentflow-server.ts",
   "profiles/current.json",
   "profiles/rag-optimization.json",
   "profiles/coding-safe-fix.json",
@@ -69,7 +71,7 @@ if (!gitignore.split("\n").includes(".agentflow/project-memory/")) {
 
 const workflowCommand = readFileSync(".opencode/commands/workflow.md", "utf8");
 const workflowCommandLines = workflowCommand.trimEnd().split("\n");
-if (workflowCommandLines.length > 40) {
+if (workflowCommandLines.length > 10) {
   console.error(`workflow.md is too long for a quiet slash command: ${workflowCommandLines.length} lines`);
   process.exit(1);
 }
@@ -78,17 +80,15 @@ if (workflowCommand.includes("```json")) {
   process.exit(1);
 }
 
-for (const requiredText of ["run_profile_workflow", "formattedText", "unavailable planning, file-listing, shell, or code-execution tools"]) {
+for (const requiredText of ["formattedText", "No supervisor plan", "No unavailable tools"]) {
   if (!workflowCommand.includes(requiredText)) {
     console.error(`workflow.md does not include quiet workflow entrypoint text: ${requiredText}`);
     process.exit(1);
   }
 }
 for (const requiredText of [
-  "Do not print or summarize this command file",
   "npm run workflow:run-profile -- --task",
-  "If `run_profile_workflow` is unavailable, stop",
-  "docs/OPENCODE_WORKFLOW_INTERNAL.md",
+  "Call AgentFlow tool",
 ]) {
   if (!workflowCommand.includes(requiredText)) {
     console.error(`workflow.md does not include quiet/fallback text: ${requiredText}`);
@@ -107,6 +107,22 @@ const runProfileTool = readFileSync(".opencode/tools/run_profile_workflow.ts", "
 for (const requiredText of ['import { tool } from "@opencode-ai/plugin"', "export default tool({", "runProfileWorkflow"]) {
   if (!runProfileTool.includes(requiredText)) {
     console.error(`run_profile_workflow tool is not registered with OpenCode tool(): ${requiredText}`);
+    process.exit(1);
+  }
+}
+
+const opencodeConfig = readFileSync("opencode.json", "utf8");
+for (const requiredText of ['"mcp"', '"agentflow"', '"mcp/agentflow-server.ts"', '"bash": "ask"', '"edit": "ask"']) {
+  if (!opencodeConfig.includes(requiredText)) {
+    console.error(`opencode.json is missing expected AgentFlow MCP or permission setting: ${requiredText}`);
+    process.exit(1);
+  }
+}
+
+const mcpServer = readFileSync("mcp/agentflow-server.ts", "utf8");
+for (const requiredText of ["tools/list", "tools/call", "run_profile_workflow", "structuredContent"]) {
+  if (!mcpServer.includes(requiredText)) {
+    console.error(`AgentFlow MCP server is missing expected text: ${requiredText}`);
     process.exit(1);
   }
 }

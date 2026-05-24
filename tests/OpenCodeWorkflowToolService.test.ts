@@ -73,6 +73,22 @@ describe("OpenCodeWorkflowToolService", () => {
     assert.equal(result.steps[1].status, "blocked");
   });
 
+  it("suppresses runtime node logs when running profile workflow from the tool service", async () => {
+    const originalLog = console.log;
+    const captured: string[] = [];
+    console.log = (...items: unknown[]) => captured.push(items.map(String).join(" "));
+    try {
+      await new OpenCodeWorkflowToolService().runProfileWorkflow({
+        profile: "rag-optimization",
+        task: "继续 RAG 召回优化，分析上一轮实验结果。",
+      });
+    } finally {
+      console.log = originalLog;
+    }
+
+    assert.deepEqual(captured, []);
+  });
+
   it("lists workflows", async () => {
     const result = await new OpenCodeWorkflowToolService().listWorkflows();
     assert.ok(result.workflows.some((item) => item.name === "abcde-basic"));

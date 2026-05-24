@@ -52,7 +52,7 @@ export class OpenCodeWorkflowToolService {
       : TaskBriefLoader.fromObject(input.taskBrief, "opencode-taskBrief");
 
     const { config } = await this.registry.load(input.template);
-    const result = await new WorkflowRunner().run(config, taskBrief);
+    const result = await runWithoutRuntimeLogs(() => new WorkflowRunner().run(config, taskBrief));
     const context = result.context;
     const finalStatus = context.stopReason ? "stopped" : context.verification?.pass ? "passed" : "not-passed";
     const enteredExecutor = context.trace.some((item) =>
@@ -78,10 +78,10 @@ export class OpenCodeWorkflowToolService {
     if (!input.task && !input.inputPath && !input.answer && !input.sessionId) {
       throw new Error("run_profile_workflow requires task, inputPath, answer, or sessionId.");
     }
-    return new ProfileWorkflowRunner().run({
+    return runWithoutRuntimeLogs(() => new ProfileWorkflowRunner().run({
       ...input,
       allowExecution: input.allowExecution === true,
-    });
+    }));
   }
 
   async listWorkflows(_input: { includeDetails?: boolean } = {}): Promise<{
@@ -178,4 +178,21 @@ export class OpenCodeWorkflowToolService {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+async function runWithoutRuntimeLogs<T>(callback: () => Promise<T>): Promise<T> {
+  const originalLog = console.log;
+  const originalWarn = console.warn;
+  const captured: string[] = [];
+  console.log = (...items: unknown[]) => captured.push(items.map(String).join(" "));
+  console.warn = (...items: unknown[]) => captured.push(items.map(String).join(" "));
+  try {
+    return await callback();
+  } finally {
+    console.log = originalLog;
+    console.warn = originalWarn;
+    if (process.env.AGENTFLOW_DEBUG_OPENCODE_TOOL === "1" && captured.length > 0) {
+      console.error(captured.join("\n"));
+    }
+  }
 }

@@ -43,3 +43,5 @@ If OpenCode custom tool loading is unavailable in a deployment environment, use 
 1. Register the tool using the OpenCode-supported custom tool mechanism for that version.
 2. Wrap `ProfileWorkflowRunner` as an MCP server tool.
 3. Keep using the CLI fallback until runtime tool registration is confirmed.
+
+The MCP fallback plan is documented in `docs/OPENCODE_MCP_AGENTFLOW.md`.

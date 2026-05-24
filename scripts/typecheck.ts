@@ -2,7 +2,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
-const roots = ["core", "cli", "tests", "adapters", ".opencode/tools", ".opencode/plugins"];
+const roots = ["core", "cli", "tests", "adapters", "mcp", ".opencode/tools", ".opencode/plugins"];
 const files = ["demo.ts", "demo-feasibility.ts", ...roots.flatMap((root) => walk(root))];
 const failures: string[] = [];
 
