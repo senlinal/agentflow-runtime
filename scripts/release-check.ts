@@ -38,6 +38,7 @@ const requiredFiles = [
   "core/scope/ScopeConfirmationFormatter.ts",
   "core/profile/WorkflowProfileLoader.ts",
   "core/profile/ProfileWorkflowRunner.ts",
+  "core/profile/ProfileRunFormatter.ts",
   "core/profile/ProfileRouter.ts",
   "core/profile/ProfileSessionStore.ts",
   "core/profile/ProjectMemoryStore.ts",

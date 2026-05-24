@@ -57,6 +57,11 @@ describe("OpenCodeWorkflowToolService", () => {
     assert.equal(result.profileId, "rag-optimization");
     assert.equal(result.finalStatus, "blocked");
     assert.ok(result.roleTimeline.length >= 2);
+    assert.ok(result.formattedText.includes("AgentFlow Profile Run"));
+    assert.ok(result.formattedText.includes("AgentFlow Role Timeline"));
+    assert.ok(result.summaryPath?.endsWith("summary.md"));
+    assert.ok(result.tracePath?.endsWith("trace.json"));
+    assert.ok(result.contextPath?.endsWith("context.json"));
     assert.equal(result.roleTimeline[0].role, "MemoryAutonomyGate");
     assert.equal(result.executedWorkflows.includes("task-negotiation"), true);
     assert.ok(result.summaryPaths.some((path) => path.endsWith("summary.md")));

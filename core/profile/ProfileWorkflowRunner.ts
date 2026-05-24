@@ -6,6 +6,7 @@ import { WorkflowRunner, type WorkflowRunnerResult } from "../WorkflowRunner.ts"
 import { WorkflowTemplateRegistry } from "../WorkflowTemplateRegistry.ts";
 import { EscalationGate } from "./EscalationGate.ts";
 import { MemoryAutonomyGate } from "./MemoryAutonomyGate.ts";
+import { formatProfileRun } from "./ProfileRunFormatter.ts";
 import { ProfileRouter, type ProfileRoutingDecision } from "./ProfileRouter.ts";
 import { WorkflowProfileLoader, type WorkflowProfile } from "./WorkflowProfileLoader.ts";
 import { ProfileSessionStore } from "./ProfileSessionStore.ts";
@@ -34,6 +35,7 @@ export type ProfileRoleTimelineEvent = {
   runId?: string;
   summaryPath?: string;
   tracePath?: string;
+  contextPath?: string;
 };
 
 export type ProfileWorkflowStep = {
@@ -59,6 +61,10 @@ export type ProfileWorkflowRunResult = {
   executedWorkflows: string[];
   summaryPaths: string[];
   tracePaths: string[];
+  contextPaths: string[];
+  summaryPath?: string;
+  tracePath?: string;
+  contextPath?: string;
   warnings: string[];
   finalStatus: "planned" | "completed" | "blocked" | "stopped";
   nextActions: string[];
@@ -69,6 +75,7 @@ export type ProfileWorkflowRunResult = {
   session?: ProfileSession;
   scopeConfirmationId?: string;
   memorySummary?: ProjectMemorySummary;
+  formattedText: string;
 };
 
 export class ProfileWorkflowRunner {
@@ -183,7 +190,7 @@ export class ProfileWorkflowRunner {
         });
       }
       const memorySummary = await this.memoryStore.summarize(profile.id, 10);
-      return {
+      return this.withFormattedText({
         profileId: profile.id,
         profileName: profile.name,
         workflowChain,
@@ -195,6 +202,8 @@ export class ProfileWorkflowRunner {
         executedWorkflows: executedWorkflows(steps),
         summaryPaths: summaryPaths(steps),
         tracePaths: tracePaths(steps),
+        contextPaths: contextPaths(steps),
+        ...primaryArtifactPaths(steps),
         warnings,
         finalStatus: "blocked",
         nextActions: escalation.nextAllowedActions,
@@ -204,7 +213,7 @@ export class ProfileWorkflowRunner {
         autonomyDecision,
         memorySummary,
         ...(profileSession ? { session: profileSession } : {}),
-      };
+      });
     }
     let blocked = false;
 
@@ -299,7 +308,7 @@ export class ProfileWorkflowRunner {
     await this.writeRouteMemory(profile.id, profileSession, steps);
     const memorySummary = await this.memoryStore.summarize(profile.id, 10);
 
-    return {
+    return this.withFormattedText({
       profileId: profile.id,
       profileName: profile.name,
       workflowChain,
@@ -311,6 +320,8 @@ export class ProfileWorkflowRunner {
       executedWorkflows: executedWorkflows(steps),
       summaryPaths: summaryPaths(steps),
       tracePaths: tracePaths(steps),
+      contextPaths: contextPaths(steps),
+      ...primaryArtifactPaths(steps),
       warnings,
       finalStatus: finalProfileStatus(steps, dryRun),
       nextActions: nextActions(profile, steps, memorySummary),
@@ -321,7 +332,7 @@ export class ProfileWorkflowRunner {
       memorySummary,
       ...(profileSession ? { session: profileSession } : {}),
       ...(scopeConfirmation?.confirmationId ? { scopeConfirmationId: scopeConfirmation.confirmationId } : {}),
-    };
+    });
   }
 
   async compactMemory(profileId?: string): Promise<CompactMemorySummary> {
@@ -344,6 +355,14 @@ export class ProfileWorkflowRunner {
       currentProfile,
       explicitProfile: requestedProfile,
     });
+  }
+
+  private withFormattedText(result: Omit<ProfileWorkflowRunResult, "formattedText">): ProfileWorkflowRunResult {
+    const withPlaceholder = { ...result, formattedText: "" };
+    return {
+      ...withPlaceholder,
+      formattedText: formatProfileRun(withPlaceholder),
+    };
   }
 
   private async createPendingSession(
@@ -548,6 +567,7 @@ function toStep(workflow: string, result: WorkflowRunnerResult): ProfileWorkflow
     runId: result.runId,
     summaryPath: result.summaryPath,
     tracePath: result.tracePath,
+    contextPath: result.contextPath,
     finalStatus: context.stopReason ? "stopped" : context.verification?.pass ? "passed" : "not-passed",
     enteredExecutor,
   };
@@ -564,6 +584,7 @@ function toTimeline(workflow: string, result: WorkflowRunnerResult): ProfileRole
     runId: result.runId,
     summaryPath: result.summaryPath,
     tracePath: result.tracePath,
+    contextPath: result.contextPath,
   }));
 }
 
@@ -577,6 +598,18 @@ function summaryPaths(steps: ProfileWorkflowStep[]): string[] {
 
 function tracePaths(steps: ProfileWorkflowStep[]): string[] {
   return steps.map((step) => step.tracePath).filter((path): path is string => Boolean(path));
+}
+
+function contextPaths(steps: ProfileWorkflowStep[]): string[] {
+  return steps.map((step) => step.contextPath).filter((path): path is string => Boolean(path));
+}
+
+function primaryArtifactPaths(steps: ProfileWorkflowStep[]): { summaryPath?: string; tracePath?: string; contextPath?: string } {
+  return {
+    ...(summaryPaths(steps)[0] ? { summaryPath: summaryPaths(steps)[0] } : {}),
+    ...(tracePaths(steps)[0] ? { tracePath: tracePaths(steps)[0] } : {}),
+    ...(contextPaths(steps)[0] ? { contextPath: contextPaths(steps)[0] } : {}),
+  };
 }
 
 function finalProfileStatus(steps: ProfileWorkflowStep[], dryRun: boolean): ProfileWorkflowRunResult["finalStatus"] {

@@ -130,6 +130,8 @@ npm run workflow:run-profile -- --profile rag-optimization --task "..."
 
 The first implementation runs only safe pre-execution profile steps by default. It will not run CodeExecutor, tests, execution workflows, or real LLM calls unless a later explicit execution path is used.
 
+The text output is formatted by the profile runner and includes `Routing Decision`, `Autonomy Decision`, `AgentFlow Role Timeline`, artifact paths, warnings, and next actions. The opencode `/workflow` command should show this runtime result instead of exposing its internal command protocol.
+
 Profile runs create resumable sessions when scope confirmation is needed:
 
 ```bash

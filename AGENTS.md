@@ -8,6 +8,8 @@ This repository contains a reusable composable Agent workflow runtime. Before ma
 
 opencode may be used as a command or custom tool entrypoint, but it must not bypass `WorkflowRuntime` or `WorkflowRunner` to decide Planner / Executor / Verifier / GoalKeeper flow on its own. Workflow routing remains configuration-driven.
 
+`/workflow` is a general AgentFlow entrypoint. It should call `run_profile_workflow` first, use profile routing when the task does not match the current profile, and show the formatted AgentFlow runtime result with Role Timeline. Do not expose internal command protocols or replace the runtime result with a generic Supervisor plan.
+
 Normal edits, local file creation, code changes, documentation updates, and local test runs can proceed without asking the user. Deleting existing project files, overwriting hard-to-recover artifacts, sending external messages, deploying, or changing production data requires user confirmation.
 
 When a task appears too costly, too broad, or underspecified, produce or preserve a `FeasibilityReport` decision such as `ask_human`, `revise_goal`, or `stop` rather than blindly executing.
