@@ -121,10 +121,8 @@ function workflowTemplate(agentFlowRootPath: string): string {
 }
 
 function mergePlugins(existing: OpenCodeConfig["plugin"], required: string[]): OpenCodeConfig["plugin"] {
-  const items = Array.isArray(existing) ? [...existing] : [];
-  const existingPaths = new Set(items.map((item) => Array.isArray(item) ? item[0] : item));
-  for (const plugin of required) {
-    if (!existingPaths.has(plugin)) items.push(plugin);
-  }
-  return items;
+  const existingItems = Array.isArray(existing) ? existing : [];
+  const requiredSet = new Set(required);
+  const remaining = existingItems.filter((item) => !requiredSet.has(Array.isArray(item) ? item[0] : item));
+  return [...required, ...remaining];
 }

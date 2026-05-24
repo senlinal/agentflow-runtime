@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, it } from "node:test";
 import { promisify } from "node:util";
 
@@ -138,5 +140,30 @@ describe("opencode workflow command", () => {
     assert.doesNotMatch(plugin, /todowrite/);
     assert.doesNotMatch(plugin, /list_files/);
     assert.doesNotMatch(plugin, /Research Plan/);
+  });
+
+  it("global installer prepends AgentFlow plugins before supervisor plugins", async () => {
+    const configDir = await mkdtemp(join(tmpdir(), "agentflow-opencode-global-"));
+    await writeFile(join(configDir, "opencode.json"), JSON.stringify({
+      plugin: ["./plugin/supervisor.js", "oh-my-openagent@latest"],
+      permission: { task: { "*": "deny" } },
+    }), "utf8");
+
+    await execFileAsync("node", [
+      "--experimental-strip-types",
+      "scripts/opencode-install-global.ts",
+    ], {
+      cwd: process.cwd(),
+      env: { ...process.env, OPENCODE_CONFIG_DIR: configDir },
+      maxBuffer: 1024 * 1024,
+    });
+
+    const config = JSON.parse(await readFile(join(configDir, "opencode.json"), "utf8")) as { plugin: string[]; command: { workflow: { template: string } } };
+    assert.match(config.plugin[0], /agentflow-policy\.ts$/);
+    assert.match(config.plugin[1], /agentflow-workflow-interceptor\.ts$/);
+    assert.equal(config.plugin.includes("./plugin/supervisor.js"), true);
+    assert.equal(config.plugin.includes("oh-my-openagent@latest"), true);
+    assert.doesNotMatch(config.command.workflow.template, /opencode-workflow-command/);
+    assert.doesNotMatch(config.command.workflow.template, /AGENTFLOW_PROJECT_ROOT/);
   });
 });
