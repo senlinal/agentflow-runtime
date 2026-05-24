@@ -87,6 +87,13 @@ npm run workflow:run-profile -- --profile agent-workforce-basic --task "演示 P
 ```
 
 The Role Timeline is built from `trace.json`. No trace means no displayed AgentFlow role.
+Timeline rows include `executorType`. `executorType: mock` is labeled as `mock simulation, not LLM-backed`; `executorType: llm` is labeled as `llm-backed role execution`.
+
+Inspect the opt-in LLM-backed workforce profile without calling a provider:
+
+```bash
+npm run workflow:profile:inspect -- --profile agent-workforce-llm
+```
 
 If the run asks for scope confirmation, inspect and resume the profile session:
 

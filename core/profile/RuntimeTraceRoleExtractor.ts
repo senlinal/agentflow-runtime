@@ -5,6 +5,8 @@ export type RuntimeVerifiedRoleEvent = {
   workflow?: string;
   nodeId: string;
   role: AgentRole;
+  nodeType: NodeType | "unknown";
+  executorType: NodeType | "unknown";
   type: NodeType | "unknown";
   status: "completed" | "failed" | "blocked" | "skipped";
   outputKey?: keyof WorkflowContext;
@@ -14,6 +16,8 @@ export type RuntimeVerifiedRoleEvent = {
   step?: number;
   timestamp?: string;
   source: "runtime_trace";
+  isMock: boolean;
+  isLLMBacked: boolean;
 };
 
 export type RuntimeProof = {
@@ -44,20 +48,27 @@ export class RuntimeTraceRoleExtractor {
   extractFromTrace(trace: unknown[], options: { workflow?: string } = {}): RuntimeVerifiedRoleEvent[] {
     return trace
       .filter(isTraceLike)
-      .map((item) => ({
-        ...(options.workflow ? { workflow: options.workflow } : {}),
-        nodeId: item.nodeId,
-        role: item.role,
-        type: item.nodeType ?? "unknown",
-        status: item.error ? "failed" : "completed",
-        outputKey: item.outputKey,
-        outputSchema: item.outputSchema,
-        summary: item.error ?? item.outputSummary,
-        nextNode: item.nextNode,
-        step: item.step,
-        timestamp: item.timestamp,
-        source: "runtime_trace" as const,
-      }));
+      .map((item) => {
+        const executorType = item.nodeType ?? "unknown";
+        return {
+          ...(options.workflow ? { workflow: options.workflow } : {}),
+          nodeId: item.nodeId,
+          role: item.role,
+          nodeType: executorType,
+          executorType,
+          type: executorType,
+          status: item.error ? "failed" : "completed",
+          outputKey: item.outputKey,
+          outputSchema: item.outputSchema,
+          summary: item.error ?? item.outputSummary,
+          nextNode: item.nextNode,
+          step: item.step,
+          timestamp: item.timestamp,
+          source: "runtime_trace" as const,
+          isMock: executorType === "mock",
+          isLLMBacked: executorType === "llm",
+        };
+      });
   }
 }
 

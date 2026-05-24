@@ -104,18 +104,23 @@ function formatTimeline(result: ProfileWorkflowRunResult): string[] {
   const events = result.roleTimeline.filter((event) => event.source === "runtime_trace");
   if (events.length === 0) {
     if (result.executedWorkflows.length === 0) return ["- No AgentFlow workflow was executed."];
-    return ["- AgentFlow Runtime trace was not found. Role timeline cannot be verified."];
+    return ["- AgentFlow Runtime trace not found. No verified agents can be displayed."];
   }
   return events.map((event, index) => {
     const parts = [
       `${index + 1}. ${event.role}`,
       `   workflow: ${event.workflow ?? "n/a"}`,
       `   nodeId: ${event.nodeId}`,
-      `   type: ${event.type ?? "unknown"}`,
+      `   nodeType: ${event.nodeType ?? event.type ?? "unknown"}`,
+      `   executorType: ${event.executorType ?? event.type ?? "unknown"}`,
+      `   type: ${event.type ?? event.executorType ?? "unknown"}`,
       `   status: ${event.status}`,
       `   outputKey: ${event.outputKey ?? "n/a"}`,
       `   outputSchema: ${event.outputSchema ?? "n/a"}`,
       `   source: ${event.source}`,
+      `   isMock: ${event.isMock === true}`,
+      `   isLLMBacked: ${event.isLLMBacked === true}`,
+      `   note: ${roleExecutionNote(event)}`,
       `   next: ${event.nextNode ?? "n/a"}`,
       `   output: ${event.summary ?? "n/a"}`,
     ];
@@ -124,6 +129,12 @@ function formatTimeline(result: ProfileWorkflowRunResult): string[] {
     if (event.contextPath) parts.push(`   context: ${event.contextPath}`);
     return parts.join("\n");
   });
+}
+
+function roleExecutionNote(event: ProfileRoleTimelineEvent): string {
+  if (event.isLLMBacked) return "llm-backed role execution";
+  if (event.isMock) return "mock simulation, not LLM-backed";
+  return `runtime executor type: ${event.executorType ?? event.type ?? "unknown"}`;
 }
 
 function formatArtifacts(result: ProfileWorkflowRunResult): string[] {

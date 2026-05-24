@@ -72,6 +72,30 @@ test("RuntimeTraceRoleExtractor", async (t) => {
     assert.equal(roles.every((role) => role.source === "runtime_trace"), true);
     assert.equal(roles[0].outputSchema, "Plan");
     assert.equal(roles[0].type, "mock");
+    assert.equal(roles[0].nodeType, "mock");
+    assert.equal(roles[0].executorType, "mock");
+    assert.equal(roles[0].isMock, true);
+    assert.equal(roles[0].isLLMBacked, false);
+  });
+
+  await t.test("marks llm nodes as llm-backed without guessing from text", () => {
+    const roles = extractor.extractFromTrace([{
+      step: 0,
+      nodeId: "planner",
+      role: "Planner",
+      nodeType: "llm",
+      inputKeys: ["taskBrief"],
+      outputKey: "plan",
+      outputSchema: "Plan",
+      outputSummary: "structured plan",
+      conditionResults: [],
+      nextNode: "end",
+      timestamp: "2026-05-24T00:00:00.000Z",
+    }]);
+
+    assert.equal(roles[0].executorType, "llm");
+    assert.equal(roles[0].isMock, false);
+    assert.equal(roles[0].isLLMBacked, true);
   });
 
   await t.test("throws clearly when trace file is missing", async () => {

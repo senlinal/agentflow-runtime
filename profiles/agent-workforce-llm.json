@@ -1,0 +1,31 @@
+{
+  "id": "agent-workforce-llm",
+  "name": "Agent Workforce LLM",
+  "description": "Opt-in LLM-backed multi-agent workforce profile using Planner, Debater, PlannerRevision, Executor, Verifier, and GoalKeeper as llm nodes.",
+  "defaultWorkflow": "abcde-basic-llm",
+  "policyFiles": [
+    "docs/AGENT_POLICY.md",
+    "docs/WORKER_POLICY.md",
+    "docs/AUTONOMY_POLICY.md",
+    "docs/LLM_ADAPTER.md"
+  ],
+  "defaultConstraints": [
+    "show_runtime_verified_role_timeline",
+    "do_not_fake_agent_roles",
+    "do_not_run_without_explicit_llm_configuration",
+    "do_not_log_api_keys"
+  ],
+  "defaultBlockedActions": [
+    "real_llm_call_without_explicit_configuration",
+    "delete_files",
+    "deploy",
+    "destructive_shell"
+  ],
+  "defaultOutput": [
+    "role_timeline",
+    "runtime_proof",
+    "summary",
+    "trace",
+    "context"
+  ]
+}

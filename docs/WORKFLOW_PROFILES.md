@@ -61,9 +61,10 @@ Role Timeline entries are runtime-verified. They are extracted from `trace.json`
 ```bash
 npm run workflow:profile:inspect -- --profile agent-workforce-basic
 npm run workflow:run-profile -- --profile agent-workforce-basic --task "演示 Planner、Debater、Executor、Verifier 多角色协作"
+npm run workflow:profile:inspect -- --profile agent-workforce-llm
 ```
 
-See `docs/RUNTIME_VERIFIED_AGENTS.md`.
+The basic profile uses `executorType: mock` and explicitly labels those rows as mock simulation. The LLM profile points to `abcde-basic-llm` and is opt-in; inspect it freely, but do not run it unless real LLM configuration is intentionally enabled. See `docs/RUNTIME_VERIFIED_AGENTS.md`.
 
 ## Profile Sessions
 

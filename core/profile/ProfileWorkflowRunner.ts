@@ -30,6 +30,8 @@ export type ProfileRoleTimelineEvent = {
   workflow?: string;
   nodeId: string;
   role: string;
+  nodeType?: string;
+  executorType?: string;
   type?: string;
   status: "completed" | "failed" | "blocked" | "skipped";
   summary?: string;
@@ -42,6 +44,8 @@ export type ProfileRoleTimelineEvent = {
   summaryPath?: string;
   tracePath?: string;
   contextPath?: string;
+  isMock?: boolean;
+  isLLMBacked?: boolean;
 };
 
 export type ProfileWorkflowStep = {
@@ -339,6 +343,8 @@ export class ProfileWorkflowRunner {
       workflow,
       nodeId: event.nodeId,
       role: event.role,
+      nodeType: event.nodeType,
+      executorType: event.executorType,
       type: event.type,
       status: event.status,
       summary: event.summary,
@@ -351,6 +357,8 @@ export class ProfileWorkflowRunner {
       summaryPath: result.summaryPath,
       tracePath: result.tracePath,
       contextPath: result.contextPath,
+      isMock: event.isMock,
+      isLLMBacked: event.isLLMBacked,
     }));
   }
 

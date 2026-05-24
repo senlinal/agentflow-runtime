@@ -34,6 +34,7 @@ const requiredFiles = [
   "profiles/external-project-fix.json",
   "profiles/frontend-site-build.json",
   "profiles/agent-workforce-basic.json",
+  "profiles/agent-workforce-llm.json",
   "core/profile/ProfileRouter.ts",
   "core/profile/ProfileRunFormatter.ts",
   "core/profile/RuntimeTraceRoleExtractor.ts",

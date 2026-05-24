@@ -27,6 +27,11 @@ test("ProfileRunFormatter", async (t) => {
     assert.match(text, /verifiedRoleCount: 1/);
     assert.match(text, /1\. TaskNegotiator/);
     assert.match(text, /source: runtime_trace/);
+    assert.match(text, /nodeType: negotiate/);
+    assert.match(text, /executorType: negotiate/);
+    assert.match(text, /isMock: false/);
+    assert.match(text, /isLLMBacked: false/);
+    assert.match(text, /note: runtime executor type: negotiate/);
     assert.match(text, /outputKey: taskNegotiationResult/);
     assert.match(text, /outputSchema: TaskNegotiationResult/);
     assert.match(text, /summary: \.workflow-runs\/run\/summary\.md/);
@@ -75,7 +80,7 @@ test("ProfileRunFormatter", async (t) => {
       },
     }));
 
-    assert.match(text, /AgentFlow Runtime trace was not found/);
+    assert.match(text, /AgentFlow Runtime trace not found. No verified agents can be displayed./);
     assert.doesNotMatch(text, /1\\. Planner/);
   });
 });
@@ -113,6 +118,8 @@ function sampleResult(overrides: Partial<ProfileWorkflowRunResult> = {}): Profil
         workflow: "task-negotiation",
         nodeId: "taskNegotiator",
         role: "TaskNegotiator",
+        nodeType: "negotiate",
+        executorType: "negotiate",
         type: "negotiate",
         status: "completed",
         summary: "Need scope confirmation.",
@@ -124,6 +131,8 @@ function sampleResult(overrides: Partial<ProfileWorkflowRunResult> = {}): Profil
         summaryPath: ".workflow-runs/run/summary.md",
         tracePath: ".workflow-runs/run/trace.json",
         contextPath: ".workflow-runs/run/context.json",
+        isMock: false,
+        isLLMBacked: false,
       },
     ],
     executedWorkflows: ["task-negotiation"],
