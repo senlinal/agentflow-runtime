@@ -18,7 +18,11 @@ const requiredFiles = [
   ".opencode/agents/agentflow-goalkeeper.md",
   "config/opencode-subagents.json",
   "core/opencode/OpenCodeSubAgentBridge.ts",
+  "core/opencode/NativeSubAgentWorkflowPackBuilder.ts",
+  "core/opencode/NativeSubAgentWorkflowPackCollector.ts",
   "cli/opencode-subagents.ts",
+  "cli/native-subagent-pack.ts",
+  "cli/native-subagent-collect.ts",
   "adapters/opencode/PolicyAuditLogger.ts",
   "adapters/opencode/PolicyApprovalStore.ts",
   "adapters/opencode/ToolCallHasher.ts",
@@ -65,6 +69,7 @@ const requiredFiles = [
   "scripts/opencode-install-global.ts",
   "docs/PROJECT_MEMORY.md",
   "docs/OPENCODE_NATIVE_SUBAGENTS.md",
+  "docs/OPENCODE_NATIVE_WORKFLOW_PACK.md",
 ];
 
 const missing: string[] = [];
@@ -266,6 +271,20 @@ const nativeBridge = readFileSync("core/opencode/OpenCodeSubAgentBridge.ts", "ut
 for (const requiredText of ["status: \"unavailable\"", "programmatic subagent dispatch API", "openCodeTaskId", "inspectConfig"]) {
   if (!nativeBridge.includes(requiredText)) {
     console.error(`OpenCodeSubAgentBridge is missing required explicit limitation behavior: ${requiredText}`);
+    process.exit(1);
+  }
+}
+const nativePackDocs = readFileSync("docs/OPENCODE_NATIVE_WORKFLOW_PACK.md", "utf8");
+for (const requiredText of ["workflow:native-pack", "workflow:native-collect", "DISPATCH.md", "output.json", "opencode_native_artifact"]) {
+  if (!nativePackDocs.includes(requiredText)) {
+    console.error(`OpenCode native workflow pack docs are missing required text: ${requiredText}`);
+    process.exit(1);
+  }
+}
+const nativePackBuilder = readFileSync("core/opencode/NativeSubAgentWorkflowPackBuilder.ts", "utf8");
+for (const requiredText of ["DISPATCH.md", "manifest.json", "output.schema.json", "openCodeAgentName", "workflow:native-collect"]) {
+  if (!nativePackBuilder.includes(requiredText)) {
+    console.error(`NativeSubAgentWorkflowPackBuilder is missing required text: ${requiredText}`);
     process.exit(1);
   }
 }

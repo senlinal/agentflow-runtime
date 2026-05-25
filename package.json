@@ -32,6 +32,8 @@
     "workflow:profile:inspect": "node --experimental-strip-types cli/workflow-profile-inspect.ts",
     "workflow:route-profile": "node --experimental-strip-types cli/workflow-route-profile.ts",
     "workflow:run-profile": "node --experimental-strip-types cli/run-profile-workflow.ts",
+    "workflow:native-pack": "node --experimental-strip-types cli/native-subagent-pack.ts",
+    "workflow:native-collect": "node --experimental-strip-types cli/native-subagent-collect.ts",
     "workflow:profile:sessions": "node --experimental-strip-types cli/workflow-profile-session-list.ts",
     "workflow:profile:session": "node --experimental-strip-types cli/workflow-profile-session-show.ts",
     "memory:list": "node --experimental-strip-types cli/project-memory-list.ts",

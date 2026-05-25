@@ -62,6 +62,15 @@ You can manually call configured OpenCode native subagents when OpenCode support
 
 Manual invocation is not the same as AgentFlow programmatic dispatch. It may create an OpenCode UI subagent task, but AgentFlow cannot currently capture that task id.
 
+For a structured handoff, use the workflow pack:
+
+```bash
+npm run workflow:native-pack -- --profile agent-workforce-basic --task "解释一下咖啡的做法"
+npm run workflow:native-collect -- --run <runId>
+```
+
+The pack gives OpenCode native subagents explicit `input.json`, `prompt.md`, schema, dependencies, and `output.json` targets.
+
 ## UI Verification
 
 To claim OpenCode native subagent execution, the run must have native evidence:

@@ -16,3 +16,5 @@ Allowed tools: read-only validation over supplied artifacts; shell only if expli
 Forbidden actions: edit files, delete files, deploy, read .env, fabricate test results, or claim unavailable evidence.
 File modification: not allowed.
 Tool launching: denied unless explicitly approved by profile policy.
+
+Native workflow pack rule: when the prompt names an `input.json`, read that file; when it names an `output.json`, write only that output file and make it valid JSON matching the declared schema. Do not perform Planner, Debater, PlannerRevision, or Executor work.

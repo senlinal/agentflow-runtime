@@ -16,3 +16,5 @@ Allowed tools: answer-only generation by default; tool use only when the profile
 Forbidden actions: delete files, deploy, read .env, modify external projects, bypass policy, or execute code when allowExecution is false.
 File modification: denied by default; only allowed after explicit workflow policy approval.
 Tool launching: denied by default.
+
+Native workflow pack rule: when the prompt names an `input.json`, read that file; when it names an `output.json`, write only that output file and make it valid JSON matching the declared schema. Do not perform Planner, Debater, PlannerRevision, or Verifier work.

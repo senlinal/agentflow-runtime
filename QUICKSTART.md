@@ -109,6 +109,20 @@ npm run workflow:run-profile -- --profile agent-workforce-opencode --task "演�
 
 This is a hybrid proof. It writes AgentFlow internal subagent artifacts and reports OpenCode native availability. In the current OpenCode API, programmatic native dispatch is unavailable, so the verified output should say `openCodeNativeSubAgent=false` and must not show a fake `openCodeTaskId`.
 
+To hand work to OpenCode's own clickable native subagents, generate a workflow pack:
+
+```bash
+npm run workflow:native-pack -- --profile agent-workforce-basic --task "解释一下咖啡的做法"
+```
+
+Open the generated `DISPATCH.md`, create the listed `@agentflow-*` native subagent tasks in OpenCode, and make each one write its assigned `output.json`. Then collect:
+
+```bash
+npm run workflow:native-collect -- --run <runId>
+```
+
+Missing `output.json` files stay pending; AgentFlow does not fabricate completed native subagent output.
+
 To run the goal-driven adaptive loop:
 
 ```bash

@@ -42,7 +42,7 @@ export type ProfileRoleTimelineEvent = {
   summary?: string;
   outputKey?: string;
   outputSchema?: string;
-  source?: "runtime_trace" | "subagent_dispatch_trace";
+  source?: "runtime_trace" | "subagent_dispatch_trace" | "opencode_native_artifact";
   nextNode?: string;
   step?: number;
   runId?: string;

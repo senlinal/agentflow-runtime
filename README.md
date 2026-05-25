@@ -86,6 +86,15 @@ Important examples:
 - `agent-workforce-opencode` profile: hybrid OpenCode native subagent bridge proof. It does not fabricate OpenCode task ids when native dispatch is unavailable.
 - `code-test-verify`: controlled CodeExecutor -> TestRunner -> deterministic Verifier.
 
+Create an OpenCode native subagent workflow pack:
+
+```bash
+npm run workflow:native-pack -- --profile agent-workforce-basic --task "解释一下咖啡的做法"
+npm run workflow:native-collect -- --run <runId>
+```
+
+The pack lets OpenCode create real native subagent tasks while AgentFlow owns artifacts, schemas, collection, and verification.
+
 Run a template:
 
 ```bash

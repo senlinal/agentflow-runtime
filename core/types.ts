@@ -835,6 +835,34 @@ export type OpenCodeSubAgentDispatchResult = {
   createdAt: string;
 };
 
+export type NativeSubAgentTask = {
+  taskId: string;
+  runId: string;
+  role: string;
+  openCodeAgentName: string;
+  title: string;
+  promptPath: string;
+  inputArtifactPath: string;
+  outputArtifactPath: string;
+  expectedOutputSchema: string;
+  dependencies: string[];
+  status: "pending" | "ready" | "completed" | "failed";
+  instructions: string;
+  createdAt: string;
+};
+
+export type NativeSubAgentWorkflowPack = {
+  runId: string;
+  task: string;
+  profileId: string;
+  tasks: NativeSubAgentTask[];
+  artifactRoot: string;
+  dispatchInstructionsPath: string;
+  manifestPath?: string;
+  status: "created" | "partially_completed" | "completed" | "failed";
+  createdAt: string;
+};
+
 export type WorkflowContext = TaskSpec & {
   codingTaskContext?: CodingTaskContext | null;
   taskBrief: TaskBrief | null;
