@@ -110,7 +110,7 @@ const requiredFiles = [
   "profiles/frontend-site-build.json",
   "profiles/agent-workforce-basic.json",
   "profiles/agent-workforce-llm.json",
-  ".opencode/commands/workflow.md",
+  ".opencode/commands/workflow-help.md",
   ".opencode/commands/workflow-cli.md",
   ".opencode/commands/workflow-profile.md",
   ".opencode/tools/run-profile-workflow.ts",

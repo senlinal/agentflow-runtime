@@ -4,12 +4,6 @@
     "./.opencode/plugins/agentflow-policy.ts",
     "./.opencode/plugins/agentflow-workflow-interceptor.ts"
   ],
-  "command": {
-    "workflow": {
-      "description": "Run AgentFlow runtime workflow with verified role timeline",
-      "template": "/workflow is handled by the AgentFlow plugin interceptor.\nIf the interceptor is unavailable, run:\nnpm run workflow:run-profile -- --task \"<task>\"\nDo not print this template."
-    }
-  },
   "mcp": {
     "agentflow": {
       "type": "local",

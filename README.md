@@ -103,7 +103,7 @@ When verification fails, the template now routes to `repairPlanBuilder -> humanA
 
 ### Workflow Profiles
 
-Profiles live in `profiles/` and define the current working mode for `/workflow`. `profiles/current.json` selects the active profile, so users do not need to repeat standing safety rules, default workflows, policy files, or memory files on every request.
+Profiles live in `profiles/` and define the current working mode for profile-aware runs. `profiles/current.json` selects the active profile, so users do not need to repeat standing safety rules, default workflows, policy files, or memory files on every request.
 
 ```bash
 npm run workflow:profiles
@@ -122,7 +122,7 @@ Built-in profiles:
 - `agent-workforce-basic`: runs `abcde-basic` to visibly demonstrate Planner, Debater, PlannerRevision, Executor, Verifier, and GoalKeeper as runtime-traced roles.
 - `agent-workforce-llm`: opt-in profile for the same visible workforce using `abcde-basic-llm`. Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper are LLM-backed when a real provider is configured; Executor remains a safe answer-only mock simulation and never calls CodeExecutor. Do not run it without explicit `--allow-llm` and real LLM configuration.
 
-The opencode `/workflow` command and `workflow:run-profile` use a rule-based profile router before choosing a default workflow. If `profiles/current.json` points to `rag-optimization` but the user asks for a Claude.ai-style personal website, the runner records `detectedTaskType=frontend_site_build`, recommends `frontend-site-build`, and can safely auto-switch when the user did not explicitly choose a profile. See `docs/WORKFLOW_PROFILES.md`.
+The OpenCode `agentflow <task>` entry and `workflow:run-profile` use a rule-based profile router before choosing a default workflow. If `profiles/current.json` points to `rag-optimization` but the user asks for a Claude.ai-style personal website, the runner records `detectedTaskType=frontend_site_build`, recommends `frontend-site-build`, and can safely auto-switch when the user did not explicitly choose a profile. See `docs/WORKFLOW_PROFILES.md`.
 
 Run the active profile directly from CLI:
 
@@ -135,7 +135,7 @@ npm run workflow:run-profile -- --profile rag-optimization --task "..."
 
 The first implementation runs only safe pre-execution profile steps by default. It will not run CodeExecutor, tests, execution workflows, or real LLM calls unless a later explicit execution path is used.
 
-The text output is formatted by the profile runner and includes `Routing Decision`, `Autonomy Decision`, `AgentFlow Role Timeline`, artifact paths, warnings, and next actions. The opencode `/workflow` command should show this runtime result instead of exposing its internal command protocol.
+The text output is formatted by the profile runner and includes `Routing Decision`, `Autonomy Decision`, `AgentFlow Role Timeline`, artifact paths, warnings, and next actions. OpenCode should use the plugin-owned `agentflow <task>` entry and show this runtime result instead of exposing markdown slash command protocol.
 
 Role timelines are runtime-verified: no trace, no agent. A role appears only when it is present in `trace.json` with `source=runtime_trace` or `source=subagent_dispatch_trace`. Each row shows `nodeType`, `executorType`, `isMock`, `isLLMBacked`, `modelProvider`, `modelName`, and `callStatus` when available, so mock simulations cannot be mistaken for LLM-backed agents. To demonstrate the full multi-agent workforce:
 
@@ -148,7 +148,7 @@ See `docs/RUNTIME_VERIFIED_AGENTS.md`.
 
 For task-solving runs, the Role Timeline also shows subagent dispatch artifact paths, Executor deliverable summaries, and Verifier fidelity flags such as `answersUserRequest` and `isNotMetaOnly`. See `docs/TASK_FIDELITY.md`.
 
-OpenCode should call AgentFlow through the MCP tool `agentflow_run_profile_workflow`, which returns the same runtime proof and role timeline.
+OpenCode should call AgentFlow through the MCP tool `agentflow_run_profile_workflow`, which returns the same runtime proof and role timeline. Markdown `/workflow` is intentionally not the execution entry because OpenCode can expand it into visible `<auto-slash-command>` text. If that appears, remove the old project or global markdown command and use `agentflow <task>`.
 
 Inspect the opt-in LLM workforce profile without calling a model:
 
@@ -398,7 +398,7 @@ The core runtime is independent. opencode is only an adapter layer.
 
 Included files:
 
-- `.opencode/commands/workflow.md`
+- `.opencode/commands/workflow-help.md`
 - `.opencode/commands/workflow-inspect.md`
 - `.opencode/commands/workflow-create.md`
 - `.opencode/tools/run-workflow.ts`

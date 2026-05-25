@@ -28,14 +28,14 @@ npm run mcp:agentflow
 
 ## Global OpenCode Use
 
-AgentFlow can be installed as a global OpenCode integration so `/workflow` works from any workspace:
+AgentFlow can be installed as a global OpenCode integration so the plugin-owned `agentflow <task>` entry works from any workspace:
 
 ```bash
 npm run opencode:install-global -- --dry-run
 npm run opencode:install-global
 ```
 
-The installer writes global OpenCode command and subagent files, registers the AgentFlow policy and workflow interceptor plugins, and configures the MCP server with an absolute `AGENTFLOW_PROJECT_ROOT`. Runtime assets such as `profiles/`, `workflows/`, `.workflow-runs/`, and `.agentflow/` stay under the AgentFlow repository. The workspace where OpenCode is opened remains the active project for any later project work.
+The installer registers the AgentFlow policy and workflow interceptor plugins, copies AgentFlow subagent files, removes the old global markdown `/workflow` command if present, and configures the MCP server with an absolute `AGENTFLOW_PROJECT_ROOT`. Runtime assets such as `profiles/`, `workflows/`, `.workflow-runs/`, and `.agentflow/` stay under the AgentFlow repository. The workspace where OpenCode is opened remains the active project for any later project work.
 
 Restart OpenCode after changing this file. The available tools should include:
 
@@ -44,7 +44,7 @@ Restart OpenCode after changing this file. The available tools should include:
 - `agentflow_inspect_profile`
 - `agentflow_show_last_run`
 
-`run_profile_workflow` remains as a compatibility alias, but `/workflow` should prefer `agentflow_run_profile_workflow`.
+`run_profile_workflow` remains as a compatibility alias, but plugin-owned entries should prefer `agentflow_run_profile_workflow`.
 
 ## Smoke Test
 
@@ -62,7 +62,7 @@ It does not call a real LLM and does not call `CodeExecutor`.
 
 It returns `formattedText`, `runtimeProof`, `roleTimeline`, `profileId`, `routingDecision`, `executedWorkflows`, `summaryPath`, `tracePath`, `contextPath`, `warnings`, and `nextActions`.
 
-Profiles with LLM-backed workflow nodes are blocked unless `allowLLM=true`. In `/workflow`, pass `--allow-llm` explicitly when running an LLM-backed profile.
+Profiles with LLM-backed workflow nodes are blocked unless `allowLLM=true`. The OpenCode entry defaults to `agent-workforce-basic` with `allowLLM=false`; run the LLM-backed profile only through an explicit CLI pilot.
 
 `agentflow_list_profiles` returns all workflow profiles.
 
@@ -70,14 +70,24 @@ Profiles with LLM-backed workflow nodes are blocked unless `allowLLM=true`. In `
 
 `agentflow_show_last_run` returns the latest `.workflow-runs` summary, trace, and context paths.
 
-## /workflow Behavior
+## OpenCode Entry Behavior
 
-The workflow plugin interceptor should catch `/workflow` through `command.execute.before`, call `agentflow_run_profile_workflow`, display only `formattedText`, and apply the rule: No trace, no agent. The markdown command is only a short fallback notice because markdown slash commands can be expanded into visible prompt instructions.
+Use this OpenCode entry:
+
+```text
+agentflow <task>
+```
+
+`@agentflow <task>` is also accepted. `/workflow` is only a best-effort compatibility path if the plugin receives the raw input.
+
+Markdown slash commands are not the runtime entrypoint. OpenCode can expand them into visible `<auto-slash-command>` prompt text before plugins can hide the template. If `<auto-slash-command>` appears, the old markdown `/workflow` command is still installed or the wrong entry was used.
+
+The workflow plugin interceptor calls `agentflow_run_profile_workflow`, displays only `formattedText`, and applies the rule: No trace, no agent. Normal output should contain `AgentFlow Runtime`, `Runtime Proof`, `Role Timeline`, `summaryPath`, and `tracePath`.
 
 If MCP is not loaded, the interceptor returns this explicit CLI fallback:
 
 ```bash
-npm run workflow:run-profile -- --task "<task>"
+npm run workflow:run-profile -- --profile agent-workforce-basic --task "<task>"
 ```
 
 Do not let OpenCode generate a generic Supervisor plan and present it as an AgentFlow run.

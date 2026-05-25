@@ -9,24 +9,22 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 describe("opencode workflow command", () => {
-  it("is quiet, tool-first, and has a non-shell-only fallback", async () => {
-    const command = await readFile(".opencode/commands/workflow.md", "utf8");
-    const lines = command.trimEnd().split("\n");
+  it("does not keep markdown /workflow as the execution entry", async () => {
+    await assert.rejects(readFile(".opencode/commands/workflow.md", "utf8"));
 
-    assert.equal(lines.length <= 10, true);
-    assert.match(command, /AgentFlow plugin interceptor/);
-    assert.match(command, /npm run workflow:run-profile -- --task "<task>"/);
-    assert.match(command, /Do not print this file/);
-    assert.doesNotMatch(command, /AGENTFLOW_PROJECT_ROOT/);
-    assert.doesNotMatch(command, /opencode-workflow-command/);
-    assert.doesNotMatch(command, /!\`/);
-    assert.doesNotMatch(command, /```json/);
-    assert.doesNotMatch(command, /todowrite/);
-    assert.doesNotMatch(command, /list_files/);
-    assert.doesNotMatch(command, /auto-slash-command/);
-    assert.doesNotMatch(command, /Command Instructions/);
-    assert.doesNotMatch(command, /agentflow_run_profile_workflow/);
-    assert.doesNotMatch(command, /Research Plan/);
+    const help = await readFile(".opencode/commands/workflow-help.md", "utf8");
+    assert.match(help, /agentflow <task>/);
+    assert.match(help, /agent-workforce-basic/);
+    assert.match(help, /<auto-slash-command>/);
+    assert.doesNotMatch(help, /AGENTFLOW_PROJECT_ROOT/);
+    assert.doesNotMatch(help, /opencode-workflow-command/);
+    assert.doesNotMatch(help, /!\`/);
+    assert.doesNotMatch(help, /```json/);
+    assert.doesNotMatch(help, /todowrite/);
+    assert.doesNotMatch(help, /list_files/);
+    assert.doesNotMatch(help, /Command Instructions/);
+    assert.doesNotMatch(help, /agentflow_run_profile_workflow/);
+    assert.doesNotMatch(help, /Research Plan/);
   });
 
   it("routes slash command arguments through the local AgentFlow CLI shim", async () => {
@@ -113,6 +111,7 @@ describe("opencode workflow command", () => {
     assert.match(config, /"agentflow-\*": "allow"/);
     assert.match(config, /"~\/development\/garbage_item_upload\/\*\*": "allow"/);
     assert.match(config, /"\/Users\/\*\/development\/garbage_item_upload\/\*\*": "allow"/);
+    assert.doesNotMatch(config, /"workflow"\s*:/);
   });
 
   it("defines AgentFlow role subagents for OpenCode Task dispatch", async () => {
@@ -138,7 +137,10 @@ describe("opencode workflow command", () => {
 
     assert.match(plugin, /export async function AgentFlowWorkflowInterceptor/);
     assert.match(plugin, /export default AgentFlowWorkflowInterceptor/);
+    assert.match(plugin, /chat\.message/);
     assert.match(plugin, /command\.execute\.before/);
+    assert.match(plugin, /parseAgentFlowEntry/);
+    assert.match(plugin, /agent-workforce-basic/);
     assert.match(plugin, /agentflow_run_profile_workflow/);
     assert.doesNotMatch(plugin, /todowrite/);
     assert.doesNotMatch(plugin, /list_files/);
@@ -161,12 +163,12 @@ describe("opencode workflow command", () => {
       maxBuffer: 1024 * 1024,
     });
 
-    const config = JSON.parse(await readFile(join(configDir, "opencode.json"), "utf8")) as { plugin: string[]; command: { workflow: { template: string } } };
+    const config = JSON.parse(await readFile(join(configDir, "opencode.json"), "utf8")) as { plugin: string[]; command?: Record<string, unknown> };
     assert.match(config.plugin[0], /agentflow-policy\.ts$/);
     assert.match(config.plugin[1], /agentflow-workflow-interceptor\.ts$/);
     assert.equal(config.plugin.includes("./plugin/supervisor.js"), true);
     assert.equal(config.plugin.includes("oh-my-openagent@latest"), true);
-    assert.doesNotMatch(config.command.workflow.template, /opencode-workflow-command/);
-    assert.doesNotMatch(config.command.workflow.template, /AGENTFLOW_PROJECT_ROOT/);
+    assert.equal(config.command?.workflow, undefined);
+    await assert.rejects(readFile(join(configDir, "commands", "workflow.md"), "utf8"));
   });
 });

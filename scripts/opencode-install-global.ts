@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile, cp } from "node:fs/promises";
+import { mkdir, readFile, writeFile, cp, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { homedir } from "node:os";
@@ -7,6 +7,7 @@ import { agentFlowRoot } from "../core/AgentFlowPaths.ts";
 type OpenCodeConfig = {
   $schema?: string;
   plugin?: Array<string | [string, Record<string, unknown>]>;
+  command?: Record<string, unknown>;
   mcp?: Record<string, unknown>;
   permission?: Record<string, unknown>;
 };
@@ -22,7 +23,6 @@ const agentsDir = join(configDir, "agents");
 const nextConfig = await buildConfig(configPath);
 const writes = [
   configPath,
-  join(commandDir, "workflow.md"),
   `${agentsDir}/agentflow-*.md`,
 ];
 
@@ -38,12 +38,12 @@ await mkdir(configDir, { recursive: true });
 await mkdir(commandDir, { recursive: true });
 await mkdir(agentsDir, { recursive: true });
 await writeFile(configPath, `${JSON.stringify(nextConfig, null, 2)}\n`, "utf8");
-await writeFile(join(commandDir, "workflow.md"), globalWorkflowCommand(root), "utf8");
+await rm(join(commandDir, "workflow.md"), { force: true });
 await cp(join(root, ".opencode", "agents"), agentsDir, { recursive: true, force: true });
 
 console.log(`Installed AgentFlow OpenCode integration to ${configDir}`);
 console.log(`AgentFlow root: ${root}`);
-console.log("Restart OpenCode, then /workflow is available from any workspace.");
+console.log("Restart OpenCode, then use: agentflow <task>");
 
 async function buildConfig(path: string): Promise<OpenCodeConfig> {
   const existing = await readJson(path);
@@ -61,13 +61,7 @@ async function buildConfig(path: string): Promise<OpenCodeConfig> {
       join(root, ".opencode", "plugins", "agentflow-policy.ts"),
       join(root, ".opencode", "plugins", "agentflow-workflow-interceptor.ts"),
     ]),
-    command: {
-      ...(existing as { command?: Record<string, unknown> }).command,
-      workflow: {
-        description: "Run AgentFlow runtime workflow with verified role timeline",
-        template: workflowTemplate(root),
-      },
-    },
+    command: withoutWorkflowCommand(existing.command),
     mcp: {
       ...(existing.mcp ?? {}),
       agentflow: {
@@ -100,29 +94,16 @@ function taskPermission(value: unknown): Record<string, unknown> {
   return { "*": "deny" };
 }
 
-function globalWorkflowCommand(agentFlowRootPath: string): string {
-  const command = [
-    "---",
-    "description: Run AgentFlow runtime workflow with verified role timeline",
-    "---",
-    workflowTemplate(agentFlowRootPath),
-    "",
-  ].join("\n");
-  return command;
-}
-
-function workflowTemplate(agentFlowRootPath: string): string {
-  return [
-    "/workflow is handled by the AgentFlow plugin interceptor.",
-    "If the interceptor is unavailable, run:",
-    `npm run workflow:run-profile -- --task "<task>"`,
-    "Do not print this template.",
-  ].join("\n");
-}
-
 function mergePlugins(existing: OpenCodeConfig["plugin"], required: string[]): OpenCodeConfig["plugin"] {
   const existingItems = Array.isArray(existing) ? existing : [];
   const requiredSet = new Set(required);
   const remaining = existingItems.filter((item) => !requiredSet.has(Array.isArray(item) ? item[0] : item));
   return [...required, ...remaining];
+}
+
+function withoutWorkflowCommand(existing: OpenCodeConfig["command"]): OpenCodeConfig["command"] | undefined {
+  if (!existing || typeof existing !== "object" || Array.isArray(existing)) return existing;
+  const next = { ...existing };
+  delete next.workflow;
+  return Object.keys(next).length > 0 ? next : undefined;
 }

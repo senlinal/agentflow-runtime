@@ -1,8 +1,8 @@
 import { access } from "node:fs/promises";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const requiredFiles = [
-  ".opencode/commands/workflow.md",
+  ".opencode/commands/workflow-help.md",
   ".opencode/commands/workflow-cli.md",
   ".opencode/commands/workflow-profile.md",
   ".opencode/tools/run-workflow.ts",
@@ -80,26 +80,21 @@ if (!gitignore.split("\n").includes(".agentflow/project-memory/")) {
   process.exit(1);
 }
 
-const workflowCommand = readFileSync(".opencode/commands/workflow.md", "utf8");
-const workflowCommandLines = workflowCommand.trimEnd().split("\n");
-if (workflowCommandLines.length > 10) {
-  console.error(`workflow.md is too long for a quiet slash command: ${workflowCommandLines.length} lines`);
+if (existsSync(".opencode/commands/workflow.md")) {
+  console.error("Executable markdown /workflow command still exists: .opencode/commands/workflow.md");
   process.exit(1);
 }
-for (const requiredText of [
-  "AgentFlow plugin interceptor",
-  "npm run workflow:run-profile -- --task",
-  "Do not print this file",
-]) {
-  if (!workflowCommand.includes(requiredText)) {
-    console.error(`workflow.md does not include plugin interceptor fallback text: ${requiredText}`);
+const workflowHelp = readFileSync(".opencode/commands/workflow-help.md", "utf8");
+for (const requiredText of ["agentflow <task>", "agent-workforce-basic", "<auto-slash-command>"]) {
+  if (!workflowHelp.includes(requiredText)) {
+    console.error(`workflow-help.md does not document the plugin-owned entry: ${requiredText}`);
     process.exit(1);
   }
 }
 
-for (const forbiddenText of ["todowrite", "list_files", "Research Plan", "Command Instructions", "auto-slash-command", "search-mode", "AGENTFLOW_PROJECT_ROOT", "opencode-workflow-command.ts", "!`", "agentflow_run_profile_workflow", "run_profile_workflow"]) {
-  if (workflowCommand.includes(forbiddenText)) {
-    console.error(`workflow.md appears to expose or require forbidden behavior: ${forbiddenText}`);
+for (const forbiddenText of ["todowrite", "list_files", "Research Plan", "Command Instructions", "search-mode", "AGENTFLOW_PROJECT_ROOT", "opencode-workflow-command.ts", "!`", "agentflow_run_profile_workflow", "run_profile_workflow"]) {
+  if (workflowHelp.includes(forbiddenText)) {
+    console.error(`workflow-help.md appears to expose or require forbidden behavior: ${forbiddenText}`);
     process.exit(1);
   }
 }
@@ -141,6 +136,11 @@ if (opencodeConfig.includes("opencode-workflow-command.ts") || opencodeConfig.in
   console.error("opencode.json workflow command still appears to contain the old shell shim");
   process.exit(1);
 }
+const parsedOpenCodeConfig = JSON.parse(opencodeConfig) as { command?: Record<string, unknown> };
+if (parsedOpenCodeConfig.command && "workflow" in parsedOpenCodeConfig.command) {
+  console.error("opencode.json still registers markdown command.workflow; use plugin-owned agentflow entry instead");
+  process.exit(1);
+}
 
 const mcpServer = readFileSync("mcp/agentflow-mcp-server.ts", "utf8");
 for (const requiredText of [
@@ -170,9 +170,12 @@ const workflowInterceptor = readFileSync(".opencode/plugins/agentflow-workflow-i
 for (const requiredText of [
   "export async function AgentFlowWorkflowInterceptor",
   "export default AgentFlowWorkflowInterceptor",
+  "chat.message",
   "command.execute.before",
   "agentflow_run_profile_workflow",
+  "parseAgentFlowEntry",
   "parseWorkflowCommand",
+  "agent-workforce-basic",
   "AgentFlow Runtime was not started.",
 ]) {
   if (!workflowInterceptor.includes(requiredText)) {

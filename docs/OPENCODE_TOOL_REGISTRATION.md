@@ -22,8 +22,8 @@ This means:
 - `.opencode/tools/run_profile_workflow.ts` is also a compatibility wrapper and should not register a duplicate custom tool.
 - `mcp/agentflow-mcp-server.ts` is the actual runtime tool provider.
 - `mcp/agentflow-server.ts` is a compatibility wrapper.
-- `npm run opencode:check` verifies file shape, MCP config, workflow interceptor registration, and minimal command text, but a live opencode session must still be restarted to pick up MCP/plugin config changes.
-- `.opencode/plugins/agentflow-workflow-interceptor.ts` is the `/workflow` entrypoint. It calls the MCP dispatcher directly and prevents the markdown command prompt from becoming the user-visible answer.
+- `npm run opencode:check` verifies file shape, MCP config, workflow interceptor registration, and that the old markdown `/workflow` command is not registered, but a live opencode session must still be restarted to pick up MCP/plugin config changes.
+- `.opencode/plugins/agentflow-workflow-interceptor.ts` owns the `agentflow <task>` and `@agentflow <task>` entries. It calls the MCP dispatcher directly and avoids the markdown slash command prompt path.
 
 ## Expected Tool
 
@@ -43,17 +43,19 @@ Expected behavior:
 - Input: `task`, optional `profile`, optional resume fields, `dryRun`, `allowExecution`.
 - Output: `formattedText`, `roleTimeline`, `routingDecision`, `autonomyDecision`, `executedWorkflows`, `summaryPath`, `tracePath`, `contextPath`, and `nextActions`.
 
-`/workflow` should not fall back to model analysis, search-mode, or a Supervisor Research Plan. If the MCP tool is unavailable, it should state that AgentFlow Runtime was not started and show the CLI fallback.
+The AgentFlow entry should not fall back to model analysis, search-mode, or a Supervisor Research Plan. If the MCP tool is unavailable, it should state that AgentFlow Runtime was not started and show the CLI fallback.
+
+Markdown `/workflow` is not an execution entry. If OpenCode displays `<auto-slash-command>`, an old project or global markdown command is still installed and must be removed.
 
 ## Fallback
 
 If the live opencode session does not show `agentflow_run_profile_workflow` under the `agentflow` MCP server after restart, use the CLI fallback from a project terminal:
 
 ```bash
-npm run workflow:run-profile -- --task "<task>"
+npm run workflow:run-profile -- --profile agent-workforce-basic --task "<task>"
 ```
 
-This fallback is explicit. The `/workflow` command should not invent a supervisor plan when neither the custom tool nor a shell fallback is available.
+This fallback is explicit. The plugin should not invent a supervisor plan when neither the MCP tool nor a CLI fallback is available.
 
 ## Future Options
 
