@@ -24,6 +24,13 @@ export type AgentFlowRunProfileWorkflowOutput =
       roleSource: "unavailable";
     };
     roleTimeline: [];
+    roleSpeechTranscript: {
+      runId: "unavailable";
+      profileId: string;
+      speeches: [];
+      warnings: string[];
+      createdAt: string;
+    };
     profileId: string;
     warnings: string[];
     nextActions: string[];
@@ -103,6 +110,13 @@ function blockedResult(profileId: string, reason: string, nextAction: string): A
       roleSource: "unavailable",
     },
     roleTimeline: [],
+    roleSpeechTranscript: {
+      runId: "unavailable",
+      profileId,
+      speeches: [],
+      warnings: [reason],
+      createdAt: new Date().toISOString(),
+    },
     profileId,
     warnings: [reason],
     nextActions: [nextAction],

@@ -70,6 +70,10 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.ok(result.roleTimeline.some((event) => event.role === "Debater"));
     assert.ok(result.roleTimeline.some((event) => event.role === "Executor"));
     assert.ok(result.roleTimeline.some((event) => event.role === "Verifier"));
+    assert.equal(result.roleSpeechTranscript.speeches.length > 1, true);
+    assert.ok(result.roleSpeechTranscript.speeches.some((speech) => speech.role === "Planner" && speech.source === "subagent_output"));
+    assert.ok(result.formattedText.includes("AgentFlow Role Speech Transcript"));
+    assert.ok(result.formattedText.includes("AgentFlow 角色发言流"));
     assert.match(result.formattedText, /Runtime Proof/);
     assert.match(result.formattedText, /source: subagent_dispatch_trace/);
   });

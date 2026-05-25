@@ -2,7 +2,8 @@ import { ScopeConfirmationService } from "../scope/ScopeConfirmationService.ts";
 import { ScopeConfirmationStore } from "../scope/ScopeConfirmationStore.ts";
 import { TaskBriefLoader } from "../TaskBriefLoader.ts";
 import { LLMConfigLoader } from "../LLMConfigLoader.ts";
-import type { AutonomyDecision, CompactMemorySummary, ProfileSession, ProjectMemoryRecord, ProjectMemorySummary, ScopeConfirmationRecord, TaskBrief, TaskNegotiationResult, WorkflowGraphConfig } from "../types.ts";
+import type { AutonomyDecision, CompactMemorySummary, ProfileSession, ProjectMemoryRecord, ProjectMemorySummary, RoleSpeechTranscript, ScopeConfirmationRecord, TaskBrief, TaskNegotiationResult, WorkflowGraphConfig } from "../types.ts";
+import { RoleSpeechExtractor } from "../subagent/RoleSpeechExtractor.ts";
 import { WorkflowRunner, type WorkflowRunnerResult } from "../WorkflowRunner.ts";
 import { WorkflowTemplateRegistry } from "../WorkflowTemplateRegistry.ts";
 import { EscalationGate } from "./EscalationGate.ts";
@@ -107,6 +108,7 @@ export type ProfileWorkflowRunResult = {
   scopeConfirmationId?: string;
   memorySummary?: ProjectMemorySummary;
   runtimeProof: RuntimeProof;
+  roleSpeechTranscript: RoleSpeechTranscript;
   formattedText: string;
 };
 
@@ -122,6 +124,7 @@ export class ProfileWorkflowRunner {
   private readonly profileRouter: ProfileRouter;
   private readonly taskInputBuilder: ProfileTaskInputBuilder;
   private readonly runtimeTraceRoleExtractor: RuntimeTraceRoleExtractor;
+  private readonly roleSpeechExtractor: RoleSpeechExtractor;
 
   constructor(
     profileLoader = new WorkflowProfileLoader(),
@@ -135,6 +138,7 @@ export class ProfileWorkflowRunner {
     profileRouter = new ProfileRouter(),
     taskInputBuilder = new ProfileTaskInputBuilder(),
     runtimeTraceRoleExtractor = new RuntimeTraceRoleExtractor(),
+    roleSpeechExtractor = new RoleSpeechExtractor(),
   ) {
     this.profileLoader = profileLoader;
     this.workflowRegistry = workflowRegistry;
@@ -147,6 +151,7 @@ export class ProfileWorkflowRunner {
     this.profileRouter = profileRouter;
     this.taskInputBuilder = taskInputBuilder;
     this.runtimeTraceRoleExtractor = runtimeTraceRoleExtractor;
+    this.roleSpeechExtractor = roleSpeechExtractor;
   }
 
   async run(request: ProfileWorkflowRunRequest): Promise<ProfileWorkflowRunResult> {
@@ -386,8 +391,14 @@ export class ProfileWorkflowRunner {
     });
   }
 
-  private withFormattedText(result: Omit<ProfileWorkflowRunResult, "formattedText">): ProfileWorkflowRunResult {
-    const withPlaceholder = { ...result, formattedText: "" };
+  private async withFormattedText(result: Omit<ProfileWorkflowRunResult, "formattedText" | "roleSpeechTranscript">): Promise<ProfileWorkflowRunResult> {
+    const roleSpeechTranscript = await this.roleSpeechExtractor.extract({
+      runId: result.steps.find((step) => step.runId)?.runId ?? "unavailable",
+      profileId: result.profileId,
+      task: result.taskBrief.rawUserInput ?? result.taskBrief.goal,
+      roleTimeline: result.roleTimeline,
+    });
+    const withPlaceholder = { ...result, roleSpeechTranscript, formattedText: "" };
     return {
       ...withPlaceholder,
       formattedText: formatProfileRun(withPlaceholder),

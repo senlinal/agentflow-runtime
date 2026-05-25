@@ -58,8 +58,11 @@ describe("opencode workflow command", () => {
     assert.match(stdout, /Dispatch targets: @agentflow-planner/);
     assert.match(stdout, /Role Coordination/);
     assert.match(stdout, /Role Progress/);
+    assert.match(stdout, /Role Speech/);
+    assert.match(stdout, /artifact=.*output\.json/);
     assert.match(stdout, /source=subagent_dispatch_trace/);
     assert.doesNotMatch(stdout, /No runtime trace roles were verified/);
+    assert.doesNotMatch(stdout, /我已经根据用户目标制定了计划/);
   });
 
   it("compact fallback parses --allow-llm instead of treating it as task text", async () => {

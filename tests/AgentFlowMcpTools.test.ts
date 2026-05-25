@@ -18,6 +18,7 @@ describe("AgentFlow MCP tools", () => {
       formattedText: string;
       runtimeProof: { runtimeStarted: boolean; verifiedRoleCount: number; roleSource: string };
       roleTimeline: Array<{ role: string; source: string }>;
+      roleSpeechTranscript: { speeches: Array<{ role: string; source: string; speech: string }> };
       summaryPath?: string;
       tracePath?: string;
       contextPath?: string;
@@ -25,11 +26,13 @@ describe("AgentFlow MCP tools", () => {
 
     assert.match(result.formattedText, /AgentFlow Profile Run/);
     assert.match(result.formattedText, /Runtime Proof/);
+    assert.match(result.formattedText, /AgentFlow Role Speech Transcript/);
     assert.equal(result.runtimeProof.runtimeStarted, true);
     assert.equal(result.runtimeProof.roleSource, "subagent_dispatch_trace");
     assert.equal(result.runtimeProof.verifiedRoleCount > 1, true);
     assert.equal(result.roleTimeline.every((event) => event.source === "subagent_dispatch_trace"), true);
     assert.ok(result.roleTimeline.some((event) => event.role === "Planner"));
+    assert.ok(result.roleSpeechTranscript.speeches.some((speech) => speech.role === "Planner" && speech.source === "subagent_output"));
     assert.ok(result.summaryPath?.endsWith("summary.md"));
     assert.ok(result.tracePath?.endsWith("trace.json"));
     assert.ok(result.contextPath?.endsWith("context.json"));
@@ -45,6 +48,7 @@ describe("AgentFlow MCP tools", () => {
       formattedText: string;
       runtimeProof: { runtimeStarted: boolean; verifiedRoleCount: number; roleSource: string };
       roleTimeline: unknown[];
+      roleSpeechTranscript: { speeches: unknown[] };
     };
 
     assert.equal(result.blocked, true);
@@ -52,6 +56,7 @@ describe("AgentFlow MCP tools", () => {
     assert.equal(result.runtimeProof.verifiedRoleCount, 0);
     assert.equal(result.runtimeProof.roleSource, "unavailable");
     assert.deepEqual(result.roleTimeline, []);
+    assert.deepEqual(result.roleSpeechTranscript.speeches, []);
     assert.doesNotMatch(result.formattedText, /1\\. Planner/);
     assert.doesNotMatch(result.formattedText, /llm-backed subagent execution/);
   });
@@ -65,6 +70,7 @@ describe("AgentFlow MCP tools", () => {
       formattedText: string;
       runtimeProof: { runtimeStarted: boolean; verifiedRoleCount: number; roleSource: string };
       roleTimeline: unknown[];
+      roleSpeechTranscript: { speeches: unknown[] };
       warnings: string[];
     };
 
@@ -73,6 +79,7 @@ describe("AgentFlow MCP tools", () => {
     assert.equal(result.runtimeProof.verifiedRoleCount, 0);
     assert.equal(result.runtimeProof.roleSource, "unavailable");
     assert.deepEqual(result.roleTimeline, []);
+    assert.deepEqual(result.roleSpeechTranscript.speeches, []);
     assert.match(result.formattedText, /allowLLM=false/);
     assert.match(result.warnings.join("\n"), /allowLLM=false/);
   });

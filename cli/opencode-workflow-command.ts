@@ -87,6 +87,9 @@ function formatCompact(result: ProfileWorkflowRunResult): string {
     "Role Progress",
     ...(roleLines.length > 0 ? roleLines : ["- No runtime trace roles were verified."]),
     "",
+    "Role Speech",
+    ...speechLines(result),
+    "",
     "Artifacts",
     `summary: ${result.summaryPath ?? "n/a"}`,
     `trace: ${result.tracePath ?? "n/a"}`,
@@ -97,6 +100,14 @@ function formatCompact(result: ProfileWorkflowRunResult): string {
       ? "- Mock nodes are simulations. Use llm or subagent-backed execution for real role intelligence."
       : "- Runtime roles are not inferred from prose; they come from trace.json.",
   ].join("\n");
+}
+
+function speechLines(result: ProfileWorkflowRunResult): string[] {
+  const speeches = result.roleSpeechTranscript.speeches;
+  if (speeches.length === 0) return ["- No verified subagent speech artifacts were available."];
+  return speeches.map((speech, index) =>
+    `${index + 1}. ${speech.title ?? speech.role}: ${oneLine(speech.speech, 180)} | artifact=${speech.artifactPath ?? "unavailable"} | source=${speech.source}`
+  );
 }
 
 function dispatchTargets(result: ProfileWorkflowRunResult): string[] {

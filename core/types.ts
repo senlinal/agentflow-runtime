@@ -796,6 +796,32 @@ export type SubAgentDispatchMetadata = {
   summaryPath?: string;
 };
 
+export type RoleSpeech = {
+  role: string;
+  nodeId: string;
+  subAgentId: string;
+  workerSessionId: string;
+  executorType: string;
+  isMock: boolean;
+  isLLMBacked: boolean;
+  source: "subagent_output" | "subagent_summary" | "unavailable";
+  title?: string;
+  speech: string;
+  outputKey?: string;
+  outputSchema?: string;
+  artifactPath?: string;
+  createdAt?: string;
+};
+
+export type RoleSpeechTranscript = {
+  runId: string;
+  profileId?: string;
+  task?: string;
+  speeches: RoleSpeech[];
+  warnings: string[];
+  createdAt: string;
+};
+
 export type WorkflowCondition = {
   type: "always" | "equals" | "exists" | "notExists" | "in";
   path?: string;

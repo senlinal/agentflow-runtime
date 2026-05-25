@@ -1,4 +1,5 @@
 import type { ProfileRoleTimelineEvent, ProfileWorkflowRunResult, ProfileWorkflowStep } from "./ProfileWorkflowRunner.ts";
+import { formatRoleSpeechTranscript } from "../subagent/RoleSpeechFormatter.ts";
 
 export class ProfileRunFormatter {
   format(result: ProfileWorkflowRunResult): string {
@@ -36,6 +37,9 @@ export class ProfileRunFormatter {
       "AgentFlow Role Timeline",
       ...formatTimeline(result),
       "",
+      "AgentFlow Role Speech Transcript",
+      ...formatSpeechTranscript(result),
+      "",
       "Artifacts",
       ...formatArtifacts(result),
       "",
@@ -52,6 +56,14 @@ export class ProfileRunFormatter {
 
     return lines.join("\n");
   }
+}
+
+function formatSpeechTranscript(result: ProfileWorkflowRunResult): string[] {
+  if (result.roleSpeechTranscript.speeches.length === 0) {
+    if (result.runtimeProof.runtimeStarted) return ["- No subagent speech artifacts were available."];
+    return ["- AgentFlow Runtime was not started. No role speech transcript is available."];
+  }
+  return formatRoleSpeechTranscript(result.roleSpeechTranscript).split("\n");
 }
 
 function formatRouting(result: ProfileWorkflowRunResult): string[] {

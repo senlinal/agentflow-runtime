@@ -22,6 +22,9 @@ test("ProfileRunFormatter", async (t) => {
     assert.match(text, /Routing Decision/);
     assert.match(text, /recommendedProfile: frontend-site-build/);
     assert.match(text, /AgentFlow Role Timeline/);
+    assert.match(text, /AgentFlow Role Speech Transcript/);
+    assert.match(text, /TaskNegotiator/);
+    assert.match(text, /Need scope confirmation speech/);
     assert.match(text, /Runtime Proof/);
     assert.match(text, /Agent Dispatch Proof/);
     assert.match(text, /dispatchModel: WorkflowRuntime trace -> SubAgentDispatcher artifacts/);
@@ -249,6 +252,29 @@ function sampleResult(overrides: Partial<ProfileWorkflowRunResult> = {}): Profil
       contextPath: ".workflow-runs/run/context.json",
       verifiedRoleCount: 1,
       roleSource: "runtime_trace",
+    },
+    roleSpeechTranscript: {
+      runId: "run",
+      profileId: "frontend-site-build",
+      task: "检查项目不足",
+      createdAt: "2026-05-24T00:00:00.000Z",
+      warnings: [],
+      speeches: [{
+        role: "TaskNegotiator",
+        nodeId: "taskNegotiator",
+        subAgentId: "taskNegotiator-0-test",
+        workerSessionId: "worker-tasknegotiator-test",
+        executorType: "negotiate",
+        isMock: false,
+        isLLMBacked: false,
+        source: "subagent_output",
+        title: "TaskNegotiator",
+        speech: "Need scope confirmation speech.",
+        outputKey: "taskNegotiationResult",
+        outputSchema: "TaskNegotiationResult",
+        artifactPath: ".workflow-runs/run/subagents/taskNegotiator-0-test/output.json",
+        createdAt: "2026-05-24T00:00:00.000Z",
+      }],
     },
     formattedText: "",
     ...overrides,
