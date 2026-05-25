@@ -1,6 +1,6 @@
 # AgentFlow Entry
 
-Use `agentflow <task>` in OpenCode.
+Use `/workflow <task>` or `/agentflow <task>` in OpenCode.
 
 If the plugin is unavailable, run:
 

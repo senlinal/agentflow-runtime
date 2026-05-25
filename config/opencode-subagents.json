@@ -1,0 +1,8 @@
+{
+  "Planner": "agentflow-planner",
+  "Debater": "agentflow-debater",
+  "PlannerRevision": "agentflow-planner-revision",
+  "Executor": "agentflow-executor",
+  "Verifier": "agentflow-verifier",
+  "GoalKeeper": "agentflow-goalkeeper"
+}

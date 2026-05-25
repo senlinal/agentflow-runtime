@@ -8,14 +8,14 @@ opencode is only an outer shell for this phase. The `agentflow` MCP server expos
 
 Plugin-level permission interception is handled by `.opencode/plugins/agentflow-policy.ts`. The plugin is an adapter only: it does not change workflow routing, node execution, schemas, or Runtime behavior.
 
-Plugin-owned AgentFlow entry handling is implemented in `.opencode/plugins/agentflow-workflow-interceptor.ts`. Use `agentflow <task>` or `@agentflow <task>` in OpenCode. Markdown slash commands can still be expanded as visible prompt text by OpenCode or command-pack supervisors, so `/workflow` is not the stable execution entry.
+Plugin-owned AgentFlow entry handling is implemented in `.opencode/plugins/agentflow-workflow-interceptor.ts`. Use `/workflow <task>` or `/agentflow <task>` in OpenCode. These are minimal config commands intercepted before markdown prompt expansion. Plain `agentflow <task>` and `@agentflow <task>` remain best effort because ordinary chat messages cannot reliably abort OpenCode model routing before the provider call.
 
 ## Command Usage
 
 Default workflow run:
 
 ```text
-agentflow 目标：基于当前 Runtime 增加一个模板运行能力。现状：已有 WorkflowRunner 和 MockLLMClient。约束：不接真实 LLM，不做 UI。验收：生成 trace 并通过测试。
+/workflow 目标：基于当前 Runtime 增加一个模板运行能力。现状：已有 WorkflowRunner 和 MockLLMClient。约束：不接真实 LLM，不做 UI。验收：生成 trace 并通过测试。
 ```
 
 The plugin calls `agentflow_run_profile_workflow` and displays the returned `formattedText`, including Runtime Proof, Role Timeline, SubAgent proof, and artifact paths. It must not print markdown command files, expose internal policy text, enter search-mode, or create a generic supervisor plan. If the MCP tool is unavailable, it prints the explicit CLI fallback `npm run workflow:run-profile -- --profile agent-workforce-basic --task "<task>"`.
@@ -60,7 +60,9 @@ opencode does not choose or store LLM provider credentials. If a workflow uses `
 
 ## Workflow Interceptor Plugin
 
-`.opencode/plugins/agentflow-workflow-interceptor.ts` listens to `chat.message` for `agentflow <task>` and `@agentflow <task>`. It keeps a best-effort `command.execute.before` path for `/workflow` only if OpenCode provides the raw command to the plugin. The dispatcher call always uses `allowExecution=false` and `allowLLM=false`. If the call fails, it reports that AgentFlow Runtime was not started and does not fabricate roles.
+`.opencode/plugins/agentflow-workflow-interceptor.ts` listens to `command.execute.before` for `/workflow` and `/agentflow`, then calls `agentflow_run_profile_workflow`. It also listens to `chat.message` for plain `agentflow <task>` and `@agentflow <task>` as a best-effort compatibility path, but that path cannot guarantee model-provider bypass in current OpenCode builds. The dispatcher call always uses `allowExecution=false` and `allowLLM=false`. If the call fails, it reports that AgentFlow Runtime was not started and does not fabricate roles.
+
+OpenCode path-loaded plugins must export a PluginModule shape with `id` and `server`, for example `export default { id, server }`. Do not add empty `config` hooks; current OpenCode builds treat an empty config hook as a plugin load failure.
 
 Allowed by default:
 

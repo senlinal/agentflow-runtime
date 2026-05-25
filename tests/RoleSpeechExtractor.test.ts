@@ -72,8 +72,8 @@ test("RoleSpeechExtractor", async (t) => {
     assert.match(transcript.speeches[4].speech, /pass=true/);
     assert.match(transcript.speeches[5].speech, /补充关键步骤/);
     assert.equal(transcript.speeches.every((speech) => speech.source === "subagent_output"), true);
-    assert.match(transcript.speeches[0].speech, /^\[mock simulation\]/);
-    assert.match(transcript.speeches[4].speech, /^\[llm-backed\]/);
+    assert.equal(transcript.speeches[0].title, "Planner [mock simulation]");
+    assert.equal(transcript.speeches[4].title, "Verifier [llm-backed]");
   });
 
   await t.test("falls back to summary.md when output.json is unavailable", async () => {

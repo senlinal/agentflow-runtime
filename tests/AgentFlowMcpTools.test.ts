@@ -24,9 +24,9 @@ describe("AgentFlow MCP tools", () => {
       contextPath?: string;
     };
 
-    assert.match(result.formattedText, /AgentFlow Profile Run/);
-    assert.match(result.formattedText, /Runtime Proof/);
-    assert.match(result.formattedText, /AgentFlow Role Speech Transcript/);
+    assert.match(result.formattedText, /AgentFlow 工作流完成/);
+    assert.match(result.formattedText, /角色发言：/);
+    assert.match(result.formattedText, /Planner:/);
     assert.equal(result.runtimeProof.runtimeStarted, true);
     assert.equal(result.runtimeProof.roleSource, "subagent_dispatch_trace");
     assert.equal(result.runtimeProof.verifiedRoleCount > 1, true);

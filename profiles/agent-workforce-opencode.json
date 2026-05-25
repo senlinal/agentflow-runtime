@@ -1,0 +1,27 @@
+{
+  "id": "agent-workforce-opencode",
+  "name": "Agent Workforce OpenCode Native Subagent Bridge",
+  "description": "Hybrid pilot that keeps AgentFlow runtime dispatch artifacts and attempts to record OpenCode native subagent bridge evidence without real LLM or CodeExecutor execution.",
+  "defaultWorkflow": "abcde-basic",
+  "dispatchMode": "hybrid",
+  "requiresOpenCodeSubagents": true,
+  "allowExecution": false,
+  "requiresLLM": false,
+  "defaultConstraints": [
+    "Do not call CodeExecutor.",
+    "Do not call real LLM providers unless allowLLM is explicitly true.",
+    "Do not modify external project files.",
+    "Do not fabricate OpenCode native subagent task ids."
+  ],
+  "defaultBlockedActions": [
+    "delete files",
+    "deploy",
+    "read .env",
+    "write production data"
+  ],
+  "defaultOutput": [
+    "AgentFlow internal subagent artifacts",
+    "OpenCode native dispatch availability evidence",
+    "Role Timeline with native dispatch status"
+  ]
+}

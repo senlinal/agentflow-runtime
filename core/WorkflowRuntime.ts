@@ -191,6 +191,14 @@ function summarizeDispatch(record: SubAgentArtifactRecord | undefined): Partial<
     outputArtifactPath: record.outputArtifactPath,
     subAgentMetadataPath: record.metadataPath,
     subAgentTraceSource: "subagent_dispatch_trace",
+    dispatchMode: record.dispatchMode ?? "internal",
+    internalSubAgentDispatched: record.internalSubAgentDispatched ?? true,
+    openCodeNativeSubAgent: record.openCodeNativeSubAgent === true,
+    ...(record.openCodeAgentName ? { openCodeAgentName: record.openCodeAgentName } : {}),
+    ...(record.openCodeTaskId ? { openCodeTaskId: record.openCodeTaskId } : {}),
+    ...(record.openCodeSessionId ? { openCodeSessionId: record.openCodeSessionId } : {}),
+    ...(record.nativeDispatchStatus ? { nativeDispatchStatus: record.nativeDispatchStatus } : {}),
+    ...(record.nativeDispatchLimitations ? { nativeDispatchLimitations: record.nativeDispatchLimitations } : {}),
   };
 }
 

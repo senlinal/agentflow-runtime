@@ -13,7 +13,8 @@ describe("opencode workflow command", () => {
     await assert.rejects(readFile(".opencode/commands/workflow.md", "utf8"));
 
     const help = await readFile(".opencode/commands/workflow-help.md", "utf8");
-    assert.match(help, /agentflow <task>/);
+    assert.match(help, /\/workflow <task>/);
+    assert.match(help, /\/agentflow <task>/);
     assert.match(help, /agent-workforce-basic/);
     assert.match(help, /<auto-slash-command>/);
     assert.doesNotMatch(help, /AGENTFLOW_PROJECT_ROOT/);
@@ -99,6 +100,19 @@ describe("opencode workflow command", () => {
     const config = await readFile("opencode.json", "utf8");
 
     assert.match(config, /"plugin"/);
+    assert.match(config, /"workflow"\s*:\s*\{/);
+    assert.match(config, /"agentflow"\s*:\s*\{/);
+    assert.match(config, /"workflow-llm"\s*:\s*\{/);
+    assert.match(config, /"agentflow-llm"\s*:\s*\{/);
+    assert.match(config, /agentflow_run_profile_workflow/);
+    assert.match(config, /\$ARGUMENTS/);
+    assert.match(config, /formattedText/);
+    assert.match(config, /profile `agent-workforce-basic`/);
+    assert.match(config, /allowLLM=false/);
+    assert.match(config, /profile `agent-workforce-llm`/);
+    assert.match(config, /allowLLM=true/);
+    assert.match(config, /Do not call agentflow_list_profiles/);
+    assert.doesNotMatch(config, /\{\{args\}\}/);
     assert.match(config, /\.opencode\/plugins\/agentflow-policy\.ts/);
     assert.match(config, /\.opencode\/plugins\/agentflow-workflow-interceptor\.ts/);
     assert.match(config, /"agentflow"/);
@@ -111,7 +125,8 @@ describe("opencode workflow command", () => {
     assert.match(config, /"agentflow-\*": "allow"/);
     assert.match(config, /"~\/development\/garbage_item_upload\/\*\*": "allow"/);
     assert.match(config, /"\/Users\/\*\/development\/garbage_item_upload\/\*\*": "allow"/);
-    assert.doesNotMatch(config, /"workflow"\s*:/);
+    assert.doesNotMatch(config, /auto-slash-command/);
+    assert.doesNotMatch(config, /Command Instructions/);
   });
 
   it("defines AgentFlow role subagents for OpenCode Task dispatch", async () => {
@@ -128,26 +143,36 @@ describe("opencode workflow command", () => {
     const plugin = await readFile(".opencode/plugins/agentflow-policy.ts", "utf8");
 
     assert.match(plugin, /export async function AgentFlowPolicy/);
-    assert.match(plugin, /export default AgentFlowPolicy/);
     assert.match(plugin, /tool\.execute\.before/);
+    assert.doesNotMatch(plugin, /export const id/);
+    assert.doesNotMatch(plugin, /export const server/);
+    assert.doesNotMatch(plugin, /export default/);
   });
 
   it("exports the workflow interceptor plugin as an OpenCode plugin function", async () => {
     const plugin = await readFile(".opencode/plugins/agentflow-workflow-interceptor.ts", "utf8");
 
     assert.match(plugin, /export async function AgentFlowWorkflowInterceptor/);
-    assert.match(plugin, /export default AgentFlowWorkflowInterceptor/);
     assert.match(plugin, /chat\.message/);
     assert.match(plugin, /command\.execute\.before/);
-    assert.match(plugin, /parseAgentFlowEntry/);
-    assert.match(plugin, /agent-workforce-basic/);
+    assert.match(plugin, /COMMANDS/);
     assert.match(plugin, /agentflow_run_profile_workflow/);
+    assert.doesNotMatch(plugin, /export const id/);
+    assert.doesNotMatch(plugin, /export const server/);
+    assert.doesNotMatch(plugin, /export default/);
     assert.doesNotMatch(plugin, /todowrite/);
     assert.doesNotMatch(plugin, /list_files/);
     assert.doesNotMatch(plugin, /Research Plan/);
+
+    const core = await readFile("adapters/opencode/AgentFlowWorkflowInterceptorCore.ts", "utf8");
+    assert.match(core, /parseAgentFlowEntry/);
+    assert.match(core, /parseWorkflowCommand/);
+    assert.match(core, /buildToolInstruction/);
+    assert.match(core, /extractFormattedText/);
+    assert.match(core, /agent-workforce-basic/);
   });
 
-  it("global installer prepends AgentFlow plugins before supervisor plugins", async () => {
+  it("global installer removes provider-affecting command-pack plugins and places AgentFlow interceptor last", async () => {
     const configDir = await mkdtemp(join(tmpdir(), "agentflow-opencode-global-"));
     await writeFile(join(configDir, "opencode.json"), JSON.stringify({
       plugin: ["./plugin/supervisor.js", "oh-my-openagent@latest"],
@@ -163,12 +188,26 @@ describe("opencode workflow command", () => {
       maxBuffer: 1024 * 1024,
     });
 
-    const config = JSON.parse(await readFile(join(configDir, "opencode.json"), "utf8")) as { plugin: string[]; command?: Record<string, unknown> };
+    const config = JSON.parse(await readFile(join(configDir, "opencode.json"), "utf8")) as {
+      plugin: string[];
+      command?: Record<string, { template?: string }>;
+    };
     assert.match(config.plugin[0], /agentflow-policy\.ts$/);
-    assert.match(config.plugin[1], /agentflow-workflow-interceptor\.ts$/);
+    assert.match(config.plugin.at(-1) ?? "", /agentflow-workflow-interceptor\.ts$/);
     assert.equal(config.plugin.includes("./plugin/supervisor.js"), true);
-    assert.equal(config.plugin.includes("oh-my-openagent@latest"), true);
-    assert.equal(config.command?.workflow, undefined);
+    assert.equal(config.plugin.includes("oh-my-openagent@latest"), false);
+    assert.match(config.command?.workflow?.template ?? "", /agentflow_run_profile_workflow/);
+    assert.match(config.command?.workflow?.template ?? "", /\$ARGUMENTS/);
+    assert.match(config.command?.workflow?.template ?? "", /profile `agent-workforce-basic`/);
+    assert.match(config.command?.workflow?.template ?? "", /allowLLM=false/);
+    assert.match(config.command?.agentflow?.template ?? "", /agentflow_run_profile_workflow/);
+    assert.match(config.command?.agentflow?.template ?? "", /\$ARGUMENTS/);
+    assert.match(config.command?.["workflow-llm"]?.template ?? "", /profile `agent-workforce-llm`/);
+    assert.match(config.command?.["workflow-llm"]?.template ?? "", /allowLLM=true/);
+    assert.match(config.command?.["agentflow-llm"]?.template ?? "", /profile `agent-workforce-llm`/);
+    assert.match(config.command?.["agentflow-llm"]?.template ?? "", /allowLLM=true/);
+    assert.doesNotMatch(config.command?.workflow?.template ?? "", /\{\{args\}\}/);
+    assert.doesNotMatch(config.command?.agentflow?.template ?? "", /\{\{args\}\}/);
     await assert.rejects(readFile(join(configDir, "commands", "workflow.md"), "utf8"));
   });
 });

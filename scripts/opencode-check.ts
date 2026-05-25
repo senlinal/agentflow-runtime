@@ -10,6 +10,15 @@ const requiredFiles = [
   ".opencode/tools/run_profile_workflow.ts",
   ".opencode/plugins/agentflow-policy.ts",
   ".opencode/plugins/agentflow-workflow-interceptor.ts",
+  ".opencode/agents/agentflow-planner.md",
+  ".opencode/agents/agentflow-debater.md",
+  ".opencode/agents/agentflow-planner-revision.md",
+  ".opencode/agents/agentflow-executor.md",
+  ".opencode/agents/agentflow-verifier.md",
+  ".opencode/agents/agentflow-goalkeeper.md",
+  "config/opencode-subagents.json",
+  "core/opencode/OpenCodeSubAgentBridge.ts",
+  "cli/opencode-subagents.ts",
   "adapters/opencode/PolicyAuditLogger.ts",
   "adapters/opencode/PolicyApprovalStore.ts",
   "adapters/opencode/ToolCallHasher.ts",
@@ -41,6 +50,7 @@ const requiredFiles = [
   "profiles/frontend-site-build.json",
   "profiles/agent-workforce-basic.json",
   "profiles/agent-workforce-llm.json",
+  "profiles/agent-workforce-opencode.json",
   "core/profile/ProfileRouter.ts",
   "core/profile/ProfileRunFormatter.ts",
   "core/profile/RuntimeTraceRoleExtractor.ts",
@@ -54,6 +64,7 @@ const requiredFiles = [
   "cli/opencode-workflow-command.ts",
   "scripts/opencode-install-global.ts",
   "docs/PROJECT_MEMORY.md",
+  "docs/OPENCODE_NATIVE_SUBAGENTS.md",
 ];
 
 const missing: string[] = [];
@@ -85,7 +96,7 @@ if (existsSync(".opencode/commands/workflow.md")) {
   process.exit(1);
 }
 const workflowHelp = readFileSync(".opencode/commands/workflow-help.md", "utf8");
-for (const requiredText of ["agentflow <task>", "agent-workforce-basic", "<auto-slash-command>"]) {
+for (const requiredText of ["/workflow <task>", "/agentflow <task>", "agent-workforce-basic", "<auto-slash-command>"]) {
   if (!workflowHelp.includes(requiredText)) {
     console.error(`workflow-help.md does not document the plugin-owned entry: ${requiredText}`);
     process.exit(1);
@@ -136,9 +147,34 @@ if (opencodeConfig.includes("opencode-workflow-command.ts") || opencodeConfig.in
   console.error("opencode.json workflow command still appears to contain the old shell shim");
   process.exit(1);
 }
-const parsedOpenCodeConfig = JSON.parse(opencodeConfig) as { command?: Record<string, unknown> };
-if (parsedOpenCodeConfig.command && "workflow" in parsedOpenCodeConfig.command) {
-  console.error("opencode.json still registers markdown command.workflow; use plugin-owned agentflow entry instead");
+const parsedOpenCodeConfig = JSON.parse(opencodeConfig) as { command?: Record<string, { template?: string; description?: string; subtask?: boolean }> };
+for (const commandName of ["workflow", "agentflow", "workflow-llm", "agentflow-llm"]) {
+  const command = parsedOpenCodeConfig.command?.[commandName];
+  if (!command || command.subtask !== false) {
+    console.error(`opencode.json must register /${commandName} as a non-subtask AgentFlow command`);
+    process.exit(1);
+  }
+  const template = command.template ?? "";
+  for (const requiredText of ["$ARGUMENTS", "agentflow_run_profile_workflow", "formattedText", "allowExecution=false", "Do not call CodeExecutor", "Do not call agentflow_list_profiles"]) {
+    if (!template.includes(requiredText)) {
+      console.error(`opencode.json /${commandName} command template is missing expected MCP display text: ${requiredText}`);
+      process.exit(1);
+    }
+  }
+  if (template.includes("{{args}}")) {
+    console.error(`opencode.json /${commandName} uses unsupported literal {{args}} instead of $ARGUMENTS`);
+    process.exit(1);
+  }
+  const isLLMCommand = commandName.endsWith("-llm");
+  const expectedProfile = isLLMCommand ? "agent-workforce-llm" : "agent-workforce-basic";
+  const expectedAllowLLM = isLLMCommand ? "allowLLM=true" : "allowLLM=false";
+  if (!template.includes(`profile \`${expectedProfile}\``) || !template.includes(expectedAllowLLM)) {
+    console.error(`opencode.json /${commandName} does not use the expected deterministic profile and LLM setting`);
+    process.exit(1);
+  }
+}
+if (parsedOpenCodeConfig.command?.workflow?.template?.includes("opencode-workflow-command.ts")) {
+  console.error("opencode.json command.workflow must not contain shell shims");
   process.exit(1);
 }
 
@@ -159,7 +195,7 @@ for (const requiredText of [
 }
 
 const policyPlugin = readFileSync(".opencode/plugins/agentflow-policy.ts", "utf8");
-for (const requiredText of ["export async function AgentFlowPolicy", "export default AgentFlowPolicy", "tool.execute.before"]) {
+for (const requiredText of ["export async function AgentFlowPolicy", "tool.execute.before"]) {
   if (!policyPlugin.includes(requiredText)) {
     console.error(`agentflow policy plugin is missing OpenCode function export text: ${requiredText}`);
     process.exit(1);
@@ -169,23 +205,67 @@ for (const requiredText of ["export async function AgentFlowPolicy", "export def
 const workflowInterceptor = readFileSync(".opencode/plugins/agentflow-workflow-interceptor.ts", "utf8");
 for (const requiredText of [
   "export async function AgentFlowWorkflowInterceptor",
-  "export default AgentFlowWorkflowInterceptor",
   "chat.message",
   "command.execute.before",
+  "tool.execute.after",
+  "experimental.text.complete",
+  "COMMANDS",
   "agentflow_run_profile_workflow",
-  "parseAgentFlowEntry",
-  "parseWorkflowCommand",
-  "agent-workforce-basic",
-  "AgentFlow Runtime was not started.",
 ]) {
   if (!workflowInterceptor.includes(requiredText)) {
     console.error(`agentflow workflow interceptor is missing expected text: ${requiredText}`);
     process.exit(1);
   }
 }
+for (const forbiddenPluginExport of ["export const id", "export const server", "export default"]) {
+  if (policyPlugin.includes(forbiddenPluginExport) || workflowInterceptor.includes(forbiddenPluginExport)) {
+    console.error(`OpenCode plugin files must only export plugin functions; found forbidden export text: ${forbiddenPluginExport}`);
+    process.exit(1);
+  }
+}
+const workflowInterceptorCore = readFileSync("adapters/opencode/AgentFlowWorkflowInterceptorCore.ts", "utf8");
+for (const requiredText of ["parseAgentFlowEntry", "parseWorkflowCommand", "buildToolInstruction", "fallbackText", "extractFormattedText", "agent-workforce-basic", "AgentFlow Runtime was not started."]) {
+  if (!workflowInterceptorCore.includes(requiredText)) {
+    console.error(`agentflow workflow interceptor core is missing expected helper text: ${requiredText}`);
+    process.exit(1);
+  }
+}
 for (const forbiddenText of ["todowrite", "list_files", "Research Plan", "search-mode"]) {
-  if (workflowInterceptor.includes(forbiddenText)) {
+  if (workflowInterceptor.includes(forbiddenText) || workflowInterceptorCore.includes(forbiddenText)) {
     console.error(`agentflow workflow interceptor includes forbidden supervisor behavior: ${forbiddenText}`);
+    process.exit(1);
+  }
+}
+
+const opencodeSubagentMapping = JSON.parse(readFileSync("config/opencode-subagents.json", "utf8")) as Record<string, string>;
+for (const [role, agentName] of Object.entries({
+  Planner: "agentflow-planner",
+  Debater: "agentflow-debater",
+  PlannerRevision: "agentflow-planner-revision",
+  Executor: "agentflow-executor",
+  Verifier: "agentflow-verifier",
+  GoalKeeper: "agentflow-goalkeeper",
+})) {
+  if (opencodeSubagentMapping[role] !== agentName) {
+    console.error(`config/opencode-subagents.json maps ${role} incorrectly`);
+    process.exit(1);
+  }
+  if (!existsSync(`.opencode/agents/${agentName}.md`)) {
+    console.error(`Missing OpenCode native subagent config for ${role}: ${agentName}`);
+    process.exit(1);
+  }
+}
+const nativeSubagentDocs = readFileSync("docs/OPENCODE_NATIVE_SUBAGENTS.md", "utf8");
+for (const requiredText of ["programmatic dispatch", "unavailable", "openCodeTaskId", "AgentFlow internal subagent", "OpenCode native subagent"]) {
+  if (!nativeSubagentDocs.includes(requiredText)) {
+    console.error(`OpenCode native subagent docs are missing required limitation text: ${requiredText}`);
+    process.exit(1);
+  }
+}
+const nativeBridge = readFileSync("core/opencode/OpenCodeSubAgentBridge.ts", "utf8");
+for (const requiredText of ["status: \"unavailable\"", "programmatic subagent dispatch API", "openCodeTaskId", "inspectConfig"]) {
+  if (!nativeBridge.includes(requiredText)) {
+    console.error(`OpenCodeSubAgentBridge is missing required explicit limitation behavior: ${requiredText}`);
     process.exit(1);
   }
 }

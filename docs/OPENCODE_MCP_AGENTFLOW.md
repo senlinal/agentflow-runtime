@@ -28,14 +28,14 @@ npm run mcp:agentflow
 
 ## Global OpenCode Use
 
-AgentFlow can be installed as a global OpenCode integration so the plugin-owned `agentflow <task>` entry works from any workspace:
+AgentFlow can be installed as a global OpenCode integration so the plugin-owned `/workflow <task>` and `/agentflow <task>` entries work from any workspace:
 
 ```bash
 npm run opencode:install-global -- --dry-run
 npm run opencode:install-global
 ```
 
-The installer registers the AgentFlow policy and workflow interceptor plugins, copies AgentFlow subagent files, removes the old global markdown `/workflow` command if present, and configures the MCP server with an absolute `AGENTFLOW_PROJECT_ROOT`. Runtime assets such as `profiles/`, `workflows/`, `.workflow-runs/`, and `.agentflow/` stay under the AgentFlow repository. The workspace where OpenCode is opened remains the active project for any later project work.
+The installer registers the AgentFlow policy and workflow interceptor plugins, registers minimal config commands for `/workflow` and `/agentflow`, copies AgentFlow subagent files, removes the old global markdown `/workflow` command if present, removes the known provider-affecting `oh-my-openagent@latest` command-pack plugin from the global plugin chain, and configures the MCP server with an absolute `AGENTFLOW_PROJECT_ROOT`. Runtime assets such as `profiles/`, `workflows/`, `.workflow-runs/`, and `.agentflow/` stay under the AgentFlow repository. The workspace where OpenCode is opened remains the active project for any later project work.
 
 Restart OpenCode after changing this file. The available tools should include:
 
@@ -70,19 +70,32 @@ Profiles with LLM-backed workflow nodes are blocked unless `allowLLM=true`. The 
 
 `agentflow_show_last_run` returns the latest `.workflow-runs` summary, trace, and context paths.
 
-## OpenCode Entry Behavior
+## Native Subagent Bridge
 
-Use this OpenCode entry:
+AgentFlow also ships OpenCode `mode: subagent` definitions for `@agentflow-planner`, `@agentflow-debater`, `@agentflow-planner-revision`, `@agentflow-executor`, `@agentflow-verifier`, and `@agentflow-goalkeeper`.
 
-```text
-agentflow <task>
+Inspect them with:
+
+```bash
+npm run opencode:subagents
 ```
 
-`@agentflow <task>` is also accepted. `/workflow` is only a best-effort compatibility path if the plugin receives the raw input.
+The MCP workflow result may include `dispatchMode`, `openCodeNativeSubAgent`, `openCodeAgentName`, `nativeDispatchStatus`, and limitations. In the current OpenCode plugin/MCP API, programmatic native subagent dispatch and task/session id reads are unavailable, so `agent-workforce-opencode` reports `openCodeNativeSubAgent=false` instead of fabricating a native task.
 
-Markdown slash commands are not the runtime entrypoint. OpenCode can expand them into visible `<auto-slash-command>` prompt text before plugins can hide the template. If `<auto-slash-command>` appears, the old markdown `/workflow` command is still installed or the wrong entry was used.
+## OpenCode Entry Behavior
 
-The workflow plugin interceptor calls `agentflow_run_profile_workflow`, displays only `formattedText`, and applies the rule: No trace, no agent. Normal output should contain `AgentFlow Runtime`, `Runtime Proof`, `Role Timeline`, `summaryPath`, and `tracePath`.
+Use one of these OpenCode entries:
+
+```text
+/workflow <task>
+/agentflow <task>
+```
+
+Plain `agentflow <task>` and `@agentflow <task>` are best-effort compatibility paths only. In current OpenCode builds, ordinary chat messages cannot reliably stop model routing before the provider call, so use slash commands when you need a hard AgentFlow run.
+
+Markdown slash command files are not the runtime entrypoint. OpenCode can expand them into visible `<auto-slash-command>` prompt text before plugins can hide the template. The supported slash entries are minimal config commands intercepted by `.opencode/plugins/agentflow-workflow-interceptor.ts`. If `<auto-slash-command>` appears, the old project or global markdown command is still installed.
+
+The workflow plugin interceptor calls `agentflow_run_profile_workflow`, captures the tool result, and replaces the final OpenCode message with MCP `formattedText`. This prevents OpenCode or command-pack agents from summarizing away the Role Speech Transcript. Normal output should contain `AgentFlow Runtime`, `Runtime Proof`, `Role Timeline`, `AgentFlow 角色发言流`, `summaryPath`, and `tracePath`.
 
 If MCP is not loaded, the interceptor returns this explicit CLI fallback:
 

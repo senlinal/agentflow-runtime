@@ -52,8 +52,8 @@ function expectedDeliverableFor(
     return {
       type: "answer",
       description: isCoffeeTask(task)
-        ? "A clear explanation of how to make coffee."
-        : `A direct, useful answer to the user's request: ${task}`,
+        ? "一份清楚说明咖啡做法的答案。"
+        : `一份直接、有用地回答用户请求的答案：${task}`,
     };
   }
   if (taskType === "rag_optimization") {

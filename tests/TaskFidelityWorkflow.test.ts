@@ -42,11 +42,10 @@ test("Task fidelity workflow", async (t) => {
     assert.equal(verifier?.answersUserRequest, true);
     assert.equal(verifier?.isNotMetaOnly, true);
     assert.equal(verifier?.pass, true);
-    assert.match(result.formattedText, /Role Timeline/);
-    assert.match(result.formattedText, /Runtime Proof/);
-    assert.match(result.formattedText, /source: subagent_dispatch_trace/);
-    assert.match(result.formattedText, /mock subagent simulation, not LLM-backed/);
-    assert.match(result.formattedText, /deliverable: answer/);
+    assert.match(result.formattedText, /AgentFlow 工作流完成/);
+    assert.match(result.formattedText, /说明: 本次为 mock subagent simulation，不是 LLM-backed agent/);
+    assert.match(result.formattedText, /Executor:/);
+    assert.match(result.formattedText, /产物:/);
   });
 
   await t.test("demo:task-solving-coffee exits successfully", async () => {
@@ -56,12 +55,9 @@ test("Task fidelity workflow", async (t) => {
       maxBuffer: 1024 * 1024,
     });
 
-    assert.match(stdout, /userRequest|Task: 解释一下咖啡的做法|解释一下咖啡的做法/);
-    assert.match(stdout, /deliverable: answer/);
-    assert.match(stdout, /answersUserRequest: true/);
-    assert.match(stdout, /isNotMetaOnly: true/);
-    assert.match(stdout, /Runtime Proof/);
-    assert.match(stdout, /subAgentDispatched: true/);
-    assert.match(stdout, /source: subagent_dispatch_trace/);
+    assert.match(stdout, /AgentFlow 工作流完成/);
+    assert.match(stdout, /解释一下咖啡的做法|咖啡/);
+    assert.match(stdout, /Executor:/);
+    assert.match(stdout, /Verifier:/);
   });
 });

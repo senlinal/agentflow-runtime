@@ -70,6 +70,14 @@ export type ProfileRoleTimelineEvent = {
   answersUserRequest?: boolean;
   isNotMetaOnly?: boolean;
   pass?: boolean;
+  dispatchMode?: string;
+  internalSubAgentDispatched?: boolean;
+  openCodeNativeSubAgent?: boolean;
+  openCodeAgentName?: string;
+  openCodeTaskId?: string;
+  openCodeSessionId?: string;
+  nativeDispatchStatus?: string;
+  nativeDispatchLimitations?: string[];
 };
 
 export type ProfileWorkflowStep = {
@@ -325,6 +333,8 @@ export class ProfileWorkflowRunner {
 
       const result = await this.workflowRunner.run(config, taskBrief, {
         contextOverrides: scopeConfirmation ? { scopeConfirmationRecord: scopeConfirmation } : undefined,
+        subAgentDispatchMode: profile.dispatchMode ?? "internal",
+        profileId: profile.id,
       });
       steps.push(toStep(workflow, result));
       roleTimeline.push(...await this.toRuntimeTimeline(workflow, result));
@@ -416,7 +426,7 @@ export class ProfileWorkflowRunner {
       workflow,
       nodeId: event.nodeId,
       role: event.role,
-      openCodeSubAgentName: toOpenCodeSubAgentName(event.role),
+      openCodeSubAgentName: event.openCodeAgentName ?? toOpenCodeSubAgentName(event.role),
       nodeType: event.nodeType,
       executorType: event.executorType,
       type: event.type,
@@ -452,6 +462,14 @@ export class ProfileWorkflowRunner {
       answersUserRequest: event.answersUserRequest,
       isNotMetaOnly: event.isNotMetaOnly,
       pass: event.pass,
+      dispatchMode: event.dispatchMode,
+      internalSubAgentDispatched: event.internalSubAgentDispatched,
+      openCodeNativeSubAgent: event.openCodeNativeSubAgent,
+      openCodeAgentName: event.openCodeAgentName,
+      openCodeTaskId: event.openCodeTaskId,
+      openCodeSessionId: event.openCodeSessionId,
+      nativeDispatchStatus: event.nativeDispatchStatus,
+      nativeDispatchLimitations: event.nativeDispatchLimitations,
     }));
   }
 

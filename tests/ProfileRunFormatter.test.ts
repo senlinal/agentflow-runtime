@@ -4,7 +4,7 @@ import { ProfileRunFormatter } from "../core/profile/ProfileRunFormatter.ts";
 import type { ProfileWorkflowRunResult } from "../core/profile/ProfileWorkflowRunner.ts";
 
 test("ProfileRunFormatter", async (t) => {
-  await t.test("formats routing, role timeline, artifacts, and pending questions", () => {
+  await t.test("formats concise blocked workflow output", () => {
     const text = new ProfileRunFormatter().format(sampleResult({
       finalStatus: "blocked",
       session: {
@@ -18,40 +18,14 @@ test("ProfileRunFormatter", async (t) => {
       },
     }));
 
-    assert.match(text, /AgentFlow Profile Run/);
-    assert.match(text, /Routing Decision/);
-    assert.match(text, /recommendedProfile: frontend-site-build/);
-    assert.match(text, /AgentFlow Role Timeline/);
-    assert.match(text, /AgentFlow Role Speech Transcript/);
-    assert.match(text, /TaskNegotiator/);
-    assert.match(text, /Need scope confirmation speech/);
-    assert.match(text, /Runtime Proof/);
-    assert.match(text, /Agent Dispatch Proof/);
-    assert.match(text, /dispatchModel: WorkflowRuntime trace -> SubAgentDispatcher artifacts/);
-    assert.match(text, /subAgentDispatchCount: 1/);
-    assert.match(text, /dispatchTargets: @agentflow-task-negotiator/);
-    assert.match(text, /No subagent dispatch record, no subagent/);
-    assert.match(text, /runtimeStarted: true/);
-    assert.match(text, /verifiedRoleCount: 1/);
-    assert.match(text, /1\. TaskNegotiator/);
-    assert.match(text, /source: subagent_dispatch_trace/);
-    assert.match(text, /subAgentDispatched: true/);
-    assert.match(text, /subAgentId: taskNegotiator-0-test/);
-    assert.match(text, /workerSessionId: worker-tasknegotiator-test/);
-    assert.match(text, /nodeType: negotiate/);
-    assert.match(text, /subagent: @agentflow-task-negotiator/);
-    assert.match(text, /executorType: negotiate/);
-    assert.match(text, /isMock: false/);
-    assert.match(text, /isLLMBacked: false/);
-    assert.match(text, /note: runtime executor type: negotiate/);
-    assert.match(text, /inputArtifactPath: \.workflow-runs\/run\/subagents\/taskNegotiator-0-test\/input\.json/);
-    assert.match(text, /outputArtifactPath: \.workflow-runs\/run\/subagents\/taskNegotiator-0-test\/output\.json/);
-    assert.match(text, /outputKey: taskNegotiationResult/);
-    assert.match(text, /outputSchema: TaskNegotiationResult/);
+    assert.match(text, /AgentFlow 工作流受阻/);
+    assert.match(text, /Profile: frontend-site-build/);
+    assert.match(text, /状态: blocked/);
+    assert.match(text, /原因:/);
     assert.match(text, /summary: \.workflow-runs\/run\/summary\.md/);
     assert.match(text, /trace: \.workflow-runs\/run\/trace\.json/);
-    assert.match(text, /context: \.workflow-runs\/run\/context\.json/);
-    assert.match(text, /pendingQuestions/);
+    assert.doesNotMatch(text, /Runtime Proof/);
+    assert.doesNotMatch(text, /AgentFlow Role Timeline/);
   });
 
   await t.test("formats blocked reasons through autonomy and steps", () => {
@@ -76,11 +50,9 @@ test("ProfileRunFormatter", async (t) => {
       },
     }));
 
-    assert.match(text, /Final status: blocked/);
+    assert.match(text, /AgentFlow 工作流受阻/);
+    assert.match(text, /状态: blocked/);
     assert.match(text, /Workflow contains execution-capable nodes/);
-    assert.match(text, /AgentFlow Runtime was not started/);
-    assert.match(text, /dispatchModel: unavailable/);
-    assert.match(text, /Next Actions/);
   });
 
   await t.test("does not fabricate role timeline when trace is unavailable", () => {
@@ -95,7 +67,8 @@ test("ProfileRunFormatter", async (t) => {
       },
     }));
 
-    assert.match(text, /AgentFlow Runtime trace not found. No verified agents can be displayed./);
+    assert.match(text, /AgentFlow 工作流受阻/);
+    assert.match(text, /runtime 未启动|unavailable/);
     assert.doesNotMatch(text, /1\\. Planner/);
   });
 
@@ -133,14 +106,12 @@ test("ProfileRunFormatter", async (t) => {
         verifiedRoleCount: 1,
         roleSource: "subagent_dispatch_trace",
       },
+      finalStatus: "completed",
     }));
 
-    assert.match(text, /executorType: llm/);
-    assert.match(text, /isLLMBacked: true/);
-    assert.match(text, /modelProvider: deepseek/);
-    assert.match(text, /modelName: deepseek-v4-flash/);
-    assert.match(text, /callStatus: completed/);
-    assert.match(text, /note: llm-backed subagent execution/);
+    assert.match(text, /AgentFlow 工作流完成/);
+    assert.match(text, /说明: 本次包含 LLM-backed agent：Planner（deepseek\/deepseek-v4-flash）/);
+    assert.doesNotMatch(text, /executorType: llm/);
   });
 
   await t.test("formats adaptive attempt evidence", () => {
@@ -170,12 +141,11 @@ test("ProfileRunFormatter", async (t) => {
         isMock: false,
         isLLMBacked: false,
       }],
+      finalStatus: "completed",
     }));
 
-    assert.match(text, /attempt: 1/);
-    assert.match(text, /routeId: direct_deliverable/);
-    assert.match(text, /attemptDecision: retry/);
-    assert.match(text, /retryReason: Verifier failed/);
+    assert.match(text, /AgentFlow 工作流完成/);
+    assert.match(text, /角色发言：/);
   });
 });
 

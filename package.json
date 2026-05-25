@@ -44,6 +44,7 @@
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "typecheck": "node --experimental-strip-types scripts/typecheck.ts",
     "opencode:check": "node --experimental-strip-types scripts/opencode-check.ts",
+    "opencode:subagents": "node --experimental-strip-types cli/opencode-subagents.ts",
     "opencode:install-global": "node --experimental-strip-types scripts/opencode-install-global.ts",
     "policy:audit": "node --experimental-strip-types cli/policy-audit.ts",
     "policy:pending": "node --experimental-strip-types cli/policy-pending.ts",

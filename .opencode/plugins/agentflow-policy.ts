@@ -5,6 +5,7 @@ const policy = new OpenCodePolicyService();
 export async function AgentFlowPolicy() {
   return {
     name: "agentflow-policy",
+    async config() {},
     async "tool.execute.before"(input: unknown) {
       const call = normalizeToolCall(input);
       const decision = policy.evaluateToolCall(call);
@@ -28,8 +29,6 @@ export async function AgentFlowPolicy() {
     },
   };
 }
-
-export default AgentFlowPolicy;
 
 function normalizeToolCall(input: unknown): { tool: string; args: Record<string, unknown> } {
   const record = input && typeof input === "object" ? input as Record<string, unknown> : {};

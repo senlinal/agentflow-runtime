@@ -160,58 +160,59 @@ export class MockLLMClient implements LLMClient {
     const brief = context.taskBrief;
     const goal = brief?.userRequest ?? brief?.goal ?? context.userGoal;
     if (isDeliverableCenteredBrief(brief)) {
+      const answerRequirements = localizeAnswerRequirements(brief.answerRequirements ?? ["direct answer"]);
       return {
         planId: `plan_${context.taskId}_initial`,
-        summary: `Plan to produce the requested deliverable for: ${goal}`,
-        taskUnderstanding: `The user needs ${brief.expectedDeliverable.description}`,
-        proposedApproach: "Answer the user request directly, cover the stated requirements, and avoid workflow-only meta narration.",
-        deliverablePlan: `Produce a ${brief.expectedDeliverable.type} with concrete content for: ${goal}`,
+        summary: `我理解任务是：${goal}。计划按用户真正要的答案来组织交付。`,
+        taskUnderstanding: `用户需要的是：${brief.expectedDeliverable.description}`,
+        proposedApproach: "直接回答用户请求，覆盖关键要点，避免只输出工作流说明。",
+        deliverablePlan: `输出一份可直接使用的“${goal}”答案。`,
         steps: [
           {
             id: "understand_request",
-            action: `Identify the real user question: ${goal}`,
-            expectedOutput: "A task understanding grounded in the original user request.",
+            action: `识别用户真正的问题：${goal}`,
+            expectedOutput: "形成基于原始请求的任务理解。",
           },
           {
             id: "cover_requirements",
-            action: `Cover required answer elements: ${(brief.answerRequirements ?? ["direct answer"]).join(", ")}.`,
-            expectedOutput: "All answer requirements are represented in the final deliverable.",
+            action: `覆盖必要回答要素：${answerRequirements.join("、")}。`,
+            expectedOutput: "最终交付物覆盖所有必要回答要素。",
           },
           {
             id: "produce_deliverable",
-            action: "Write the actual deliverable content, not a description of having done it.",
-            expectedOutput: `${brief.expectedDeliverable.type} content that the user can use immediately.`,
+            action: "写出真实交付内容，而不是描述已经完成。",
+            expectedOutput: "用户可以直接使用的答案内容。",
           },
         ],
-        risks: ["The response could become a process summary instead of answering the user's real request."],
+        risks: ["回答可能变成流程总结，而不是直接回答用户问题。"],
         successCriteria: context.successCriteria,
-        successCriteriaMapping: Object.fromEntries(context.successCriteria.map((criterion) => [criterion, "Covered by producing and checking the final deliverable content."])),
-        assumptions: ["The task can be answered without external API calls in the mock workflow."],
+        successCriteriaMapping: Object.fromEntries(context.successCriteria.map((criterion) => [criterion, "通过生成并检查最终答案内容来覆盖。"])),
+        assumptions: ["本次 mock 工作流不调用外部 API 或真实 LLM。"],
       };
     }
     return {
       planId: `plan_${context.taskId}_initial`,
-      summary: `Initial structured plan for: ${goal}`,
+      summary: `我理解任务是：${goal}。计划先明确用户真正要的交付物，再让 Executor 输出具体内容，最后由 Verifier 检查是否真的回答了问题。`,
       steps: [
         {
           id: "step_1",
-          action: "Define domain types and workflow configuration contracts.",
-          expectedOutput: "Typed core runtime contracts.",
+          action: "明确用户目标、成功标准和最终交付物。",
+          expectedOutput: "Planner 能说明要解决什么问题，以及什么结果算完成。",
         },
         {
           id: "step_2",
-          action: "Execute nodes using a registered NodeExecutor.",
-          expectedOutput: "Runtime can execute arbitrary configured graph nodes.",
+          action: "按角色流程推进，让 Executor 产出真实内容，而不是只描述流程完成。",
+          expectedOutput: "Executor 输出可直接给用户使用的 deliverable.content。",
         },
         {
           id: "step_3",
-          action: "Verify structured execution results and route by configured conditions.",
-          expectedOutput: "Verifier output drives graph edges through ConditionEvaluator.",
+          action: "让 Verifier 检查交付物是否回答用户请求、是否不是空壳输出。",
+          expectedOutput: "Verifier 给出 pass、score 和是否需要返工的判断。",
         },
       ],
-      risks: ["Mock output can hide real LLM formatting failures."],
+      risks: ["如果只展示多角色状态，用户会看到 completed，但看不到每个角色真正说了什么。"],
       successCriteria: context.successCriteria,
-      assumptions: ["Phase three keeps execution local and does not call real model providers."],
+      assumptions: ["本次默认使用 mock subagent simulation，不调用真实 LLM。"],
     };
   }
 
@@ -221,22 +222,22 @@ export class MockLLMClient implements LLMClient {
     if (isDeliverableCenteredBrief(brief)) {
       return {
         issues: [
-          "The final answer must contain the requested content itself, not just say the workflow completed.",
-          "The plan should explicitly check the original user request and expected deliverable.",
+          "最终答案必须包含用户请求的内容本身，不能只说工作流完成了。",
+          "计划需要显式核对原始用户请求和期望交付物。",
         ],
-        risks: ["A generic role output could look multi-agent but fail to answer the user."],
+        risks: ["通用角色输出可能看起来像多 Agent 协作，但没有真正回答用户。"],
         missingRequirements: (brief.answerRequirements ?? []).filter((requirement) =>
           !JSON.stringify(context.plan ?? {}).includes(requirement)
-        ),
-        suggestions: ["Make Executor produce deliverable.content and make Verifier reject meta-only content."],
+        ).map(localizeAnswerRequirement),
+        suggestions: ["让 Executor 产出 deliverable.content，并让 Verifier 拒绝空壳元叙述。"],
         severity: "medium",
       };
     }
     return {
-      issues: ["The initial plan must explicitly prove schema validation and trace persistence."],
-      risks: ["A runtime without output validation can corrupt context state."],
-      missingRequirements: ["Stable structured role output schemas.", "Verifier nextAction enum validation."],
-      suggestions: ["Validate every node output before writing it into context."],
+      issues: ["计划方向可行，但必须确保最终答案包含真实内容，而不是只说工作流已经完成。"],
+      risks: ["如果 Executor 只输出流程说明，用户会误以为多 Agent 已经工作，但实际没有得到可用结果。"],
+      missingRequirements: ["真实交付物内容", "Verifier 对空壳输出的拒绝标准"],
+      suggestions: ["要求 Executor 输出具体 deliverable.content，并让 Verifier 检查它是否回答用户请求。"],
       severity: "medium",
     };
   }
@@ -248,44 +249,44 @@ export class MockLLMClient implements LLMClient {
     if (isDeliverableCenteredBrief(brief)) {
       return {
         planId: `plan_${context.taskId}_revised_${context.iteration}`,
-        summary: `Revised plan focused on the user deliverable for: ${goal}`,
-        taskUnderstanding: context.plan?.taskUnderstanding ?? `The user needs ${brief.expectedDeliverable.description}`,
-        proposedApproach: "Produce concrete deliverable content first, then verify it against the original request and success criteria.",
-        deliverablePlan: `Executor must return deliverable.type=${brief.expectedDeliverable.type} with substantive content.`,
+        summary: `我已根据 Debater 的意见修订计划：把计划重新聚焦到“${goal}”这个用户交付物。`,
+        taskUnderstanding: context.plan?.taskUnderstanding ?? `用户需要的是：${brief.expectedDeliverable.description}`,
+        proposedApproach: "先产出具体答案内容，再按原始请求和成功标准验证。",
+        deliverablePlan: "Executor 必须返回有实质内容的 deliverable.content。",
         steps: [
           ...(context.plan?.steps ?? []),
           {
             id: "verify_deliverable_fidelity",
-            action: "Check that deliverable.content directly satisfies the user request and is not meta-only.",
-            expectedOutput: "Verifier can mark answersUserRequest=true and isNotMetaOnly=true.",
+            action: "检查 deliverable.content 是否直接满足用户请求，并且不是空壳元叙述。",
+            expectedOutput: "Verifier 可以确认 answersUserRequest=true 且 isNotMetaOnly=true。",
           },
         ],
-        risks: ["If the executor omits the answer body, the workflow must fail verification."],
+        risks: ["如果 Executor 省略答案正文，工作流必须验证失败。"],
         successCriteria: context.successCriteria,
-        successCriteriaMapping: Object.fromEntries(context.successCriteria.map((criterion) => [criterion, "Mapped to deliverable content or verifier checks."])),
-        assumptions: ["No real model provider is called in this mock path."],
+        successCriteriaMapping: Object.fromEntries(context.successCriteria.map((criterion) => [criterion, "映射到交付物内容或 Verifier 检查。"])),
+        assumptions: ["本次 mock 路径不会调用真实模型提供方。"],
         basedOnCritique: context.critique?.suggestions ?? [],
-        revisionNotes: ["Re-centered the plan on the expected deliverable and original user request."],
+        revisionNotes: ["把计划重新对齐到期望交付物和原始用户请求。"],
       };
     }
     return {
       planId: `plan_${context.taskId}_revised_${context.iteration}`,
-      summary: `Revised structured plan for: ${goal}`,
+      summary: `我已根据 Debater 的意见修订计划：围绕“${goal}”输出真实交付物，并把 Verifier 检查作为结束条件。`,
       steps: [
         ...(context.plan?.steps ?? []),
         {
           id: "step_4",
-          action: "Use GoalKeeper correction instructions after verifier failure.",
-          expectedOutput: "Second verification can pass without Runtime hardcoding role behavior.",
+          action: "如果 Verifier 发现内容不足，再根据 GoalKeeper 的修正意见补充一轮，而不是固定重复流程。",
+          expectedOutput: "返工只围绕缺失内容展开，直到通过或明确停止。",
         },
       ],
-      risks: ["Schema validation is still hand-written and intentionally minimal."],
+      risks: ["如果修订计划仍然停留在流程层面，Executor 可能继续输出空壳内容。"],
       successCriteria: context.successCriteria,
-      assumptions: ["MockLLMClient controls the fail-then-pass verifier scenario."],
+      assumptions: ["本次 mock 流程用于验证角色协作和 artifact 展示，不代表真实 LLM-backed agent。"],
       basedOnCritique: context.critique?.suggestions ?? [],
       revisionNotes: context.correctionHint
         ? context.correctionHint.correctionInstructions
-        : ["No correction hint available yet; applied critique only."],
+        : ["尚无 GoalKeeper 修正意见；先采纳 Debater 的批判，把计划改成以真实交付物为中心。"],
     };
   }
 
@@ -320,8 +321,8 @@ export class MockLLMClient implements LLMClient {
       completedSteps: context.revisedPlan?.steps.map((step) => step.id) ?? [],
       artifacts: ["typed schemas", "schema validator", "mock llm client", "configuration-driven runtime trace"],
       summary: context.correctionHint
-        ? "Executed revised plan after GoalKeeper correction with structured output validation."
-        : "Executed first revised plan; verifier should request one correction cycle.",
+        ? "我已根据 GoalKeeper 的意见补充交付物，并保留验证证据。"
+        : "我已按修订计划产出第一版结果，等待 Verifier 检查是否需要补充。",
       errors: [],
       rawOutput: JSON.stringify({
         revisedPlanId: context.revisedPlan?.planId,
@@ -344,10 +345,10 @@ export class MockLLMClient implements LLMClient {
       return {
         pass: false,
         score: 0.72,
-        failedCriteria: ["Structured output validation and recovery loop need one more pass."],
-        reason: "First verifier pass intentionally fails to exercise GoalKeeper and replanning.",
+        failedCriteria: ["交付物内容或验证证据还不够完整。"],
+        reason: "第一轮检查发现交付物还需要补充具体内容和验证证据。",
         nextAction: "replan",
-        feedbackToPlanner: "Use correction instructions and explicitly preserve schema validation evidence.",
+        feedbackToPlanner: "请按修正意见补充真实交付物内容，并保留可验证 artifact 证据。",
       };
     }
 
@@ -355,9 +356,9 @@ export class MockLLMClient implements LLMClient {
       pass: true,
       score: 0.96,
       failedCriteria: [],
-      reason: "The second verifier pass confirms schema validation, correction loop, and trace output.",
+      reason: "第二轮检查确认交付物内容、修正闭环和 trace 证据都已满足要求。",
       nextAction: "end",
-      feedbackToPlanner: "No further replanning required.",
+      feedbackToPlanner: "不需要继续返工。",
     };
   }
 
@@ -368,9 +369,9 @@ export class MockLLMClient implements LLMClient {
       originalGoalReminder: context.taskBrief?.goal ?? context.userGoal,
       failedCriteria: context.verification?.failedCriteria ?? [],
       correctionInstructions: [
-        "Keep the runtime configuration-driven.",
-        "Do not move role-specific output behavior into WorkflowRuntime.",
-        "Make the next revised plan show schema validation and trace persistence explicitly.",
+        "保持 Runtime 配置驱动，不要在 WorkflowRuntime 中硬编码角色行为。",
+        "下一轮必须补充真实交付物内容，而不是只展示角色状态。",
+        "保留 output.json、summary.md 和 trace 证据，方便用户核验。",
       ],
       recommendedNextAction: "replan",
     };
@@ -402,6 +403,20 @@ function isDeliverableCenteredBrief(brief: TaskBrief | null | undefined): brief 
   return Boolean(brief?.userRequest && brief.expectedDeliverable?.type === "answer" || brief?.taskType === "general_answer");
 }
 
+function localizeAnswerRequirements(requirements: string[]): string[] {
+  return requirements.map(localizeAnswerRequirement);
+}
+
+function localizeAnswerRequirement(requirement: string): string {
+  const normalized = requirement.toLowerCase();
+  if (normalized.includes("material") || normalized.includes("tool")) return "材料和工具";
+  if (normalized.includes("step")) return "具体步骤";
+  if (normalized.includes("tip") || normalized.includes("caution")) return "注意事项";
+  if (normalized.includes("summary")) return "简要总结";
+  if (normalized.includes("direct answer")) return "直接回答";
+  return requirement;
+}
+
 function buildDeliverableContent(brief: TaskBrief): string {
   if (/咖啡|coffee/i.test(brief.userRequest)) {
     return [
@@ -414,6 +429,23 @@ function buildDeliverableContent(brief: TaskBrief): string {
       "提示：水温太高容易苦，太低容易酸薄；粉太细会萃取过度，粉太粗会味道淡。刚开始可以固定比例和水温，只调整研磨粗细。没有手冲器具时，也可以用法压壶、摩卡壶或咖啡机，但核心仍是控制粉水比、研磨、水温和时间。",
       "",
       "简要总结：准备咖啡粉和热水，按合适粉水比萃取，控制水温、研磨和时间，就能稳定做出一杯咖啡。",
+    ].join("\n");
+  }
+  if (/\bRAG\b|检索增强|retrieval augmented/i.test(brief.userRequest)) {
+    return [
+      "RAG（Retrieval-Augmented Generation，检索增强生成）的流程可以理解为：先检索证据，再把证据交给大模型生成回答。",
+      "",
+      "1. 用户提出问题：系统接收用户问题，并提取关键词、意图或约束。",
+      "2. 查询改写或扩展：必要时把原始问题改写成更适合检索的 query，例如补充同义词、拆分复杂问题。",
+      "3. 检索候选文档：从知识库、向量库、全文索引或混合检索系统中召回相关片段。",
+      "4. 重排与过滤：用 reranker、规则或分数阈值筛掉弱相关内容，把最有用的证据排在前面。",
+      "5. 构造上下文：把选中的文档片段、来源、用户问题和回答要求组合成 prompt。",
+      "6. 生成回答：大模型基于上下文生成答案，尽量引用检索到的证据，避免凭空编造。",
+      "7. 验证与后处理：检查回答是否覆盖问题、是否基于证据、是否有遗漏或冲突；必要时重新检索或让用户澄清。",
+      "",
+      "影响质量的关键环节通常是召回质量、chunk 切分、embedding/检索策略、reranker 效果、上下文长度控制和答案是否忠实于证据。",
+      "",
+      "简要总结：RAG = 用户问题 -> 检索相关资料 -> 重排筛选 -> 构造上下文 -> LLM 生成 -> 验证答案。",
     ].join("\n");
   }
   return [

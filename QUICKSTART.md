@@ -88,7 +88,7 @@ npm run workflow:run-profile -- --profile task-solving --task "解释一下咖�
 This preserves `TaskBrief.userRequest`, sets `expectedDeliverable.type=answer`, makes Executor return `deliverable.content`, and makes Verifier reject meta-only output.
 Each role also writes subagent artifacts under `.workflow-runs/<runId>/subagents/<subAgentId>/`, and the Role Timeline reports `subAgentDispatched`, artifact paths, and whether the node was mock or LLM-backed.
 
-The default text output includes `AgentFlow Profile Run`, `Routing Decision`, `AgentFlow Role Timeline`, summary paths, trace paths, context paths, warnings, and next actions. In OpenCode, use `agentflow <task>` so the plugin calls `agentflow_run_profile_workflow` and shows that formatted runtime result instead of displaying internal command instructions.
+The default text output includes `AgentFlow Profile Run`, `Routing Decision`, `AgentFlow Role Timeline`, summary paths, trace paths, context paths, warnings, and next actions. In OpenCode, use `/workflow <task>` or `/agentflow <task>` so the plugin calls `agentflow_run_profile_workflow` and shows that formatted runtime result instead of displaying internal command instructions.
 
 To see a runtime-verified multi-agent workforce, run:
 
@@ -100,6 +100,15 @@ npm run mcp:agentflow:smoke
 The Role Timeline is built from `trace.json`. No trace means no displayed AgentFlow role.
 Timeline rows include `executorType`, `isMock`, `isLLMBacked`, `modelProvider`, `modelName`, and `callStatus` when available. `executorType: mock` is labeled as `mock simulation, not LLM-backed`; `executorType: llm` is labeled as LLM-backed only when a matching LLM call record exists.
 
+To inspect the OpenCode native subagent bridge:
+
+```bash
+npm run opencode:subagents
+npm run workflow:run-profile -- --profile agent-workforce-opencode --task "演示 OpenCode native subagents"
+```
+
+This is a hybrid proof. It writes AgentFlow internal subagent artifacts and reports OpenCode native availability. In the current OpenCode API, programmatic native dispatch is unavailable, so the verified output should say `openCodeNativeSubAgent=false` and must not show a fake `openCodeTaskId`.
+
 To run the goal-driven adaptive loop:
 
 ```bash
@@ -109,13 +118,14 @@ npm run workflow:run-profile -- --profile goal-driven-task-solving --task "解�
 
 If the first attempt passes verification, the loop ends immediately. If verification fails with a repairable reason, the controller chooses the next safe untried route; attempts are recorded under `.workflow-runs/<runId>/attempts/`.
 
-For OpenCode, restart the app after config changes and confirm the `agentflow` MCP tools are visible. The recommended entry is:
+For OpenCode, restart the app after config changes and confirm the `agentflow` MCP tools are visible. The reliable entries are:
 
 ```text
-agentflow 检查项目目前有什么不足
+/workflow 检查项目目前有什么不足
+/agentflow 检查项目目前有什么不足
 ```
 
-It should call `agentflow_run_profile_workflow` and display only its `formattedText`, including `AgentFlow Runtime`, `Runtime Proof`, `Role Timeline`, `summaryPath`, and `tracePath`. If `<auto-slash-command>` appears, an old markdown `/workflow` command is still installed or the wrong entry was used.
+They should call `agentflow_run_profile_workflow` and display only its `formattedText`, including `AgentFlow Runtime`, `Runtime Proof`, `Role Timeline`, `summaryPath`, and `tracePath`. Plain `agentflow <task>` is only best effort in current OpenCode builds because ordinary chat messages cannot reliably abort model routing before a provider call. If `<auto-slash-command>` appears, an old markdown `/workflow` command is still installed.
 
 Inspect the opt-in LLM-backed workforce profile without calling a provider:
 
@@ -132,7 +142,7 @@ npm run workflow:run-profile -- \
   --allow-llm
 ```
 
-`agent-workforce-basic` is a mock subagent simulation. `agent-workforce-llm` uses a real provider for Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper; Executor remains answer-only mock simulation and does not call CodeExecutor. DeepSeek is the default pilot provider, and `openai-compatible` is accepted when fully configured.
+`agent-workforce-basic` is a mock subagent simulation. `agent-workforce-llm` uses a real provider for Planner, Debater, PlannerRevision, Executor, Verifier, and optional GoalKeeper. Executor is answer-only and does not call CodeExecutor. DeepSeek is the default pilot provider, and `openai-compatible` is accepted when fully configured.
 
 If the run asks for scope confirmation, inspect and resume the profile session:
 

@@ -22,8 +22,8 @@ This means:
 - `.opencode/tools/run_profile_workflow.ts` is also a compatibility wrapper and should not register a duplicate custom tool.
 - `mcp/agentflow-mcp-server.ts` is the actual runtime tool provider.
 - `mcp/agentflow-server.ts` is a compatibility wrapper.
-- `npm run opencode:check` verifies file shape, MCP config, workflow interceptor registration, and that the old markdown `/workflow` command is not registered, but a live opencode session must still be restarted to pick up MCP/plugin config changes.
-- `.opencode/plugins/agentflow-workflow-interceptor.ts` owns the `agentflow <task>` and `@agentflow <task>` entries. It calls the MCP dispatcher directly and avoids the markdown slash command prompt path.
+- `npm run opencode:check` verifies file shape, MCP config, workflow interceptor registration, minimal `/workflow` and `/agentflow` config commands, and that the old markdown `/workflow` command is not registered, but a live opencode session must still be restarted to pick up MCP/plugin config changes.
+- `.opencode/plugins/agentflow-workflow-interceptor.ts` owns the `/workflow <task>` and `/agentflow <task>` command entries. It calls the MCP dispatcher directly and avoids the markdown slash command prompt path. Plain `agentflow <task>` remains best effort because ordinary chat messages cannot reliably abort OpenCode model routing before a provider call.
 
 ## Expected Tool
 
@@ -45,7 +45,21 @@ Expected behavior:
 
 The AgentFlow entry should not fall back to model analysis, search-mode, or a Supervisor Research Plan. If the MCP tool is unavailable, it should state that AgentFlow Runtime was not started and show the CLI fallback.
 
-Markdown `/workflow` is not an execution entry. If OpenCode displays `<auto-slash-command>`, an old project or global markdown command is still installed and must be removed.
+Markdown `/workflow` is not an execution entry. `/workflow` is supported only as a minimal config command intercepted by the plugin. If OpenCode displays `<auto-slash-command>`, an old project or global markdown command is still installed and must be removed.
+
+## Native Subagent Registration
+
+OpenCode native subagent definitions live in `.opencode/agents/agentflow-*.md`; the AgentFlow role mapping is `config/opencode-subagents.json`.
+
+These files let OpenCode recognize manual native subagents such as `@agentflow-planner`. They do not by themselves create clickable OpenCode task records for an AgentFlow run. `core/opencode/OpenCodeSubAgentBridge.ts` records the intended native dispatch request, but currently returns `nativeDispatchStatus=unavailable` because OpenCode does not expose a documented programmatic dispatch API or task/session id reader in the installed plugin surface.
+
+Use:
+
+```bash
+npm run opencode:subagents
+```
+
+to verify mapping status and limitations.
 
 ## Fallback
 

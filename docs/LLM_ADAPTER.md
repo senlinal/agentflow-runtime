@@ -80,7 +80,7 @@ Do not commit `.env`. API keys, tokens, and provider error bodies are sanitized 
 
 ## Running an LLM Workflow
 
-`workflows/abcde-basic.llm.json` is an opt-in template named `abcde-basic-llm`. It is not used by default demos. In the `agent-workforce-llm` pilot, Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper are LLM nodes. Executor remains an answer-only mock simulation node and does not call CodeExecutor.
+`workflows/abcde-basic.llm.json` is an opt-in template named `abcde-basic-llm`. It is not used by default demos. In the `agent-workforce-llm` pilot, Planner, Debater, PlannerRevision, Executor, Verifier, and optional GoalKeeper are LLM nodes. Executor is answer-only and does not call CodeExecutor.
 
 ```bash
 AGENTFLOW_LLM_PROVIDER=openai-compatible \
@@ -176,6 +176,6 @@ Tests use fake `fetch` responses and never call external APIs. Existing demo wor
 
 - Real providers currently supported: `openai-compatible` and `deepseek`.
 - DeepSeek uses the OpenAI-compatible adapter under the hood.
-- The LLM workforce pilot does not use CodeExecutor; its Executor role is a safe mock simulation.
+- The LLM workforce pilot does not use CodeExecutor; its Executor role is LLM-backed but answer-only.
 - There is no UI.
 - Real model output can still be inconsistent; schema validation remains the final gate before context writes.

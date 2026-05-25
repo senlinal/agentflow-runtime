@@ -2,6 +2,7 @@ import { access, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join, isAbsolute, relative } from "node:path";
 import { agentFlowPath, agentFlowRoot } from "../AgentFlowPaths.ts";
 import { WorkflowTemplateRegistry } from "../WorkflowTemplateRegistry.ts";
+import type { SubAgentDispatchMode } from "../types.ts";
 
 export type CurrentWorkflowProfile = {
   activeProfile: string;
@@ -26,6 +27,8 @@ export type WorkflowProfile = {
   defaultOutput?: string[];
   externalProjectMode?: string;
   patchFlow?: string[];
+  dispatchMode?: SubAgentDispatchMode;
+  requiresOpenCodeSubagents?: boolean;
 };
 
 export type WorkflowProfileValidationResult = {

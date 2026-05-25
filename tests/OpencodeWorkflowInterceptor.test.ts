@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { AgentFlowWorkflowInterceptor } from "../.opencode/plugins/agentflow-workflow-interceptor.ts";
 import {
-  AgentFlowWorkflowInterceptor,
+  buildToolInstruction,
+  extractFormattedText,
   fallbackText,
   parseAgentFlowEntry,
   parseWorkflowCommand,
   type WorkflowToolCaller,
-} from "../.opencode/plugins/agentflow-workflow-interceptor.ts";
+} from "../adapters/opencode/AgentFlowWorkflowInterceptorCore.ts";
 
 describe("opencode workflow interceptor", () => {
   it("parses agentflow task text", () => {
@@ -30,10 +32,28 @@ describe("opencode workflow interceptor", () => {
     });
   });
 
+  it("parses explicit no-mock workflow text as LLM-backed opt-in", () => {
+    assert.deepEqual(parseAgentFlowEntry("/workflow 不要mock 给我解释咖啡的相关知识"), {
+      profile: "agent-workforce-llm",
+      task: "给我解释咖啡的相关知识",
+      allowLLM: true,
+    });
+    assert.deepEqual(parseAgentFlowEntry("agentflow --allow-llm 给我解释咖啡的相关知识"), {
+      profile: "agent-workforce-llm",
+      task: "给我解释咖啡的相关知识",
+      allowLLM: true,
+    });
+  });
+
   it("parses agentflow run profile task text", () => {
     assert.deepEqual(parseAgentFlowEntry("agentflow run agent-workforce-basic 演示 Planner、Debater、Executor、Verifier 多角色协作"), {
       profile: "agent-workforce-basic",
       task: "演示 Planner、Debater、Executor、Verifier 多角色协作",
+    });
+    assert.deepEqual(parseAgentFlowEntry("agentflow run agent-workforce-llm 给我解释咖啡的相关知识"), {
+      profile: "agent-workforce-llm",
+      task: "给我解释咖啡的相关知识",
+      allowLLM: true,
     });
   });
 
@@ -50,7 +70,7 @@ describe("opencode workflow interceptor", () => {
     assert.equal(parseAgentFlowEntry("请正常分析这个项目"), undefined);
   });
 
-  it("calls agentflow_run_profile_workflow and returns formattedText", async () => {
+  it("turns /workflow into a visible MCP tool instruction", async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
     const toolCaller: WorkflowToolCaller = async (name, args) => {
       calls.push({ name, args });
@@ -67,21 +87,16 @@ describe("opencode workflow interceptor", () => {
       arguments: "run agent-workforce-basic 演示 Planner、Debater、Executor、Verifier 多角色协作",
     }, output);
 
-    assert.deepEqual(calls, [{
-      name: "agentflow_run_profile_workflow",
-      args: {
-        profile: "agent-workforce-basic",
-        task: "演示 Planner、Debater、Executor、Verifier 多角色协作",
-        allowExecution: false,
-        allowLLM: false,
-      },
-    }]);
+    assert.deepEqual(calls, []);
     assert.equal(output.parts.length, 1);
     assert.equal(output.parts[0].type, "text");
-    assert.equal(output.parts[0].text, "AgentFlow Runtime\nRole Timeline\ntrace: /tmp/trace.json");
+    assert.match(String(output.parts[0].text), /agentflow_run_profile_workflow/);
+    assert.match(String(output.parts[0].text), /"profile":"agent-workforce-basic"/);
+    assert.match(String(output.parts[0].text), /"allowLLM":false/);
+    assert.match(String(output.parts[0].text), /display only `formattedText` exactly/);
   });
 
-  it("intercepts plugin-owned agentflow chat messages", async () => {
+  it("turns plugin-owned agentflow chat messages into MCP tool instructions", async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
     const hooks = await AgentFlowWorkflowInterceptor({
       toolCaller: async (name, args) => {
@@ -95,19 +110,46 @@ describe("opencode workflow interceptor", () => {
 
     await hooks["chat.message"]({ sessionID: "test" }, output);
 
-    assert.deepEqual(calls, [{
-      name: "agentflow_run_profile_workflow",
-      args: {
-        profile: "agent-workforce-basic",
-        task: "检查 garbage_item_upload 项目目前有什么不足",
-        allowExecution: false,
-        allowLLM: false,
-      },
-    }]);
-    assert.equal(output.parts[0].text, "AgentFlow Runtime\nruntimeStarted=true\nRole Timeline");
+    assert.deepEqual(calls, []);
+    assert.match(String(output.parts[0].text), /agentflow_run_profile_workflow/);
+    assert.match(String(output.parts[0].text), /"task":"检查 garbage_item_upload 项目目前有什么不足"/);
+    assert.match(String(output.parts[0].text), /"allowExecution":false/);
   });
 
-  it("returns explicit CLI fallback when MCP tool is unavailable", async () => {
+  it("keeps /workflow command executions on the safe basic profile", async () => {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const hooks = await AgentFlowWorkflowInterceptor({
+      toolCaller: async (name, args) => {
+        calls.push({ name, args });
+        return { formattedText: "AgentFlow 工作流完成\n说明: 本次为 mock subagent simulation" };
+      },
+    });
+    const output = { parts: [] as Array<Record<string, unknown>> };
+
+    await hooks["command.execute.before"]({
+      command: "workflow",
+      arguments: "不要mock 给我解释咖啡的相关知识",
+    }, output);
+
+    assert.deepEqual(calls, []);
+    assert.match(String(output.parts[0].text), /"profile":"agent-workforce-basic"/);
+    assert.match(String(output.parts[0].text), /"allowLLM":false/);
+  });
+
+  it("uses the explicit /workflow-llm command for real LLM opt-in", async () => {
+    const hooks = await AgentFlowWorkflowInterceptor();
+    const output = { parts: [] as Array<Record<string, unknown>> };
+
+    await hooks["command.execute.before"]({
+      command: "workflow-llm",
+      arguments: "给我解释咖啡的相关知识",
+    }, output);
+
+    assert.match(String(output.parts[0].text), /"profile":"agent-workforce-llm"/);
+    assert.match(String(output.parts[0].text), /"allowLLM":true/);
+  });
+
+  it("includes explicit CLI fallback in the visible instruction", async () => {
     const hooks = await AgentFlowWorkflowInterceptor({
       toolCaller: async () => {
         throw new Error("missing tool");
@@ -121,7 +163,7 @@ describe("opencode workflow interceptor", () => {
     }, output);
 
     const text = String(output.parts[0].text);
-    assert.equal(text, fallbackText("检查 garbage_item_upload 项目目前有什么不足"));
+    assert.match(text, /If the MCP tool is unavailable/);
     assert.match(text, /AgentFlow Runtime was not started\./);
     assert.match(text, /agentflow_run_profile_workflow MCP tool is unavailable/);
     assert.match(text, /npm run workflow:run-profile -- --profile agent-workforce-basic --task "检查 garbage_item_upload 项目目前有什么不足"/);
@@ -142,5 +184,67 @@ describe("opencode workflow interceptor", () => {
     await hooks["command.execute.before"]({ command: "other", arguments: "anything" }, output);
 
     assert.deepEqual(output.parts, []);
+  });
+
+  it("intercepts /agentflow command executions as a hard command path", async () => {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const hooks = await AgentFlowWorkflowInterceptor({
+      toolCaller: async (name, args) => {
+        calls.push({ name, args });
+        return { formattedText: "AgentFlow Runtime\nRuntime Proof\nRole Timeline" };
+      },
+    });
+    const output = { parts: [] as Array<Record<string, unknown>> };
+
+    await hooks["command.execute.before"]({
+      command: "agentflow",
+      arguments: "检查项目不足",
+    }, output);
+
+    assert.deepEqual(calls, []);
+    assert.match(String(output.parts[0].text), /agentflow_run_profile_workflow/);
+    assert.match(String(output.parts[0].text), /"task":"检查项目不足"/);
+  });
+
+  it("builds the exact visible instruction for the model/MCP path", () => {
+    const instruction = buildToolInstruction({
+      profile: "agent-workforce-llm",
+      task: "给我解释咖啡的相关知识",
+      allowLLM: true,
+    });
+
+    assert.match(instruction, /agentflow_run_profile_workflow/);
+    assert.match(instruction, /"profile":"agent-workforce-llm"/);
+    assert.match(instruction, /"allowLLM":true/);
+    assert.match(instruction, /display only `formattedText` exactly/);
+  });
+
+  it("captures workflow tool output and replaces final text with formattedText", async () => {
+    const hooks = await AgentFlowWorkflowInterceptor();
+    const output = {
+      metadata: {
+        structuredContent: {
+          formattedText: "AgentFlow Runtime\nAgentFlow 角色发言流\nPlanner [mock simulation]",
+        },
+      },
+    };
+    await hooks["tool.execute.after"]({
+      tool: "agentflow_agentflow_run_profile_workflow",
+      sessionID: "session",
+      callID: "call",
+      args: {},
+    }, output);
+    const complete = { text: "Workflow 完成，经过 5 个角色。" };
+
+    await hooks["experimental.text.complete"]({ sessionID: "session" }, complete);
+
+    assert.equal(complete.text, "AgentFlow Runtime\nAgentFlow 角色发言流\nPlanner [mock simulation]");
+  });
+
+  it("extracts formattedText from MCP-style output strings", () => {
+    assert.equal(
+      extractFormattedText(JSON.stringify({ formattedText: "AgentFlow Runtime\nRole Speech" })),
+      "AgentFlow Runtime\nRole Speech",
+    );
   });
 });

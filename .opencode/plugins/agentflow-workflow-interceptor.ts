@@ -1,107 +1,78 @@
-import { callAgentFlowTool } from "../../mcp/agentflow-mcp-server.ts";
+import {
+  buildToolInstruction,
+  DEFAULT_PROFILE,
+  extractFormattedText,
+  LLM_PROFILE,
+  parseAgentFlowEntry,
+  parseWorkflowCommand,
+  type WorkflowToolCaller,
+} from "../../adapters/opencode/AgentFlowWorkflowInterceptorCore.ts";
 
-export type WorkflowInterceptorCommand = {
-  task?: string;
-  profile?: string;
-  resume?: boolean;
-  answer?: string;
-};
-
-export type WorkflowToolCaller = (name: string, args: Record<string, unknown>) => Promise<unknown>;
-
+const COMMANDS = new Set(["workflow", "agentflow", "workflow-llm", "agentflow-llm"]);
+const LLM_COMMANDS = new Set(["workflow-llm", "agentflow-llm"]);
 const WORKFLOW_TOOL = "agentflow_run_profile_workflow";
-const DEFAULT_PROFILE = "agent-workforce-basic";
-const DEFAULT_TASK = "演示 AgentFlow 多角色协作";
-const ENTRY_PREFIX_RE = /^(?:\/workflow|@?agentflow)\b/i;
+const latestFormattedTextBySession = new Map<string, string>();
 
 export async function AgentFlowWorkflowInterceptor(input: {
   toolCaller?: WorkflowToolCaller;
 } = {}) {
-  const toolCaller = input.toolCaller ?? callAgentFlowTool;
+  void input;
   return {
     name: "agentflow-workflow-interceptor",
+    async config() {},
     async "chat.message"(
-      _input: { sessionID?: string },
-      output: { parts: Array<Record<string, unknown>> },
+      _input: { sessionID?: string } = {},
+      output: { parts?: Array<Record<string, unknown>> } = {},
     ) {
-      const text = textFromParts(output.parts);
+      const text = textFromParts(output.parts ?? []);
       const parsed = parseAgentFlowEntry(text);
       if (!parsed) return;
-      output.parts = [textPart(await runWorkflowEntry(toolCaller, parsed))];
+      output.parts = [textPart(buildToolInstruction(parsed))];
     },
     async "command.execute.before"(
-      commandInput: { command: string; arguments?: string },
-      output: { parts: Array<Record<string, unknown>> },
+      commandInput: { command?: string; sessionID?: string; arguments?: unknown } = {},
+      output: { parts?: Array<Record<string, unknown>> } = {},
     ) {
-      if (commandInput.command !== "workflow") return;
+      if (typeof commandInput.command !== "string") return;
+      if (!COMMANDS.has(commandInput.command)) return;
       const parsed = parseWorkflowCommand(commandInput.arguments ?? "");
-      output.parts = [textPart(await runWorkflowEntry(toolCaller, parsed))];
+      if (LLM_COMMANDS.has(commandInput.command)) {
+        parsed.profile = LLM_PROFILE;
+        parsed.allowLLM = true;
+      } else {
+        parsed.profile = DEFAULT_PROFILE;
+        parsed.allowLLM = false;
+      }
+      output.parts = [textPart(buildToolInstruction(parsed))];
+    },
+    async "tool.execute.after"(
+      input: { tool?: string; sessionID?: string } = {},
+      output: { output?: string; metadata?: unknown } = {},
+    ) {
+      if (!input.tool) return;
+      if (!isAgentFlowWorkflowTool(input.tool)) return;
+      const formatted = extractFormattedText(output.metadata) ?? extractFormattedText(output.output);
+      if (formatted) rememberFormattedText(input.sessionID, formatted);
+    },
+    async "experimental.text.complete"(
+      input: { sessionID?: string } = {},
+      output: { text?: string } = {},
+    ) {
+      const formatted = input.sessionID ? latestFormattedTextBySession.get(input.sessionID) : undefined;
+      if (!formatted) return;
+      output.text = formatted;
+      latestFormattedTextBySession.delete(input.sessionID);
     },
   };
 }
 
-export default AgentFlowWorkflowInterceptor;
-
-export function parseAgentFlowEntry(input: string): WorkflowInterceptorCommand | undefined {
-  const text = input.trim();
-  if (!ENTRY_PREFIX_RE.test(text)) return undefined;
-  return parseWorkflowCommand(text.replace(ENTRY_PREFIX_RE, "").trim());
+function rememberFormattedText(sessionID: string | undefined, formattedText: string): void {
+  if (!sessionID || !formattedText.includes("AgentFlow")) return;
+  latestFormattedTextBySession.set(sessionID, formattedText);
 }
 
-export function parseWorkflowCommand(input: string): WorkflowInterceptorCommand {
-  const text = input.replace(ENTRY_PREFIX_RE, "").trim();
-  const resumePrefix = "回答上一轮问题：";
-  if (text.startsWith(resumePrefix)) {
-    const answer = text.slice(resumePrefix.length).trim();
-    return { profile: DEFAULT_PROFILE, resume: true, answer, task: answer };
-  }
-
-  const tokens = text.split(/\s+/).filter(Boolean);
-  if (tokens[0] === "run" && tokens[1]) {
-    return {
-      profile: tokens[1],
-      task: tokens.slice(2).join(" ").trim() || DEFAULT_TASK,
-    };
-  }
-
-  return {
-    profile: DEFAULT_PROFILE,
-    task: text || DEFAULT_TASK,
-  };
-}
-
-export function fallbackText(task: string): string {
-  return [
-    "AgentFlow Runtime was not started.",
-    "Reason: agentflow_run_profile_workflow MCP tool is unavailable.",
-    "Fallback:",
-    `npm run workflow:run-profile -- --profile ${DEFAULT_PROFILE} --task "${escapeShellDoubleQuoted(task)}"`,
-  ].join("\n");
-}
-
-export async function runWorkflowEntry(toolCaller: WorkflowToolCaller, parsed: WorkflowInterceptorCommand): Promise<string> {
-  const task = parsed.task ?? parsed.answer ?? DEFAULT_TASK;
-  try {
-    const result = await toolCaller(WORKFLOW_TOOL, {
-      ...(task ? { task } : {}),
-      profile: parsed.profile ?? DEFAULT_PROFILE,
-      ...(parsed.resume ? { resume: true } : {}),
-      ...(parsed.answer ? { answer: parsed.answer } : {}),
-      allowExecution: false,
-      allowLLM: false,
-    });
-    return formattedText(result, task);
-  } catch {
-    return fallbackText(task);
-  }
-}
-
-function formattedText(result: unknown, task: string): string {
-  if (result && typeof result === "object" && "formattedText" in result) {
-    const value = (result as { formattedText?: unknown }).formattedText;
-    if (typeof value === "string" && value.trim()) return value;
-  }
-  return fallbackText(task);
+function isAgentFlowWorkflowTool(tool: string): boolean {
+  return tool === WORKFLOW_TOOL || tool.endsWith(`_${WORKFLOW_TOOL}`) || tool === "run_profile_workflow" || tool.endsWith("_run_profile_workflow");
 }
 
 function textPart(text: string): Record<string, unknown> {
@@ -114,8 +85,4 @@ function textFromParts(parts: Array<Record<string, unknown>>): string {
     .map((part) => String(part.text))
     .join("\n")
     .trim();
-}
-
-function escapeShellDoubleQuoted(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\$/g, "\\$").replace(/`/g, "\\`");
 }

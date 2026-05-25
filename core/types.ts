@@ -795,6 +795,14 @@ export type WorkflowTrace = {
   outputArtifactPath?: string;
   subAgentMetadataPath?: string;
   subAgentTraceSource?: "subagent_dispatch_trace";
+  dispatchMode?: SubAgentDispatchMode;
+  internalSubAgentDispatched?: boolean;
+  openCodeNativeSubAgent?: boolean;
+  openCodeAgentName?: string;
+  openCodeTaskId?: string;
+  openCodeSessionId?: string;
+  nativeDispatchStatus?: OpenCodeSubAgentDispatchResult["status"];
+  nativeDispatchLimitations?: string[];
   attemptNumber?: number;
   routeId?: string;
   attemptDecision?: AttemptDecision["decision"];
@@ -809,6 +817,22 @@ export type WorkflowTrace = {
   nextNode: string;
   timestamp: string;
   error?: string;
+};
+
+export type SubAgentDispatchMode = "internal" | "opencode-native" | "hybrid";
+
+export type OpenCodeSubAgentDispatchResult = {
+  dispatchId: string;
+  role: AgentRole;
+  nodeId: string;
+  openCodeAgentName: string;
+  openCodeTaskId?: string;
+  openCodeSessionId?: string;
+  status: "dispatched" | "completed" | "failed" | "unavailable";
+  inputPromptPath: string;
+  outputPath?: string;
+  limitations: string[];
+  createdAt: string;
 };
 
 export type WorkflowContext = TaskSpec & {
@@ -865,6 +889,7 @@ export type RuntimeMetadata = {
     runDir?: string;
     attemptsDir?: string;
   };
+  subAgentDispatchMode?: SubAgentDispatchMode;
   e2eRealProject?: Record<string, unknown>;
   externalProject?: Record<string, unknown>;
   patchExport?: Record<string, unknown>;
@@ -891,6 +916,15 @@ export type SubAgentDispatchMetadata = {
   metadataPath: string;
   promptPath?: string;
   summaryPath?: string;
+  dispatchMode?: SubAgentDispatchMode;
+  internalSubAgentDispatched?: boolean;
+  openCodeNativeSubAgent?: boolean;
+  openCodeAgentName?: string;
+  openCodeTaskId?: string;
+  openCodeSessionId?: string;
+  nativeDispatchStatus?: OpenCodeSubAgentDispatchResult["status"];
+  nativeDispatchLimitations?: string[];
+  openCodeNativeDispatch?: OpenCodeSubAgentDispatchResult;
 };
 
 export type RoleSpeech = {

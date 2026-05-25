@@ -19,6 +19,8 @@ const configDir = resolve(process.env.OPENCODE_CONFIG_DIR || join(homedir(), ".c
 const configPath = join(configDir, "opencode.json");
 const commandDir = join(configDir, "commands");
 const agentsDir = join(configDir, "agents");
+const basicAgentFlowCommandTemplate = "Call only MCP tool `agentflow_run_profile_workflow` now with task `$ARGUMENTS`, profile `agent-workforce-basic`, allowExecution=false, allowLLM=false. Do not call agentflow_list_profiles. Do not read summaryPath or tracePath. After the tool returns, display only the tool result field `formattedText` exactly as returned. Do not summarize it. Do not create a Supervisor plan. Do not search. Do not call CodeExecutor.";
+const llmAgentFlowCommandTemplate = "Call only MCP tool `agentflow_run_profile_workflow` now with task `$ARGUMENTS`, profile `agent-workforce-llm`, allowExecution=false, allowLLM=true. Do not call agentflow_list_profiles. Do not read summaryPath or tracePath. After the tool returns, display only the tool result field `formattedText` exactly as returned. Do not summarize it. Do not create a Supervisor plan. Do not search. Do not call CodeExecutor.";
 
 const nextConfig = await buildConfig(configPath);
 const writes = [
@@ -43,7 +45,7 @@ await cp(join(root, ".opencode", "agents"), agentsDir, { recursive: true, force:
 
 console.log(`Installed AgentFlow OpenCode integration to ${configDir}`);
 console.log(`AgentFlow root: ${root}`);
-console.log("Restart OpenCode, then use: agentflow <task>");
+console.log("Restart OpenCode, then use: /workflow <task>. For real LLM, use: /workflow-llm <task>.");
 
 async function buildConfig(path: string): Promise<OpenCodeConfig> {
   const existing = await readJson(path);
@@ -57,11 +59,11 @@ async function buildConfig(path: string): Promise<OpenCodeConfig> {
   return {
     $schema: existing.$schema ?? "https://opencode.ai/config.json",
     ...existing,
-    plugin: mergePlugins(existing.plugin, [
+    plugin: mergePlugins(existing.plugin,
       join(root, ".opencode", "plugins", "agentflow-policy.ts"),
       join(root, ".opencode", "plugins", "agentflow-workflow-interceptor.ts"),
-    ]),
-    command: withoutWorkflowCommand(existing.command),
+    ),
+    command: withAgentFlowCommands(existing.command),
     mcp: {
       ...(existing.mcp ?? {}),
       agentflow: {
@@ -94,16 +96,39 @@ function taskPermission(value: unknown): Record<string, unknown> {
   return { "*": "deny" };
 }
 
-function mergePlugins(existing: OpenCodeConfig["plugin"], required: string[]): OpenCodeConfig["plugin"] {
+function mergePlugins(existing: OpenCodeConfig["plugin"], policyPlugin: string, workflowPlugin: string): OpenCodeConfig["plugin"] {
   const existingItems = Array.isArray(existing) ? existing : [];
-  const requiredSet = new Set(required);
-  const remaining = existingItems.filter((item) => !requiredSet.has(Array.isArray(item) ? item[0] : item));
-  return [...required, ...remaining];
+  const requiredSet = new Set([policyPlugin, workflowPlugin]);
+  const remaining = existingItems.filter((item) => {
+    const id = Array.isArray(item) ? item[0] : item;
+    return !requiredSet.has(id) && id !== "oh-my-openagent@latest" && !String(id).includes("agentflow-workflow-interceptor-core");
+  });
+  return [policyPlugin, ...remaining, workflowPlugin];
 }
 
-function withoutWorkflowCommand(existing: OpenCodeConfig["command"]): OpenCodeConfig["command"] | undefined {
-  if (!existing || typeof existing !== "object" || Array.isArray(existing)) return existing;
-  const next = { ...existing };
-  delete next.workflow;
-  return Object.keys(next).length > 0 ? next : undefined;
+function withAgentFlowCommands(existing: OpenCodeConfig["command"]): OpenCodeConfig["command"] {
+  const base = existing && typeof existing === "object" && !Array.isArray(existing) ? existing : {};
+  return {
+    ...base,
+    workflow: {
+      template: basicAgentFlowCommandTemplate,
+      description: "Run AgentFlow workflow through the AgentFlow MCP tool",
+      subtask: false,
+    },
+    agentflow: {
+      template: basicAgentFlowCommandTemplate,
+      description: "Run AgentFlow workflow through the AgentFlow MCP tool",
+      subtask: false,
+    },
+    "workflow-llm": {
+      template: llmAgentFlowCommandTemplate,
+      description: "Run real LLM-backed AgentFlow workflow through the AgentFlow MCP tool",
+      subtask: false,
+    },
+    "agentflow-llm": {
+      template: llmAgentFlowCommandTemplate,
+      description: "Run real LLM-backed AgentFlow workflow through the AgentFlow MCP tool",
+      subtask: false,
+    },
+  };
 }

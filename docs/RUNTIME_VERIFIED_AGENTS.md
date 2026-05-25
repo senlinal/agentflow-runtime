@@ -10,7 +10,7 @@ Text such as `[Planner]` or `Supervisor plan` is not proof that an AgentFlow rol
 source=runtime_trace
 ```
 
-Each timeline row also shows `nodeType`, `executorType`, `isMock`, `isLLMBacked`, `modelProvider`, `modelName`, `callStatus`, and the configured OpenCode subagent target when those fields exist. `executorType` is read from the runtime trace, which is written from the workflow node configuration. It is not inferred from model prose.
+Each timeline row also shows `nodeType`, `executorType`, `isMock`, `isLLMBacked`, `modelProvider`, `modelName`, `callStatus`, and the configured OpenCode subagent target when those fields exist. For OpenCode bridge profiles, rows also show `dispatchMode`, `openCodeNativeSubAgent`, `openCodeAgentName`, `nativeDispatchStatus`, and limitations. `executorType` is read from the runtime trace, which is written from the workflow node configuration. It is not inferred from model prose.
 
 If no trace exists, the formatter must say:
 
@@ -46,7 +46,7 @@ The profile runs `abcde-basic`, whose runtime nodes include Planner, Debater, Pl
 
 These nodes use `executorType: mock`, so the timeline explicitly says `mock simulation, not LLM-backed`. This proves the orchestration node is real while making clear the role intelligence is simulated.
 
-OpenCode subagents for AgentFlow roles live under `.opencode/agents/agentflow-*.md`. The `/workflow` command must first run AgentFlow Runtime, then dispatch an OpenCode Task subagent only for roles that appear in the runtime trace. This prevents a primary agent from inventing roles while still creating real child sessions for visible roles.
+OpenCode subagents for AgentFlow roles live under `.opencode/agents/agentflow-*.md`. These are native OpenCode `mode: subagent` definitions. AgentFlow internal subagent artifacts are separate from OpenCode native subagent tasks. In the current OpenCode plugin API, AgentFlow cannot programmatically create a native subagent task or read an OpenCode task id, so the bridge reports `nativeDispatchStatus=unavailable` instead of inventing a child session.
 
 The OpenCode MCP smoke path returns the same runtime-proofed timeline:
 
@@ -58,7 +58,7 @@ The MCP tool must still obey: No trace, no agent.
 
 ## Agent Workforce LLM Profile
 
-`agent-workforce-llm` points to `abcde-basic-llm`. In the current pilot, Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper are configured as `type: "llm"` roles. Executor remains `type: "mock"` as a safe answer-only deliverable generator, so the pilot can answer a small task without invoking CodeExecutor, external project execution, file writes, or destructive actions.
+`agent-workforce-llm` points to `abcde-basic-llm`. In the current pilot, Planner, Debater, PlannerRevision, Executor, Verifier, and optional GoalKeeper are configured as `type: "llm"` roles. Executor is still answer-only, so the pilot can answer a small task without invoking CodeExecutor, external project execution, file writes, or destructive actions.
 
 Inspect it without calling a real model:
 
@@ -105,3 +105,14 @@ To verify a displayed role:
 4. Confirm `executorType` matches the workflow node type.
 
 No trace entry means no displayed AgentFlow role.
+
+## OpenCode Native Subagent Bridge
+
+Inspect the bridge with:
+
+```bash
+npm run opencode:subagents
+npm run workflow:run-profile -- --profile agent-workforce-opencode --task "演示 OpenCode native subagents"
+```
+
+`agent-workforce-opencode` uses `dispatchMode=hybrid`: it keeps AgentFlow internal artifacts and records OpenCode native dispatch availability. Until OpenCode exposes programmatic dispatch and task/session id APIs, `openCodeNativeSubAgent=false` is the correct verified state.

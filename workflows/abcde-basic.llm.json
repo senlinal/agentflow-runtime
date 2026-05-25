@@ -1,7 +1,7 @@
 {
   "name": "abcde-basic-llm",
   "version": "1.0.0",
-  "description": "Opt-in ABCDE workflow using real LLM nodes for Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper while Executor remains safe answer-only mock simulation.",
+  "description": "Opt-in ABCDE workflow using real LLM nodes for Planner, Debater, PlannerRevision, Executor, Verifier, and optional GoalKeeper. Executor is answer-only and must not call CodeExecutor or modify files.",
   "start": "planner",
   "maxIterations": 6,
   "inputSchema": "TaskBrief",
@@ -26,7 +26,7 @@
     { "rolePreset": "planner", "type": "llm", "retryPolicy": { "maxAttempts": 2, "backoffMs": 100 } },
     { "rolePreset": "debater", "type": "llm", "retryPolicy": { "maxAttempts": 2, "backoffMs": 100 } },
     { "rolePreset": "planner-revision", "type": "llm", "retryPolicy": { "maxAttempts": 2, "backoffMs": 100 } },
-    { "rolePreset": "executor", "type": "mock" },
+    { "rolePreset": "executor", "type": "llm", "retryPolicy": { "maxAttempts": 2, "backoffMs": 100 } },
     { "rolePreset": "verifier", "type": "llm", "retryPolicy": { "maxAttempts": 2, "backoffMs": 100 } },
     { "rolePreset": "goalkeeper", "type": "llm", "retryPolicy": { "maxAttempts": 2, "backoffMs": 100 } }
   ],

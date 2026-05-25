@@ -4,7 +4,7 @@ This document keeps the detailed `/workflow` behavior out of the slash command f
 
 ## Runtime Entry
 
-`agentflow <task>` is handled by `.opencode/plugins/agentflow-workflow-interceptor.ts`. The interceptor invokes `agentflow_run_profile_workflow` first and shows the returned `formattedText`. It must not replace AgentFlow with a generic supervisor plan. Markdown `/workflow` is not the execution entry because OpenCode can expand it into visible `<auto-slash-command>` text before a plugin can hide the template.
+`/workflow <task>` and `/agentflow <task>` are handled by `.opencode/plugins/agentflow-workflow-interceptor.ts`. The interceptor invokes `agentflow_run_profile_workflow` first and shows the returned `formattedText`. It must not replace AgentFlow with a generic supervisor plan. Markdown `/workflow` files are not the execution entry because OpenCode can expand them into visible `<auto-slash-command>` text before a plugin can hide the template.
 
 The command should not call unavailable planning helpers, unavailable file listing helpers, search-mode, shell fallback, or code execution tools unless the current runtime explicitly exposes them and the workflow state allows them.
 

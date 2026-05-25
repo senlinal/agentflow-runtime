@@ -83,6 +83,7 @@ Important examples:
 - `abcde-basic`: Planner -> Debater -> PlannerRevision -> Executor -> Verifier -> GoalKeeper loop.
 - `abcde-basic-llm`: opt-in LLM node version. It is not used by default.
 - `agent-workforce-task-solving`: Planner -> Debater -> PlannerRevision -> Executor -> Verifier for deliverable-centered general answers.
+- `agent-workforce-opencode` profile: hybrid OpenCode native subagent bridge proof. It does not fabricate OpenCode task ids when native dispatch is unavailable.
 - `code-test-verify`: controlled CodeExecutor -> TestRunner -> deterministic Verifier.
 
 Run a template:
@@ -115,15 +116,16 @@ npm run workflow:profile:inspect -- --profile rag-optimization
 Built-in profiles:
 
 - `rag-optimization`: starts with `task-negotiation`, uses `confirmed-scope-gate`, then proceeds to feasibility. It blocks production index changes, deployment, deletion, and unconfirmed metric changes.
+- `agent-workforce-opencode`: keeps AgentFlow internal subagent artifacts and records whether OpenCode native subagent dispatch is available.
 - `coding-safe-fix`: defaults to the controlled code/test/verify and approval chain for small scoped fixes.
 - `external-project-fix`: copies external projects into temporary workspaces and exports patches for manual review.
 - `frontend-site-build`: handles single-page websites, landing pages, personal sites, HTML/CSS/JS, and lightweight React or Next.js page work. It starts with negotiation and does not deploy, delete files, call real LLMs, or execute code changes by default.
 - `task-solving`: handles explanations, definitions, how-to answers, and conceptual help. It preserves `userRequest`, sets `expectedDeliverable`, and verifies the actual deliverable rather than workflow metadata.
 - `goal-driven-task-solving`: handles answer, analysis, and plan tasks with GoalPlanner, bounded attempts, verifier feedback, attempt records, and AdaptiveExecutionController decisions. It stops after one successful attempt and does not call CodeExecutor or real LLM providers by default.
 - `agent-workforce-basic`: runs `abcde-basic` to visibly demonstrate Planner, Debater, PlannerRevision, Executor, Verifier, and GoalKeeper as runtime-traced roles.
-- `agent-workforce-llm`: opt-in profile for the same visible workforce using `abcde-basic-llm`. Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper are LLM-backed when a real provider is configured; Executor remains a safe answer-only mock simulation and never calls CodeExecutor. Do not run it without explicit `--allow-llm` and real LLM configuration.
+- `agent-workforce-llm`: opt-in profile for the same visible workforce using `abcde-basic-llm`. Planner, Debater, PlannerRevision, Executor, Verifier, and optional GoalKeeper are LLM-backed when a real provider is configured. Executor is answer-only and never calls CodeExecutor or modifies files. Do not run it without explicit `--allow-llm` and real LLM configuration.
 
-The OpenCode `agentflow <task>` entry and `workflow:run-profile` use a rule-based profile router before choosing a default workflow. If `profiles/current.json` points to `rag-optimization` but the user asks for a Claude.ai-style personal website, the runner records `detectedTaskType=frontend_site_build`, recommends `frontend-site-build`, and can safely auto-switch when the user did not explicitly choose a profile. See `docs/WORKFLOW_PROFILES.md`.
+The OpenCode `/workflow <task>` and `/agentflow <task>` entries plus `workflow:run-profile` use a rule-based profile router before choosing a default workflow. If `profiles/current.json` points to `rag-optimization` but the user asks for a Claude.ai-style personal website, the runner records `detectedTaskType=frontend_site_build`, recommends `frontend-site-build`, and can safely auto-switch when the user did not explicitly choose a profile. See `docs/WORKFLOW_PROFILES.md`.
 
 Run the active profile directly from CLI:
 
@@ -136,7 +138,7 @@ npm run workflow:run-profile -- --profile rag-optimization --task "..."
 
 The first implementation runs only safe pre-execution profile steps by default. It will not run CodeExecutor, tests, execution workflows, or real LLM calls unless a later explicit execution path is used.
 
-The text output is formatted by the profile runner and includes `Routing Decision`, `Autonomy Decision`, `AgentFlow Role Timeline`, artifact paths, warnings, and next actions. OpenCode should use the plugin-owned `agentflow <task>` entry and show this runtime result instead of exposing markdown slash command protocol.
+The text output is formatted by the profile runner and includes `Routing Decision`, `Autonomy Decision`, `AgentFlow Role Timeline`, artifact paths, warnings, and next actions. OpenCode should use the plugin-owned `/workflow <task>` or `/agentflow <task>` entry and show this runtime result instead of exposing markdown slash command protocol.
 
 Role timelines are runtime-verified: no trace, no agent. A role appears only when it is present in `trace.json` with `source=runtime_trace` or `source=subagent_dispatch_trace`. Each row shows `nodeType`, `executorType`, `isMock`, `isLLMBacked`, `modelProvider`, `modelName`, and `callStatus` when available, so mock simulations cannot be mistaken for LLM-backed agents. To demonstrate the full multi-agent workforce:
 
@@ -158,7 +160,7 @@ This writes bounded attempt records under `.workflow-runs/<runId>/attempts/` and
 
 For task-solving runs, the Role Timeline also shows subagent dispatch artifact paths, Executor deliverable summaries, and Verifier fidelity flags such as `answersUserRequest` and `isNotMetaOnly`. See `docs/TASK_FIDELITY.md`.
 
-OpenCode should call AgentFlow through the MCP tool `agentflow_run_profile_workflow`, which returns the same runtime proof and role timeline. Markdown `/workflow` is intentionally not the execution entry because OpenCode can expand it into visible `<auto-slash-command>` text. If that appears, remove the old project or global markdown command and use `agentflow <task>`.
+OpenCode should call AgentFlow through the MCP tool `agentflow_run_profile_workflow`, which returns the same runtime proof and role timeline. Use `/workflow <task>` or `/agentflow <task>` after installing the AgentFlow OpenCode integration; these are minimal config commands intercepted by the plugin. Markdown `/workflow` files are intentionally not the execution entry because OpenCode can expand them into visible `<auto-slash-command>` text. Plain `agentflow <task>` is best effort only because ordinary chat messages cannot reliably abort model routing before a provider call.
 
 Inspect the opt-in LLM workforce profile without calling a model:
 
@@ -398,7 +400,7 @@ LLM details:
 - DeepSeek default model is `deepseek-v4-flash`.
 - API keys are read from environment variables and must not be committed.
 - `agent-workforce-basic` is a mock subagent simulation; `agent-workforce-llm` is the opt-in LLM-backed pilot.
-- In `agent-workforce-llm`, Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper are LLM nodes; Executor is answer-only mock simulation and does not execute code.
+- In `agent-workforce-llm`, Planner, Debater, PlannerRevision, Executor, Verifier, and optional GoalKeeper are LLM nodes; Executor is answer-only and does not execute code.
 - Missing `modelProvider` or `callStatus`, or `modelProvider=mock` / `modelName=mock-structured`, means a role must not be described as LLM-backed.
 - See `docs/LLM_ADAPTER.md` for full details.
 

@@ -23,9 +23,7 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.equal(result.roleTimeline.every((event) => event.source === "subagent_dispatch_trace"), true);
     assert.equal(result.runtimeProof.runtimeStarted, true);
     assert.equal(result.runtimeProof.roleSource, "subagent_dispatch_trace");
-    assert.ok(result.formattedText.includes("AgentFlow Profile Run"));
-    assert.ok(result.formattedText.includes("AgentFlow Role Timeline"));
-    assert.ok(result.formattedText.includes("Runtime Proof"));
+    assert.ok(result.formattedText.includes("AgentFlow 工作流受阻"));
     assert.ok(result.routingDecision);
     assert.ok(result.summaryPaths.some((path) => path.endsWith("summary.md")));
     assert.ok(result.tracePaths.some((path) => path.endsWith("trace.json")));
@@ -72,10 +70,10 @@ test("ProfileWorkflowRunner", async (t) => {
     assert.ok(result.roleTimeline.some((event) => event.role === "Verifier"));
     assert.equal(result.roleSpeechTranscript.speeches.length > 1, true);
     assert.ok(result.roleSpeechTranscript.speeches.some((speech) => speech.role === "Planner" && speech.source === "subagent_output"));
-    assert.ok(result.formattedText.includes("AgentFlow Role Speech Transcript"));
-    assert.ok(result.formattedText.includes("AgentFlow 角色发言流"));
-    assert.match(result.formattedText, /Runtime Proof/);
-    assert.match(result.formattedText, /source: subagent_dispatch_trace/);
+    assert.ok(result.formattedText.includes("AgentFlow 工作流完成"));
+    assert.ok(result.formattedText.includes("角色发言："));
+    assert.match(result.formattedText, /Planner:/);
+    assert.match(result.formattedText, /产物:/);
   });
 
   await t.test("requires allowLLM for requiresLLM profiles before runtime starts", async () => {

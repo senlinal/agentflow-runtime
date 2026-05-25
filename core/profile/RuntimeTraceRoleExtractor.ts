@@ -37,6 +37,14 @@ export type RuntimeVerifiedRoleEvent = {
   answersUserRequest?: boolean;
   isNotMetaOnly?: boolean;
   pass?: boolean;
+  dispatchMode?: string;
+  internalSubAgentDispatched?: boolean;
+  openCodeNativeSubAgent?: boolean;
+  openCodeAgentName?: string;
+  openCodeTaskId?: string;
+  openCodeSessionId?: string;
+  nativeDispatchStatus?: string;
+  nativeDispatchLimitations?: string[];
 };
 
 export type RuntimeProof = {
@@ -105,6 +113,14 @@ export class RuntimeTraceRoleExtractor {
           answersUserRequest: item.answersUserRequest,
           isNotMetaOnly: item.isNotMetaOnly,
           pass: item.pass,
+          dispatchMode: item.dispatchMode,
+          internalSubAgentDispatched: item.internalSubAgentDispatched,
+          openCodeNativeSubAgent: item.openCodeNativeSubAgent,
+          openCodeAgentName: item.openCodeAgentName,
+          openCodeTaskId: item.openCodeTaskId,
+          openCodeSessionId: item.openCodeSessionId,
+          nativeDispatchStatus: item.nativeDispatchStatus,
+          nativeDispatchLimitations: item.nativeDispatchLimitations,
         };
       });
   }

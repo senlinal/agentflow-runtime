@@ -4,6 +4,28 @@
     "./.opencode/plugins/agentflow-policy.ts",
     "./.opencode/plugins/agentflow-workflow-interceptor.ts"
   ],
+  "command": {
+    "workflow": {
+      "template": "Call only MCP tool `agentflow_run_profile_workflow` now with task `$ARGUMENTS`, profile `agent-workforce-basic`, allowExecution=false, allowLLM=false. Do not call agentflow_list_profiles. Do not read summaryPath or tracePath. After the tool returns, display only the tool result field `formattedText` exactly as returned. Do not summarize it. Do not create a Supervisor plan. Do not search. Do not call CodeExecutor.",
+      "description": "Run AgentFlow workflow through the AgentFlow MCP tool",
+      "subtask": false
+    },
+    "agentflow": {
+      "template": "Call only MCP tool `agentflow_run_profile_workflow` now with task `$ARGUMENTS`, profile `agent-workforce-basic`, allowExecution=false, allowLLM=false. Do not call agentflow_list_profiles. Do not read summaryPath or tracePath. After the tool returns, display only the tool result field `formattedText` exactly as returned. Do not summarize it. Do not create a Supervisor plan. Do not search. Do not call CodeExecutor.",
+      "description": "Run AgentFlow workflow through the AgentFlow MCP tool",
+      "subtask": false
+    },
+    "workflow-llm": {
+      "template": "Call only MCP tool `agentflow_run_profile_workflow` now with task `$ARGUMENTS`, profile `agent-workforce-llm`, allowExecution=false, allowLLM=true. Do not call agentflow_list_profiles. Do not read summaryPath or tracePath. After the tool returns, display only the tool result field `formattedText` exactly as returned. Do not summarize it. Do not create a Supervisor plan. Do not search. Do not call CodeExecutor.",
+      "description": "Run real LLM-backed AgentFlow workflow through the AgentFlow MCP tool",
+      "subtask": false
+    },
+    "agentflow-llm": {
+      "template": "Call only MCP tool `agentflow_run_profile_workflow` now with task `$ARGUMENTS`, profile `agent-workforce-llm`, allowExecution=false, allowLLM=true. Do not call agentflow_list_profiles. Do not read summaryPath or tracePath. After the tool returns, display only the tool result field `formattedText` exactly as returned. Do not summarize it. Do not create a Supervisor plan. Do not search. Do not call CodeExecutor.",
+      "description": "Run AgentFlow workflow through the AgentFlow MCP tool",
+      "subtask": false
+    }
+  },
   "mcp": {
     "agentflow": {
       "type": "local",

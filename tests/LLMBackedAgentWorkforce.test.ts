@@ -103,7 +103,7 @@ test("LLM-backed agent workforce pilot", async (t) => {
     }
   });
 
-  await t.test("uses LLMExecutor for Planner/Debater/PlannerRevision/Verifier and keeps Executor mock", async () => {
+  await t.test("uses LLMExecutor for Planner/Debater/PlannerRevision/Executor/Verifier", async () => {
     const restore = withDeepSeekEnv({ apiKey: "test-key" });
     try {
       const result = await createRunner(new RealProviderMockClient("deepseek", "deepseek-v4-flash")).run({
@@ -122,7 +122,7 @@ test("LLM-backed agent workforce pilot", async (t) => {
       const executor = mustFindRole(result, "Executor");
       const verifier = mustFindRole(result, "Verifier");
 
-      for (const event of [planner, debater, revision, verifier]) {
+      for (const event of [planner, debater, revision, executor, verifier]) {
         assert.equal(event.executorType, "llm");
         assert.equal(event.isMock, false);
         assert.equal(event.isLLMBacked, true);
@@ -131,9 +131,6 @@ test("LLM-backed agent workforce pilot", async (t) => {
         assert.equal(event.callStatus, "completed");
       }
 
-      assert.equal(executor.executorType, "mock");
-      assert.equal(executor.isMock, true);
-      assert.equal(executor.isLLMBacked, false);
       assert.equal(result.roleTimeline.some((event) => event.role === "CodeExecutor"), false);
 
       const context = JSON.parse(await readFile(result.contextPath!, "utf8")) as WorkflowContext;
@@ -146,7 +143,8 @@ test("LLM-backed agent workforce pilot", async (t) => {
       assert.equal(plannerMetadata.modelProvider, "deepseek");
       assert.equal(plannerMetadata.modelName, "deepseek-v4-flash");
       assert.equal(plannerMetadata.callStatus, "completed");
-      assert.equal(result.formattedText.includes("callStatus: completed"), true);
+      assert.match(result.formattedText, /LLM-backed agent/);
+      assert.match(result.formattedText, /deepseek\/deepseek-v4-flash/);
     } finally {
       restore();
     }

@@ -1,7 +1,7 @@
 {
   "id": "agent-workforce-llm",
   "name": "Agent Workforce LLM",
-  "description": "Opt-in LLM-backed role pilot using Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper as real LLM nodes while Executor remains a safe answer-only deliverable generator.",
+  "description": "Opt-in LLM-backed role pilot using Planner, Debater, PlannerRevision, Executor, Verifier, and optional GoalKeeper as real LLM nodes. Executor is answer-only and must not call CodeExecutor or modify files.",
   "defaultWorkflow": "abcde-basic-llm",
   "requiresLLM": true,
   "allowExecution": false,

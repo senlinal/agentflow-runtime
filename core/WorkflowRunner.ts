@@ -9,7 +9,7 @@ import { NodeRegistry } from "./NodeRegistry.ts";
 import { SubAgentArtifactStore } from "./subagent/SubAgentArtifactStore.ts";
 import { SubAgentDispatcher } from "./subagent/SubAgentDispatcher.ts";
 import { TraceStore, type TraceStoreResult } from "./TraceStore.ts";
-import type { TaskBrief, WorkflowContext, WorkflowGraphConfig, WorkflowTrace } from "./types.ts";
+import type { SubAgentDispatchMode, TaskBrief, WorkflowContext, WorkflowGraphConfig, WorkflowTrace } from "./types.ts";
 import { WorkflowGraph } from "./WorkflowGraph.ts";
 import { WorkflowRuntime } from "./WorkflowRuntime.ts";
 
@@ -26,6 +26,8 @@ export type WorkflowRunnerResult = {
 export type WorkflowRunnerOptions = {
   contextOverrides?: Partial<WorkflowContext>;
   baseRunDir?: string;
+  subAgentDispatchMode?: SubAgentDispatchMode;
+  profileId?: string;
 };
 
 export class WorkflowRunner {
@@ -60,11 +62,17 @@ export class WorkflowRunner {
           runDir,
           attemptsDir: join(runDir, "attempts"),
         },
+        subAgentDispatchMode: options.subAgentDispatchMode ?? "internal",
       },
       ...options.contextOverrides,
     };
 
-    const subAgentDispatcher = new SubAgentDispatcher(new SubAgentArtifactStore(runDir));
+    const subAgentDispatcher = new SubAgentDispatcher(new SubAgentArtifactStore(runDir), {
+      dispatchMode: options.subAgentDispatchMode ?? "internal",
+      runId,
+      runDir,
+      profileId: options.profileId,
+    });
     const finalContext = await new WorkflowRuntime(graph, this.registry, subAgentDispatcher).run(context);
     const traceStore = await TraceStore.save(finalContext, {
       workflowName: graph.name,
