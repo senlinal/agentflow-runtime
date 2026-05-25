@@ -29,6 +29,11 @@ export type RuntimeVerifiedRoleEvent = {
   subAgentMetadataPath?: string;
   deliverableType?: string;
   deliverablePreview?: string;
+  attemptNumber?: number;
+  routeId?: string;
+  attemptDecision?: string;
+  retryReason?: string;
+  stopReason?: string;
   answersUserRequest?: boolean;
   isNotMetaOnly?: boolean;
   pass?: boolean;
@@ -92,6 +97,11 @@ export class RuntimeTraceRoleExtractor {
           subAgentMetadataPath: item.subAgentMetadataPath,
           deliverableType: item.deliverableType,
           deliverablePreview: item.deliverablePreview,
+          attemptNumber: item.attemptNumber,
+          routeId: item.routeId,
+          attemptDecision: item.attemptDecision,
+          retryReason: item.retryReason,
+          stopReason: item.stopReason,
           answersUserRequest: item.answersUserRequest,
           isNotMetaOnly: item.isNotMetaOnly,
           pass: item.pass,

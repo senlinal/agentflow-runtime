@@ -134,12 +134,26 @@ function createTrace(input: {
     outputSchema: input.node.outputSchema,
     outputSummary: summarize(input.context[input.node.outputKey]),
     ...summarizeDispatch(input.dispatchRecord),
+    ...summarizeAdaptive(input.context),
     ...summarizeDeliverable(input.context[input.node.outputKey]),
     ...summarizeVerification(input.context[input.node.outputKey]),
     conditionResults: input.conditionResults,
     nextNode: input.nextNode,
     timestamp: input.timestamp,
     ...(input.error ? { error: input.error } : {}),
+  };
+}
+
+function summarizeAdaptive(context: WorkflowContext): Partial<WorkflowTrace> {
+  const decision = context.attemptDecision;
+  const attemptNumber = context.adaptiveState?.currentAttemptNumber;
+  const routeId = context.adaptiveState?.currentRouteId;
+  return {
+    ...(attemptNumber ? { attemptNumber } : {}),
+    ...(routeId ? { routeId } : {}),
+    ...(decision?.decision ? { attemptDecision: decision.decision } : {}),
+    ...(decision?.decision === "retry" ? { retryReason: decision.reason } : {}),
+    ...(decision?.decision === "stop" || decision?.decision === "ask_human" ? { stopReason: decision.reason } : {}),
   };
 }
 

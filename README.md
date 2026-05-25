@@ -119,6 +119,7 @@ Built-in profiles:
 - `external-project-fix`: copies external projects into temporary workspaces and exports patches for manual review.
 - `frontend-site-build`: handles single-page websites, landing pages, personal sites, HTML/CSS/JS, and lightweight React or Next.js page work. It starts with negotiation and does not deploy, delete files, call real LLMs, or execute code changes by default.
 - `task-solving`: handles explanations, definitions, how-to answers, and conceptual help. It preserves `userRequest`, sets `expectedDeliverable`, and verifies the actual deliverable rather than workflow metadata.
+- `goal-driven-task-solving`: handles answer, analysis, and plan tasks with GoalPlanner, bounded attempts, verifier feedback, attempt records, and AdaptiveExecutionController decisions. It stops after one successful attempt and does not call CodeExecutor or real LLM providers by default.
 - `agent-workforce-basic`: runs `abcde-basic` to visibly demonstrate Planner, Debater, PlannerRevision, Executor, Verifier, and GoalKeeper as runtime-traced roles.
 - `agent-workforce-llm`: opt-in profile for the same visible workforce using `abcde-basic-llm`. Planner, Debater, PlannerRevision, Verifier, and optional GoalKeeper are LLM-backed when a real provider is configured; Executor remains a safe answer-only mock simulation and never calls CodeExecutor. Do not run it without explicit `--allow-llm` and real LLM configuration.
 
@@ -145,6 +146,15 @@ npm run mcp:agentflow:smoke
 ```
 
 See `docs/RUNTIME_VERIFIED_AGENTS.md`.
+
+For goal-driven adaptive execution:
+
+```bash
+npm run workflow:validate -- --template goal-driven-task-solving
+npm run workflow:run-profile -- --profile goal-driven-task-solving --task "解释一下咖啡的做法"
+```
+
+This writes bounded attempt records under `.workflow-runs/<runId>/attempts/` and shows attempt number, route id, verifier result, and controller decision in the Role Timeline. See `docs/GOAL_DRIVEN_EXECUTION.md`.
 
 For task-solving runs, the Role Timeline also shows subagent dispatch artifact paths, Executor deliverable summaries, and Verifier fidelity flags such as `answersUserRequest` and `isNotMetaOnly`. See `docs/TASK_FIDELITY.md`.
 

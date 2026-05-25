@@ -142,6 +142,41 @@ test("ProfileRunFormatter", async (t) => {
     assert.match(text, /callStatus: completed/);
     assert.match(text, /note: llm-backed subagent execution/);
   });
+
+  await t.test("formats adaptive attempt evidence", () => {
+    const text = new ProfileRunFormatter().format(sampleResult({
+      profileId: "goal-driven-task-solving",
+      profileName: "Goal-driven Task Solving",
+      roleTimeline: [{
+        workflow: "goal-driven-task-solving",
+        nodeId: "adaptiveController",
+        role: "AdaptiveExecutionController",
+        nodeType: "adaptive",
+        executorType: "adaptive",
+        type: "adaptive",
+        status: "completed",
+        summary: "Verifier failed with meta_only_output; retry with route add_missing_content.",
+        outputKey: "attemptDecision",
+        outputSchema: "AttemptDecision",
+        source: "subagent_dispatch_trace",
+        subAgentDispatched: true,
+        subAgentId: "adaptiveController-0-test",
+        workerSessionId: "worker-adaptive-test",
+        attemptNumber: 1,
+        routeId: "direct_deliverable",
+        attemptDecision: "retry",
+        retryReason: "Verifier failed with meta_only_output; retry with route add_missing_content.",
+        nextNode: "attemptExecutor",
+        isMock: false,
+        isLLMBacked: false,
+      }],
+    }));
+
+    assert.match(text, /attempt: 1/);
+    assert.match(text, /routeId: direct_deliverable/);
+    assert.match(text, /attemptDecision: retry/);
+    assert.match(text, /retryReason: Verifier failed/);
+  });
 });
 
 function sampleResult(overrides: Partial<ProfileWorkflowRunResult> = {}): ProfileWorkflowRunResult {

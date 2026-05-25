@@ -1,0 +1,71 @@
+{
+  "name": "goal-driven-task-solving",
+  "version": "1.0.0",
+  "description": "Goal-driven adaptive task solving with verifier feedback and bounded attempts.",
+  "start": "goalPlanner",
+  "maxIterations": 12,
+  "inputSchema": "TaskBrief",
+  "defaultPolicies": {
+    "permissionPolicy": {
+      "allowWithoutConfirmation": ["produce answer deliverables", "write workflow run artifacts"],
+      "requireConfirmation": ["scope expansion", "high cost route", "high risk route"],
+      "forbiddenWithoutExplicitApproval": ["CodeExecutor", "external LLM calls", "destructive actions", "production data changes"]
+    },
+    "costPolicy": {
+      "maxCostLevel": "medium",
+      "stopWhen": ["max attempts reached", "no untried safe route", "high cost route required"],
+      "preferredDecisionsWhenOverBudget": ["ask_human", "stop"]
+    },
+    "qualityPolicy": {
+      "principles": ["goal-driven attempts", "verifier feedback", "no fixed two-round demo loop"],
+      "requiredChecks": ["Verifier pass or explicit AttemptDecision stop"],
+      "forbiddenShortcuts": ["fabricating attempts", "retrying repeated routes without new evidence"]
+    }
+  },
+  "nodes": [
+    {
+      "id": "goalPlanner",
+      "type": "goalPlanner",
+      "role": "GoalPlanner",
+      "description": "Create a goal execution plan with success criteria, candidate routes, stop conditions, and escalation conditions.",
+      "inputKeys": ["taskBrief", "constraints", "successCriteria"],
+      "outputKey": "goalExecutionPlan",
+      "outputSchema": "GoalExecutionPlan"
+    },
+    {
+      "id": "attemptExecutor",
+      "type": "attempt",
+      "role": "AttemptExecutor",
+      "description": "Produce a safe answer-only attempt for the current route. Does not call CodeExecutor or modify project files.",
+      "inputKeys": ["taskBrief", "goalExecutionPlan", "adaptiveState"],
+      "outputKey": "executionResult",
+      "outputSchema": "ExecutionResult"
+    },
+    {
+      "id": "verifier",
+      "type": "mock",
+      "role": "Verifier",
+      "description": "Verify whether the attempt deliverable satisfies the user's goal and success criteria.",
+      "inputKeys": ["taskBrief", "executionResult", "successCriteria"],
+      "outputKey": "verification",
+      "outputSchema": "VerificationReport"
+    },
+    {
+      "id": "adaptiveController",
+      "type": "adaptive",
+      "role": "AdaptiveExecutionController",
+      "description": "Decide success, retry, ask_human, revise_plan, or stop from verifier feedback and attempt history.",
+      "inputKeys": ["goalExecutionPlan", "executionResult", "verification", "adaptiveState"],
+      "outputKey": "attemptDecision",
+      "outputSchema": "AttemptDecision"
+    }
+  ],
+  "edges": [
+    { "from": "goalPlanner", "to": "attemptExecutor", "condition": { "type": "always" } },
+    { "from": "attemptExecutor", "to": "verifier", "condition": { "type": "always" } },
+    { "from": "verifier", "to": "adaptiveController", "condition": { "type": "always" } },
+    { "from": "adaptiveController", "to": "end", "condition": { "type": "in", "path": "attemptDecision.decision", "value": ["success", "ask_human", "stop"] } },
+    { "from": "adaptiveController", "to": "attemptExecutor", "condition": { "type": "equals", "path": "attemptDecision.decision", "value": "retry" } },
+    { "from": "adaptiveController", "to": "goalPlanner", "condition": { "type": "equals", "path": "attemptDecision.decision", "value": "revise_plan" } }
+  ]
+}

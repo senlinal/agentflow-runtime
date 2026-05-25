@@ -9,6 +9,7 @@ import type {
   CodeChangePlanExecutionRecord,
   CodeChangePlanExecutionApprovalRequest,
   ConfirmedScopeGateResult,
+  AttemptDecision,
   OutputSchemaName,
   PatchExportRecord,
   Plan,
@@ -18,6 +19,8 @@ import type {
   SmokeTestResult,
   TaskBrief,
   TaskNegotiationResult,
+  ExecutionAttempt,
+  GoalExecutionPlan,
   ScopeConfirmationRecord,
   VerificationReport,
   HumanApprovalRequest,
@@ -77,6 +80,12 @@ export class SchemaValidator {
         return validatePatchExportRecord(output);
       case "CorrectionHint":
         return validateCorrectionHint(output);
+      case "GoalExecutionPlan":
+        return validateGoalExecutionPlan(output);
+      case "ExecutionAttempt":
+        return validateExecutionAttempt(output);
+      case "AttemptDecision":
+        return validateAttemptDecision(output);
       case "SmokeTestResult":
         return validateSmokeTestResult(output);
       default:
@@ -345,6 +354,62 @@ function validateVerificationReport(output: unknown): VerificationReport {
   requireOptionalStringArray(record, "safetyFindings", "VerificationReport");
   requireOptionalStringArray(record, "recommendedFixes", "VerificationReport");
   return record as VerificationReport;
+}
+
+function validateGoalExecutionPlan(output: unknown): GoalExecutionPlan {
+  const record = requireObject(output, "GoalExecutionPlan");
+  requireString(record, "planId", "GoalExecutionPlan");
+  requireString(record, "goal", "GoalExecutionPlan");
+  requireArray(record, "successCriteria", "GoalExecutionPlan");
+  requireArray(record, "candidateRoutes", "GoalExecutionPlan");
+  requireArray(record, "stopConditions", "GoalExecutionPlan");
+  requireArray(record, "escalationConditions", "GoalExecutionPlan");
+  requireNumber(record, "maxAttempts", "GoalExecutionPlan");
+  if (!Number.isInteger(record.maxAttempts) || record.maxAttempts < 1) throw new Error("GoalExecutionPlan.maxAttempts must be an integer >= 1.");
+  requireEnum(record, "costBudget", ["low", "medium", "high"], "GoalExecutionPlan");
+  requireEnum(record, "riskBudget", ["low", "medium", "high"], "GoalExecutionPlan");
+  requireString(record, "createdAt", "GoalExecutionPlan");
+  record.candidateRoutes.forEach((route, index) => {
+    const item = requireObject(route, `GoalExecutionPlan.candidateRoutes[${index}]`);
+    requireString(item, "routeId", `GoalExecutionPlan.candidateRoutes[${index}]`);
+    requireString(item, "summary", `GoalExecutionPlan.candidateRoutes[${index}]`);
+    requireString(item, "expectedOutcome", `GoalExecutionPlan.candidateRoutes[${index}]`);
+    requireEnum(item, "costLevel", ["low", "medium", "high"], `GoalExecutionPlan.candidateRoutes[${index}]`);
+    requireEnum(item, "riskLevel", ["low", "medium", "high"], `GoalExecutionPlan.candidateRoutes[${index}]`);
+    requireArray(item, "repairableFailureCodes", `GoalExecutionPlan.candidateRoutes[${index}]`);
+  });
+  return record as GoalExecutionPlan;
+}
+
+function validateExecutionAttempt(output: unknown): ExecutionAttempt {
+  const record = requireObject(output, "ExecutionAttempt");
+  requireString(record, "attemptId", "ExecutionAttempt");
+  requireNumber(record, "attemptNumber", "ExecutionAttempt");
+  if (!Number.isInteger(record.attemptNumber) || record.attemptNumber < 1) throw new Error("ExecutionAttempt.attemptNumber must be an integer >= 1.");
+  requireString(record, "routeId", "ExecutionAttempt");
+  requireString(record, "actionSummary", "ExecutionAttempt");
+  requireArray(record, "inputArtifacts", "ExecutionAttempt");
+  requireArray(record, "outputArtifacts", "ExecutionAttempt");
+  requireString(record, "resultSummary", "ExecutionAttempt");
+  if ("verifierResult" in record) validateVerificationReport(record.verifierResult);
+  if ("failureReason" in record && typeof record.failureReason !== "string") throw new Error("ExecutionAttempt.failureReason must be a string when provided.");
+  requireString(record, "createdAt", "ExecutionAttempt");
+  return record as ExecutionAttempt;
+}
+
+function validateAttemptDecision(output: unknown): AttemptDecision {
+  const record = requireObject(output, "AttemptDecision");
+  requireEnum(record, "decision", ["success", "retry", "revise_plan", "ask_human", "stop"], "AttemptDecision");
+  requireString(record, "reason", "AttemptDecision");
+  if ("nextRouteId" in record && typeof record.nextRouteId !== "string") throw new Error("AttemptDecision.nextRouteId must be a string when provided.");
+  requireArray(record, "blockedReasons", "AttemptDecision");
+  requireBoolean(record, "shouldUpdateMemory", "AttemptDecision");
+  if ("failureAnalysis" in record) requireObject(record.failureAnalysis, "AttemptDecision.failureAnalysis");
+  if ("attemptId" in record && typeof record.attemptId !== "string") throw new Error("AttemptDecision.attemptId must be a string when provided.");
+  if ("attemptNumber" in record && typeof record.attemptNumber !== "number") throw new Error("AttemptDecision.attemptNumber must be a number when provided.");
+  if ("routeId" in record && typeof record.routeId !== "string") throw new Error("AttemptDecision.routeId must be a string when provided.");
+  requireString(record, "createdAt", "AttemptDecision");
+  return record as AttemptDecision;
 }
 
 function validateScopedRepairPlan(output: unknown): ScopedRepairPlan {

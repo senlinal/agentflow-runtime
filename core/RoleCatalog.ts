@@ -4,7 +4,7 @@ import { agentFlowPath } from "./AgentFlowPaths.ts";
 import { isSupportedOutputSchema } from "./OutputSchemaRegistry.ts";
 import type { RoleDefinition } from "./types.ts";
 
-const ROLE_TYPES = ["mock", "llm", "negotiate", "scopeGate", "code", "test", "verify", "repair", "approval", "materialize", "executionApproval", "executionDryRun", "execution"];
+const ROLE_TYPES = ["mock", "llm", "negotiate", "scopeGate", "code", "test", "verify", "repair", "approval", "materialize", "executionApproval", "executionDryRun", "execution", "goalPlanner", "attempt", "adaptive"];
 
 export class RoleCatalog {
   private rolesCache: RoleDefinition[] | null = null;

@@ -1,0 +1,33 @@
+{
+  "id": "goal-driven-task-solving",
+  "name": "Goal-driven Task Solving",
+  "description": "General target-mode profile for adaptive answer, analysis, and plan tasks with verifier feedback and bounded attempts.",
+  "defaultWorkflow": "goal-driven-task-solving",
+  "allowExecution": false,
+  "policyFiles": [
+    "docs/AGENT_POLICY.md",
+    "docs/GOAL_DRIVEN_EXECUTION.md"
+  ],
+  "defaultConstraints": [
+    "goal_driven_attempts",
+    "do_not_call_code_executor",
+    "do_not_call_real_llm_by_default",
+    "stop_on_repeated_route",
+    "ask_human_on_high_cost_or_high_risk"
+  ],
+  "defaultBlockedActions": [
+    "external LLM calls without explicit allowLLM",
+    "code execution",
+    "destructive actions",
+    "production data changes"
+  ],
+  "defaultOutput": [
+    "goal_execution_plan",
+    "attempt_records",
+    "role_timeline",
+    "deliverable",
+    "verification",
+    "trace",
+    "context"
+  ]
+}

@@ -53,7 +53,14 @@ export class WorkflowRunner {
         successCriteria: taskBrief.successCriteria,
       }),
       taskBrief,
-      runtimeMetadata: buildRuntimeMetadata(config),
+      runtimeMetadata: {
+        ...buildRuntimeMetadata(config),
+        adaptiveExecution: {
+          runId,
+          runDir,
+          attemptsDir: join(runDir, "attempts"),
+        },
+      },
       ...options.contextOverrides,
     };
 

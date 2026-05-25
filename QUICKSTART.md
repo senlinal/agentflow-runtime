@@ -60,7 +60,7 @@ npm run workflow:profile:inspect -- --profile frontend-site-build
 npm run workflow:profile:use -- --profile rag-optimization
 ```
 
-The default `rag-optimization` profile starts with task negotiation, then uses confirmed scope as a gate before feasibility. `task-solving` is for explanations, definitions, how-to answers, and conceptual help. `coding-safe-fix` is for scoped code fixes, `external-project-fix` is for temp-workspace external project runs and patch export, and `frontend-site-build` is for personal sites, landing pages, static HTML/CSS/JS, and lightweight React/Next.js page work.
+The default `rag-optimization` profile starts with task negotiation, then uses confirmed scope as a gate before feasibility. `task-solving` is for explanations, definitions, how-to answers, and conceptual help. `goal-driven-task-solving` is for bounded adaptive attempts driven by verifier feedback. `coding-safe-fix` is for scoped code fixes, `external-project-fix` is for temp-workspace external project runs and patch export, and `frontend-site-build` is for personal sites, landing pages, static HTML/CSS/JS, and lightweight React/Next.js page work.
 
 Check how a task will route before running it:
 
@@ -99,6 +99,15 @@ npm run mcp:agentflow:smoke
 
 The Role Timeline is built from `trace.json`. No trace means no displayed AgentFlow role.
 Timeline rows include `executorType`, `isMock`, `isLLMBacked`, `modelProvider`, `modelName`, and `callStatus` when available. `executorType: mock` is labeled as `mock simulation, not LLM-backed`; `executorType: llm` is labeled as LLM-backed only when a matching LLM call record exists.
+
+To run the goal-driven adaptive loop:
+
+```bash
+npm run workflow:validate -- --template goal-driven-task-solving
+npm run workflow:run-profile -- --profile goal-driven-task-solving --task "解释一下咖啡的做法"
+```
+
+If the first attempt passes verification, the loop ends immediately. If verification fails with a repairable reason, the controller chooses the next safe untried route; attempts are recorded under `.workflow-runs/<runId>/attempts/`.
 
 For OpenCode, restart the app after config changes and confirm the `agentflow` MCP tools are visible. The recommended entry is:
 

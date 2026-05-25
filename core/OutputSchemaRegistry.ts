@@ -21,6 +21,9 @@ export const OUTPUT_SCHEMA_NAMES: OutputSchemaName[] = [
   "CodeChangePlanExecutionRecord",
   "PatchExportRecord",
   "CorrectionHint",
+  "GoalExecutionPlan",
+  "ExecutionAttempt",
+  "AttemptDecision",
   "CodeExecutionResult",
   "TestExecutionResult",
   "SmokeTestResult",
@@ -414,6 +417,52 @@ export function getOutputSchemaShape(schemaName: OutputSchemaName): Record<strin
         failedCriteria: ["string"],
         correctionInstructions: ["string"],
         recommendedNextAction: "replan | retry_execute | ask_human",
+      };
+    case "GoalExecutionPlan":
+      return {
+        planId: "string",
+        goal: "string",
+        successCriteria: ["string"],
+        candidateRoutes: [{
+          routeId: "string",
+          summary: "string",
+          expectedOutcome: "string",
+          costLevel: "low | medium | high",
+          riskLevel: "low | medium | high",
+          repairableFailureCodes: ["string"],
+        }],
+        stopConditions: ["string"],
+        escalationConditions: ["string"],
+        maxAttempts: "number",
+        costBudget: "low | medium | high",
+        riskBudget: "low | medium | high",
+        createdAt: "string",
+      };
+    case "ExecutionAttempt":
+      return {
+        attemptId: "string",
+        attemptNumber: "number",
+        routeId: "string",
+        actionSummary: "string",
+        inputArtifacts: ["string"],
+        outputArtifacts: ["string"],
+        resultSummary: "string",
+        verifierResult: "object optional",
+        failureReason: "string optional",
+        createdAt: "string",
+      };
+    case "AttemptDecision":
+      return {
+        decision: "success | retry | revise_plan | ask_human | stop",
+        reason: "string",
+        nextRouteId: "string optional",
+        blockedReasons: ["string"],
+        shouldUpdateMemory: "boolean",
+        failureAnalysis: "object optional",
+        attemptId: "string optional",
+        attemptNumber: "number optional",
+        routeId: "string optional",
+        createdAt: "string",
       };
     case "SmokeTestResult":
       return {

@@ -17,7 +17,10 @@ export type AgentRole =
   | "CodeChangePlanExecutionApprovalGate"
   | "CodeChangePlanDryRunRunner"
   | "CodeChangePlanExecutionRunner"
-  | "GoalKeeper";
+  | "GoalKeeper"
+  | "GoalPlanner"
+  | "AttemptExecutor"
+  | "AdaptiveExecutionController";
 
 export type RetryPolicy = {
   maxAttempts: number;
@@ -45,6 +48,9 @@ export type OutputSchemaName =
   | "CodeChangePlanExecutionRecord"
   | "PatchExportRecord"
   | "CorrectionHint"
+  | "GoalExecutionPlan"
+  | "ExecutionAttempt"
+  | "AttemptDecision"
   | "CodeExecutionResult"
   | "TestExecutionResult"
   | "SmokeTestResult";
@@ -62,7 +68,10 @@ export type NodeType =
   | "materialize"
   | "executionApproval"
   | "executionDryRun"
-  | "execution";
+  | "execution"
+  | "goalPlanner"
+  | "attempt"
+  | "adaptive";
 
 export type AgentNode = {
   id: string;
@@ -467,6 +476,80 @@ export type VerificationReport = {
   recommendedFixes?: string[];
 };
 
+export type GoalCandidateRoute = {
+  routeId: string;
+  summary: string;
+  expectedOutcome: string;
+  costLevel: "low" | "medium" | "high";
+  riskLevel: "low" | "medium" | "high";
+  repairableFailureCodes: FailureAnalysis["failureType"][];
+};
+
+export type GoalExecutionPlan = {
+  planId: string;
+  goal: string;
+  successCriteria: string[];
+  candidateRoutes: GoalCandidateRoute[];
+  stopConditions: string[];
+  escalationConditions: string[];
+  maxAttempts: number;
+  costBudget: "low" | "medium" | "high";
+  riskBudget: "low" | "medium" | "high";
+  createdAt: string;
+};
+
+export type FailureAnalysis = {
+  failureType:
+    | "missing_content"
+    | "meta_only_output"
+    | "schema_invalid"
+    | "test_failed"
+    | "scope_mismatch"
+    | "repeated_route"
+    | "high_cost"
+    | "unsafe_action"
+    | "unknown";
+  reason: string;
+  repairable: boolean;
+  suggestedRouteId?: string;
+  blockedReasons: string[];
+};
+
+export type ExecutionAttempt = {
+  attemptId: string;
+  attemptNumber: number;
+  routeId: string;
+  actionSummary: string;
+  inputArtifacts: string[];
+  outputArtifacts: string[];
+  resultSummary: string;
+  verifierResult?: VerificationReport;
+  failureReason?: string;
+  createdAt: string;
+};
+
+export type AttemptDecision = {
+  decision: "success" | "retry" | "revise_plan" | "ask_human" | "stop";
+  reason: string;
+  nextRouteId?: string;
+  blockedReasons: string[];
+  shouldUpdateMemory: boolean;
+  failureAnalysis?: FailureAnalysis;
+  attemptId?: string;
+  attemptNumber?: number;
+  routeId?: string;
+  createdAt: string;
+};
+
+export type AdaptiveExecutionState = {
+  goalPlan?: GoalExecutionPlan;
+  attempts: ExecutionAttempt[];
+  decisions: AttemptDecision[];
+  currentAttemptNumber: number;
+  currentRouteId?: string;
+  status: "planning" | "attempting" | "retrying" | "succeeded" | "blocked" | "stopped";
+};
+
 export type ProposedRepairOperation = {
   id: string;
   type: "modify_file" | "create_file" | "run_test" | "inspect" | "manual_review";
@@ -712,6 +795,11 @@ export type WorkflowTrace = {
   outputArtifactPath?: string;
   subAgentMetadataPath?: string;
   subAgentTraceSource?: "subagent_dispatch_trace";
+  attemptNumber?: number;
+  routeId?: string;
+  attemptDecision?: AttemptDecision["decision"];
+  retryReason?: string;
+  stopReason?: string;
   deliverableType?: TaskBrief["expectedDeliverable"]["type"];
   deliverablePreview?: string;
   answersUserRequest?: boolean;
@@ -738,6 +826,10 @@ export type WorkflowContext = TaskSpec & {
   codeExecutionResult: CodeExecutionResult | null;
   testExecutionResult: TestExecutionResult | null;
   verification: VerificationReport | null;
+  goalExecutionPlan?: GoalExecutionPlan | null;
+  executionAttempt?: ExecutionAttempt | null;
+  attemptDecision?: AttemptDecision | null;
+  adaptiveState?: AdaptiveExecutionState | null;
   scopedRepairPlan: ScopedRepairPlan | null;
   humanApprovalRequest: HumanApprovalRequest | null;
   repairApprovalRecord?: RepairApprovalRecord | null;
@@ -768,6 +860,11 @@ export type RuntimeMetadata = {
   llmConfigSummary?: Record<string, unknown>;
   llmCalls?: Array<Record<string, unknown>>;
   executionVerification?: Record<string, unknown>;
+  adaptiveExecution?: {
+    runId?: string;
+    runDir?: string;
+    attemptsDir?: string;
+  };
   e2eRealProject?: Record<string, unknown>;
   externalProject?: Record<string, unknown>;
   patchExport?: Record<string, unknown>;

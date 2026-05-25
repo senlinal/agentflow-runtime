@@ -12,6 +12,9 @@ import { CodeChangePlanExecutionApprovalExecutor } from "./repair/CodeChangePlan
 import { RepairPlanExecutor } from "./repair/RepairPlanExecutor.ts";
 import { RepairPlanMaterializerExecutor } from "./repair/RepairPlanMaterializerExecutor.ts";
 import { VerificationExecutor } from "./verification/VerificationExecutor.ts";
+import { AdaptiveExecutionController } from "./adaptive/AdaptiveExecutionController.ts";
+import { AttemptExecutor } from "./adaptive/AttemptExecutor.ts";
+import { GoalPlanner } from "./adaptive/GoalPlanner.ts";
 
 export class NodeRegistry {
   private readonly executors = new Map<string, NodeExecutor>();
@@ -30,6 +33,9 @@ export class NodeRegistry {
     registry.register("executionApproval", new CodeChangePlanExecutionApprovalExecutor());
     registry.register("executionDryRun", new CodeChangePlanDryRunExecutor());
     registry.register("execution", new CodeChangePlanExecutionExecutor());
+    registry.register("goalPlanner", new GoalPlanner());
+    registry.register("attempt", new AttemptExecutor());
+    registry.register("adaptive", new AdaptiveExecutionController());
     return registry;
   }
 

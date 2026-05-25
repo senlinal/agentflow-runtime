@@ -62,6 +62,11 @@ export type ProfileRoleTimelineEvent = {
   subAgentMetadataPath?: string;
   deliverableType?: string;
   deliverablePreview?: string;
+  attemptNumber?: number;
+  routeId?: string;
+  attemptDecision?: string;
+  retryReason?: string;
+  stopReason?: string;
   answersUserRequest?: boolean;
   isNotMetaOnly?: boolean;
   pass?: boolean;
@@ -439,6 +444,11 @@ export class ProfileWorkflowRunner {
       subAgentMetadataPath: event.subAgentMetadataPath,
       deliverableType: event.deliverableType,
       deliverablePreview: event.deliverablePreview,
+      attemptNumber: event.attemptNumber,
+      routeId: event.routeId,
+      attemptDecision: event.attemptDecision,
+      retryReason: event.retryReason,
+      stopReason: event.stopReason,
       answersUserRequest: event.answersUserRequest,
       isNotMetaOnly: event.isNotMetaOnly,
       pass: event.pass,
