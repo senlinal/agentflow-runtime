@@ -40,7 +40,8 @@ export class ProjectMemoryStore {
   async list(filters: ProjectMemoryListFilters = {}): Promise<ProjectMemoryRecord[]> {
     await mkdir(this.recordsDir(), { recursive: true });
     const files = (await readdir(this.recordsDir())).filter((file) => file.endsWith(".json"));
-    const records = await Promise.all(files.map((file) => this.get(file.replace(/\.json$/, ""))));
+    const maybeRecords = await Promise.all(files.map((file) => this.tryGet(file.replace(/\.json$/, ""))));
+    const records = maybeRecords.filter((record): record is ProjectMemoryRecord => record !== null);
     return records
       .filter((record) => !filters.profileId || record.profileId === filters.profileId)
       .filter((record) => !filters.type || record.type === filters.type)
@@ -87,6 +88,14 @@ export class ProjectMemoryStore {
 
   private compactedDir(): string {
     return join(this.baseDir, "compacted");
+  }
+
+  private async tryGet(memoryId: string): Promise<ProjectMemoryRecord | null> {
+    try {
+      return await this.get(memoryId);
+    } catch {
+      return null;
+    }
   }
 }
 

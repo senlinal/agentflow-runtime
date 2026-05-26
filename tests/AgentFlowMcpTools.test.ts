@@ -105,6 +105,40 @@ describe("AgentFlow MCP tools", () => {
     assert.equal(typeof result.found, "boolean");
   });
 
+  it("creates and collects an OpenCode native workflow pack through MCP", async () => {
+    const packed = await callAgentFlowTool("agentflow_native_pack", {
+      profile: "agent-workforce-basic",
+      task: "解释一下咖啡的做法",
+    }) as {
+      formattedText: string;
+      runId: string;
+      dispatchInstructionsPath: string;
+      taskCount: number;
+      dispatchPrompt: string;
+    };
+
+    assert.match(packed.formattedText, /AgentFlow Native Workflow Pack 已生成/);
+    assert.match(packed.formattedText, /@agentflow-planner/);
+    assert.match(packed.dispatchPrompt, /OpenCode native subagent/);
+    assert.equal(packed.taskCount, 5);
+    assert.ok(packed.dispatchInstructionsPath.endsWith("DISPATCH.md"));
+
+    const collected = await callAgentFlowTool("agentflow_native_collect", {
+      run: packed.runId,
+    }) as {
+      formattedText: string;
+      status: string;
+      pendingCount: number;
+      roleTimeline: Array<{ source: string; status: string }>;
+    };
+
+    assert.match(collected.formattedText, /AgentFlow Native Workflow Collect/);
+    assert.equal(collected.status, "partially_completed");
+    assert.equal(collected.pendingCount, 5);
+    assert.equal(collected.roleTimeline.every((event) => event.source === "opencode_native_artifact"), true);
+    assert.equal(collected.roleTimeline.every((event) => event.status === "pending"), true);
+  });
+
   it("loads AgentFlow .env when the MCP server starts outside the project shell", async () => {
     const root = await mkdtemp(join(tmpdir(), "agentflow-mcp-env-"));
     await writeFile(join(root, ".env"), [

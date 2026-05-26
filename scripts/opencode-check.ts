@@ -44,6 +44,8 @@ const requiredFiles = [
   "mcp/agentflow-mcp-server.ts",
   "mcp/agentflow-server.ts",
   "mcp/tools/run-profile-workflow.ts",
+  "mcp/tools/native-pack.ts",
+  "mcp/tools/native-collect.ts",
   "mcp/tools/list-profiles.ts",
   "mcp/tools/inspect-profile.ts",
   "mcp/tools/show-last-run.ts",
@@ -191,6 +193,8 @@ for (const requiredText of [
   "agentflow_list_profiles",
   "agentflow_inspect_profile",
   "agentflow_show_last_run",
+  "agentflow_native_pack",
+  "agentflow_native_collect",
   "structuredContent",
 ]) {
   if (!mcpServer.includes(requiredText)) {
@@ -229,7 +233,7 @@ for (const forbiddenPluginExport of ["export const id", "export const server", "
   }
 }
 const workflowInterceptorCore = readFileSync("adapters/opencode/AgentFlowWorkflowInterceptorCore.ts", "utf8");
-for (const requiredText of ["parseAgentFlowEntry", "parseWorkflowCommand", "buildToolInstruction", "fallbackText", "extractFormattedText", "agent-workforce-basic", "AgentFlow Runtime was not started."]) {
+for (const requiredText of ["parseAgentFlowEntry", "parseWorkflowCommand", "buildToolInstruction", "fallbackText", "extractFormattedText", "agent-workforce-basic", "agentflow_native_pack", "agentflow_native_collect", "AgentFlow Runtime was not started."]) {
   if (!workflowInterceptorCore.includes(requiredText)) {
     console.error(`agentflow workflow interceptor core is missing expected helper text: ${requiredText}`);
     process.exit(1);

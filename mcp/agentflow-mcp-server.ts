@@ -1,6 +1,8 @@
 import {
   agentflowInspectProfile,
   agentflowListProfiles,
+  agentflowNativeCollect,
+  agentflowNativePack,
   agentflowRunProfileWorkflow,
   agentflowShowLastRun,
 } from "./tools/index.ts";
@@ -25,6 +27,31 @@ const encoder = new TextEncoder();
 let buffer = "";
 
 const tools: ToolDefinition[] = [
+  {
+    name: "agentflow_native_pack",
+    description: "Create an OpenCode native subagent workflow pack with dispatch prompt and artifacts.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        task: { type: "string" },
+        profile: { type: "string" },
+      },
+      required: ["task"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "agentflow_native_collect",
+    description: "Collect and validate OpenCode native subagent workflow pack output artifacts.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        run: { type: "string" },
+        runId: { type: "string" },
+      },
+      additionalProperties: false,
+    },
+  },
   {
     name: "agentflow_run_profile_workflow",
     description: "Run AgentFlow Runtime through a workflow profile and return verified formatted role timeline output.",
@@ -139,6 +166,10 @@ export async function callAgentFlowTool(name: string, args: Record<string, unkno
     case "agentflow_run_profile_workflow":
     case "run_profile_workflow":
       return agentflowRunProfileWorkflow(args);
+    case "agentflow_native_pack":
+      return agentflowNativePack(args);
+    case "agentflow_native_collect":
+      return agentflowNativeCollect(args);
     case "agentflow_list_profiles":
       return agentflowListProfiles();
     case "agentflow_inspect_profile":

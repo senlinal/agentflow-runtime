@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { ProjectMemoryStore } from "../core/profile/ProjectMemoryStore.ts";
@@ -107,6 +107,20 @@ test("ProjectMemoryStore", async (t) => {
       () => new ProjectMemoryStore(dir).get("missing"),
       /Project memory record not found: missing/,
     );
+  });
+
+  await t.test("list skips stale record files without failing summaries", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "agentflow-memory-"));
+    const store = new ProjectMemoryStore(dir);
+    await store.save(memory({ memoryId: "memory_valid" }));
+
+    await mkdir(join(dir, "records"), { recursive: true });
+    await writeFile(join(dir, "records", "memory_stale.json"), "{", "utf8");
+
+    const records = await store.list({ profileId: "rag-optimization" });
+    assert.deepEqual(records.map((record) => record.memoryId), ["memory_valid"]);
+    const summary = await store.summarize("rag-optimization");
+    assert.equal(summary.records.length, 1);
   });
 });
 

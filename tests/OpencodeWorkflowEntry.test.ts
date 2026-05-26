@@ -26,6 +26,25 @@ describe("opencode plugin-owned AgentFlow entry", () => {
     });
   });
 
+  it("parses native pack and collect entries", () => {
+    assert.deepEqual(parseAgentFlowEntry("agentflow native-pack 解释一下咖啡的做法"), {
+      mode: "native-pack",
+      profile: "agent-workforce-basic",
+      task: "解释一下咖啡的做法",
+    });
+    assert.deepEqual(parseAgentFlowEntry("agentflow native-pack run agent-workforce-basic 解释一下咖啡的做法"), {
+      mode: "native-pack",
+      profile: "agent-workforce-basic",
+      task: "解释一下咖啡的做法",
+    });
+    assert.deepEqual(parseAgentFlowEntry("agentflow native-collect 2026-run"), {
+      mode: "native-collect",
+      profile: "agent-workforce-basic",
+      runId: "2026-run",
+      task: "2026-run",
+    });
+  });
+
   it("parses explicit LLM opt-in entries", () => {
     assert.deepEqual(parseAgentFlowEntry("agentflow llm 给我解释咖啡的相关知识"), {
       profile: "agent-workforce-llm",
@@ -58,6 +77,27 @@ describe("opencode plugin-owned AgentFlow entry", () => {
         allowLLM: false,
       },
     }]);
+  });
+
+  it("calls native pack and native collect MCP tools", async () => {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const caller: WorkflowToolCaller = async (name, args) => {
+      calls.push({ name, args });
+      return { formattedText: name === "agentflow_native_pack" ? "AgentFlow Native Workflow Pack 已生成" : "AgentFlow Native Workflow Collect" };
+    };
+
+    assert.equal(
+      await runWorkflowEntry(caller, parseAgentFlowEntry("agentflow native-pack 解释 RAG 流程")!),
+      "AgentFlow Native Workflow Pack 已生成",
+    );
+    assert.equal(
+      await runWorkflowEntry(caller, parseAgentFlowEntry("agentflow native-collect run-123")!),
+      "AgentFlow Native Workflow Collect",
+    );
+    assert.deepEqual(calls, [
+      { name: "agentflow_native_pack", args: { profile: "agent-workforce-basic", task: "解释 RAG 流程" } },
+      { name: "agentflow_native_collect", args: { run: "run-123" } },
+    ]);
   });
 
   it("returns CLI fallback without fabricating runtime proof", async () => {

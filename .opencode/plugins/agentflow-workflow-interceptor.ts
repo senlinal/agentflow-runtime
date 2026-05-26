@@ -3,14 +3,17 @@ import {
   DEFAULT_PROFILE,
   extractFormattedText,
   LLM_PROFILE,
+  NATIVE_COLLECT_TOOL,
+  NATIVE_PACK_TOOL,
   parseAgentFlowEntry,
   parseWorkflowCommand,
   type WorkflowToolCaller,
+  WORKFLOW_TOOL,
 } from "../../adapters/opencode/AgentFlowWorkflowInterceptorCore.ts";
 
 const COMMANDS = new Set(["workflow", "agentflow", "workflow-llm", "agentflow-llm"]);
 const LLM_COMMANDS = new Set(["workflow-llm", "agentflow-llm"]);
-const WORKFLOW_TOOL = "agentflow_run_profile_workflow";
+const AGENTFLOW_WORKFLOW_TOOL_NAME = "agentflow_run_profile_workflow";
 const latestFormattedTextBySession = new Map<string, string>();
 
 export async function AgentFlowWorkflowInterceptor(input: {
@@ -72,7 +75,14 @@ function rememberFormattedText(sessionID: string | undefined, formattedText: str
 }
 
 function isAgentFlowWorkflowTool(tool: string): boolean {
-  return tool === WORKFLOW_TOOL || tool.endsWith(`_${WORKFLOW_TOOL}`) || tool === "run_profile_workflow" || tool.endsWith("_run_profile_workflow");
+  return tool === WORKFLOW_TOOL
+    || tool.endsWith(`_${WORKFLOW_TOOL}`)
+    || tool === "run_profile_workflow"
+    || tool.endsWith("_run_profile_workflow")
+    || tool === NATIVE_PACK_TOOL
+    || tool.endsWith(`_${NATIVE_PACK_TOOL}`)
+    || tool === NATIVE_COLLECT_TOOL
+    || tool.endsWith(`_${NATIVE_COLLECT_TOOL}`);
 }
 
 function textPart(text: string): Record<string, unknown> {

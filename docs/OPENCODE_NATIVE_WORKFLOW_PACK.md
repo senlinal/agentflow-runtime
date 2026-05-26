@@ -48,6 +48,16 @@ Each subagent reads its `input.json`, follows its `prompt.md`, and writes exactl
 
 ## Pack Command
 
+In OpenCode, use:
+
+```text
+/agentflow native-pack 解释一下咖啡的做法
+```
+
+This calls the MCP tool `agentflow_native_pack` and returns a copyable dispatch prompt for OpenCode native subagents.
+
+CLI fallback:
+
 ```bash
 npm run workflow:native-pack -- --profile agent-workforce-basic --task "解释一下咖啡的做法"
 ```
@@ -66,6 +76,16 @@ The command prints `runId`, `dispatchInstructionsPath`, `manifestPath`, task cou
 6. The collection command to run after outputs exist.
 
 ## Collect Command
+
+In OpenCode, use:
+
+```text
+/agentflow native-collect <runId>
+```
+
+This calls the MCP tool `agentflow_native_collect`.
+
+CLI fallback:
 
 ```bash
 npm run workflow:native-collect -- --run <runId>

@@ -1,6 +1,8 @@
 export type WorkflowInterceptorCommand = {
+  mode?: "profile-run" | "native-pack" | "native-collect";
   task?: string;
   profile?: string;
+  runId?: string;
   resume?: boolean;
   answer?: string;
   allowLLM?: boolean;
@@ -9,6 +11,8 @@ export type WorkflowInterceptorCommand = {
 export type WorkflowToolCaller = (name: string, args: Record<string, unknown>) => Promise<unknown>;
 
 export const WORKFLOW_TOOL = "agentflow_run_profile_workflow";
+export const NATIVE_PACK_TOOL = "agentflow_native_pack";
+export const NATIVE_COLLECT_TOOL = "agentflow_native_collect";
 export const DEFAULT_PROFILE = "agent-workforce-basic";
 export const LLM_PROFILE = "agent-workforce-llm";
 const DEFAULT_TASK = "演示 AgentFlow 多角色协作";
@@ -37,6 +41,24 @@ export function parseWorkflowCommand(input: unknown): WorkflowInterceptorCommand
   }
 
   const tokens = text.split(/\s+/).filter(Boolean);
+  if (tokens[0] === "native-pack") {
+    const explicitProfile = tokens[1] === "run" && tokens[2] ? tokens[2] : undefined;
+    const taskTokens = explicitProfile ? tokens.slice(3) : tokens.slice(1);
+    return {
+      mode: "native-pack",
+      profile: explicitProfile ?? DEFAULT_PROFILE,
+      task: taskTokens.join(" ").trim() || DEFAULT_TASK,
+    };
+  }
+  if (tokens[0] === "native-collect") {
+    const runId = tokens[1] === "run" && tokens[2] ? tokens[2] : tokens[1];
+    return {
+      mode: "native-collect",
+      runId,
+      task: runId ?? DEFAULT_TASK,
+      profile: DEFAULT_PROFILE,
+    };
+  }
   if (tokens[0] === "run" && tokens[1]) {
     const profile = tokens[1];
     const allowLLM = llmIntent.allowLLM || profile === LLM_PROFILE;
@@ -67,6 +89,31 @@ export function fallbackText(task: string, profile = DEFAULT_PROFILE): string {
 export function buildToolInstruction(parsed: WorkflowInterceptorCommand = {}): string {
   const task = stringifyInput(parsed.task ?? parsed.answer ?? DEFAULT_TASK) || DEFAULT_TASK;
   const profile = parsed.profile ?? DEFAULT_PROFILE;
+  if (parsed.mode === "native-pack") {
+    const args = { task, profile };
+    return [
+      "Call MCP tool `agentflow_native_pack` now with exactly these arguments:",
+      JSON.stringify(args),
+      "",
+      "After the tool returns, display only `formattedText` exactly as returned.",
+      "Do not summarize it. Do not create a Supervisor plan. Do not search. Do not call CodeExecutor.",
+      "If the MCP tool is unavailable, display this fallback exactly:",
+      `AgentFlow native workflow pack was not created.\nReason: agentflow_native_pack MCP tool is unavailable.\nFallback:\nnpm run workflow:native-pack -- --profile ${profile} --task "${escapeShellDoubleQuoted(task)}"`,
+    ].join("\n");
+  }
+  if (parsed.mode === "native-collect") {
+    const runId = stringifyInput(parsed.runId ?? parsed.task ?? "").trim();
+    const args = { run: runId };
+    return [
+      "Call MCP tool `agentflow_native_collect` now with exactly these arguments:",
+      JSON.stringify(args),
+      "",
+      "After the tool returns, display only `formattedText` exactly as returned.",
+      "Do not summarize it. Do not create a Supervisor plan. Do not search. Do not call CodeExecutor.",
+      "If the MCP tool is unavailable, display this fallback exactly:",
+      `AgentFlow native workflow collect was not started.\nReason: agentflow_native_collect MCP tool is unavailable.\nFallback:\nnpm run workflow:native-collect -- --run ${escapeShellDoubleQuoted(runId)}`,
+    ].join("\n");
+  }
   const args = {
     task,
     profile,
@@ -90,6 +137,15 @@ export async function runWorkflowEntry(toolCaller: WorkflowToolCaller, parsed: W
   const task = stringifyInput(parsed.task ?? parsed.answer ?? DEFAULT_TASK) || DEFAULT_TASK;
   const profile = parsed.profile ?? DEFAULT_PROFILE;
   try {
+    if (parsed.mode === "native-pack") {
+      const result = await toolCaller(NATIVE_PACK_TOOL, { task, profile });
+      return formattedText(result, task, profile);
+    }
+    if (parsed.mode === "native-collect") {
+      const runId = stringifyInput(parsed.runId ?? task).trim();
+      const result = await toolCaller(NATIVE_COLLECT_TOOL, { run: runId });
+      return formattedText(result, task, profile);
+    }
     const result = await toolCaller(WORKFLOW_TOOL, {
       ...(task ? { task } : {}),
       profile,

@@ -111,6 +111,14 @@ This is a hybrid proof. It writes AgentFlow internal subagent artifacts and repo
 
 To hand work to OpenCode's own clickable native subagents, generate a workflow pack:
 
+```text
+/agentflow native-pack 解释一下咖啡的做法
+```
+
+The OpenCode response includes a copyable dispatch prompt. Send that prompt in OpenCode so it creates the listed `@agentflow-*` native subagent tasks.
+
+CLI fallback:
+
 ```bash
 npm run workflow:native-pack -- --profile agent-workforce-basic --task "解释一下咖啡的做法"
 ```
@@ -119,6 +127,12 @@ Open the generated `DISPATCH.md`, create the listed `@agentflow-*` native subage
 
 ```bash
 npm run workflow:native-collect -- --run <runId>
+```
+
+In OpenCode, the equivalent collection entry is:
+
+```text
+/agentflow native-collect <runId>
 ```
 
 Missing `output.json` files stay pending; AgentFlow does not fabricate completed native subagent output.

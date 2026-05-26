@@ -40,6 +40,8 @@ The installer registers the AgentFlow policy and workflow interceptor plugins, r
 Restart OpenCode after changing this file. The available tools should include:
 
 - `agentflow_run_profile_workflow`
+- `agentflow_native_pack`
+- `agentflow_native_collect`
 - `agentflow_list_profiles`
 - `agentflow_inspect_profile`
 - `agentflow_show_last_run`
@@ -61,6 +63,10 @@ It does not call a real LLM and does not call `CodeExecutor`.
 `agentflow_run_profile_workflow` accepts `task`, optional `profile`, optional resume fields, and safety booleans `allowExecution=false` and `allowLLM=false`.
 
 It returns `formattedText`, `runtimeProof`, `roleTimeline`, `profileId`, `routingDecision`, `executedWorkflows`, `summaryPath`, `tracePath`, `contextPath`, `warnings`, and `nextActions`.
+
+`agentflow_native_pack` accepts `task` and optional `profile`. It returns an OpenCode native workflow pack and a copyable dispatch prompt for `@agentflow-*` native subagents.
+
+`agentflow_native_collect` accepts `run` or `runId`. It validates native subagent `output.json` artifacts and reports `source=opencode_native_artifact` rows. Missing outputs remain pending and are not fabricated.
 
 Profiles with LLM-backed workflow nodes are blocked unless `allowLLM=true`. The OpenCode entry defaults to `agent-workforce-basic` with `allowLLM=false`; run the LLM-backed profile only through an explicit CLI pilot.
 
@@ -89,6 +95,8 @@ Use one of these OpenCode entries:
 ```text
 /workflow <task>
 /agentflow <task>
+/agentflow native-pack <task>
+/agentflow native-collect <runId>
 ```
 
 Plain `agentflow <task>` and `@agentflow <task>` are best-effort compatibility paths only. In current OpenCode builds, ordinary chat messages cannot reliably stop model routing before the provider call, so use slash commands when you need a hard AgentFlow run.

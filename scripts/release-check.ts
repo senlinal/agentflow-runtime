@@ -33,6 +33,8 @@ const requiredFiles = [
   "mcp/agentflow-mcp-server.ts",
   "mcp/agentflow-server.ts",
   "mcp/tools/run-profile-workflow.ts",
+  "mcp/tools/native-pack.ts",
+  "mcp/tools/native-collect.ts",
   "mcp/tools/list-profiles.ts",
   "mcp/tools/inspect-profile.ts",
   "mcp/tools/show-last-run.ts",
